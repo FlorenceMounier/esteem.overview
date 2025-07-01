@@ -1,0 +1,13 @@
+Package: esteem.overview
+Version: 0.0.0.9000
+Title: Recent Trends of Nursery Quality
+Description: Recent trends of nursery quality related parameters in French estuaries.
+Authors@R: person(given = "Florence",
+       family = "Mounier",
+       role = c("aut", "cre"),
+       email = "florence.mounier@inrae.fr",
+       comment = c(ORCID = "0000-0001-8916-7007"))
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
