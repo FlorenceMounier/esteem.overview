@@ -35,6 +35,7 @@ See `vignette("share-on-a-github-website", package = "fusen")` for more informat
 ```{r, eval=FALSE}
 # _All-in-one share of your package and its documentation on GitHub
 fusen::init_share_on_github()
+# The next time you run this function, you can set `init_share_on_github(ask = TRUE)`, to not see all the intermediate questions.
 ```
 
 
