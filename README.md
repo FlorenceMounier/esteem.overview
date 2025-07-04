@@ -1,65 +1,51 @@
----
-output: github_document
----
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
-
 
 # esteem.overview
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/FlorenceMounier/esteem.overview/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/FlorenceMounier/esteem.overview/actions/workflows/R-CMD-check.yaml)
-[![Codecov test coverage](https://codecov.io/gh/FlorenceMounier/esteem.overview/graph/badge.svg)](https://app.codecov.io/gh/FlorenceMounier/esteem.overview)
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-The goal of esteem.overview is to ...
+The goal of esteem.overview is to explore data extractions from Quadrige
+database.
 
 ## Installation
 
-You can install the development version of esteem.overview from [GitHub](https://github.com/) with:
+You can install the development version of esteem.overview from
+[GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("pak")
-pak::pak("FlorenceMounier/esteem.overview")
+devtools::install_github("FlorenceMounier/esteem.overview")
+#> Using GitHub PAT from the git credential store.
+#> Skipping install of 'esteem.overview' from a github remote, the SHA1 (7a8bbc37) has not changed since last install.
+#>   Use `force = TRUE` to force installation
 ```
 
-## Documentation
+## About
 
-Full documentation website on: https://FlorenceMounier.github.io/esteem.overview
+This README has been compiled on the 2025-07-04 14:11:39.086113
 
-## Example
-
-This is a basic example which shows you how to solve a common problem:
-
+Here are the tests results and package coverage:
 
 ``` r
-library(esteem.overview)
-#> Error in library(esteem.overview): aucun package nommé 'esteem.overview' n'est trouvé
-## basic example code
+devtools::check(quiet = TRUE)
+#> ℹ Loading esteem.overview
+#> ── R CMD check results ───────────────────────── esteem.overview 0.0.0.9000 ────
+#> Duration: 29.5s
+#> 
+#> ❯ checking for missing documentation entries ... WARNING
+#>   Jeux de données non documentés :
+#>     'data_benthos' 'data_contamination' 'data_phyto' 'data_pomet'
+#>   All user-level objects in a package should have documentation entries.
+#>   See chapter 'Writing R documentation files' in the 'Writing R
+#>   Extensions' manual.
+#> 
+#> ❯ checking for unstated dependencies in examples ... WARNING
+#>   aucun fichier source n'est trouvé
+#> 
+#> 0 errors ✔ | 2 warnings ✖ | 0 notes ✔
+#> Error: R CMD check found WARNINGs
 ```
-
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
-
-
-``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-<div class="figure">
-<img src="man/figures/README-pressure-1.png" alt="plot of chunk pressure" width="100%" />
-<p class="caption">plot of chunk pressure</p>
-</div>
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
