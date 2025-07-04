@@ -1,0 +1,439 @@
+---
+title: "data_benthos"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_benthos}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+knitr::opts_chunk$set(echo = FALSE)
+library(esteem.overview)
+library(tidyverse, quietly = TRUE)
+library(writexl)
+# Maps
+library(sf)
+# Get taxonomy api
+library(jsonlite) # install.packages("jsonlite", repos="http://cran.r-project.org")
+library(httr) # install.packages("httr")
+
+`%!in%` = Negate(`%in%`)
+```
+
+```{r}
+data <- esteem.overview::data_benthos |> 
+  mutate(YEAR = year(DATE))
+```
+
+## General informations
+
+### Campaign period and frequencies
+- Campains are organized each 3 years, once in autumn, except for 2007: april in Seine only, april&may in Gironde as well as october the same year.
+```{r}
+data |> 
+  mutate(year_month = paste0(year(DATE), "-", month(DATE))) |> 
+  distinct(ZONE_MARINE_QUADRIGE, year_month) |> 
+  arrange(ZONE_MARINE_QUADRIGE, year_month)
+```
+
+### Campaign spatio-temporal measurments
+```{r}
+data |> 
+  select(ZONE_MARINE_QUADRIGE, LIEU_MNEMONIQUE, latitude, longitude) |> 
+  distinct() |> 
+  group_by(ZONE_MARINE_QUADRIGE) |> 
+  summarise(lat_stat = paste0(min(latitude), " - ", max(latitude)),
+            lon_stat = paste0(min(longitude), " - ", max(longitude)))
+```
+
+=> Wrong coordinates for Gironde estuary: latitude = 42.26208 => 45.26208
+```{r}
+data <- data |> 
+  mutate(latitude = case_when(
+    latitude == 42.26208 ~ 45.26208,
+    TRUE ~ latitude
+  ))
+```
+
+```{r}
+ggmap_REBENT_gironde <- gg_map_parametre_data_benthos(data = data, 
+                                estuaire = "085 - Estuaire de la Gironde", 
+                                color = ggplot2_colors(3)[3])
+ggmap_REBENT_gironde
+# ggsave(plot = ggmap_REBENT_gironde, filename = "../inst/results/data_benthos/maps/ggmap_REBENT_gironde.jpg")
+```
+
+```{r}
+ggmap_REBENT_loire <- gg_map_parametre_data_benthos(data = data, 
+                                estuaire = "070 - Estuaire de la Loire",
+                                color = ggplot2_colors(3)[2])
+ggmap_REBENT_loire
+# ggsave(plot = ggmap_REBENT_loire, filename = "../inst/results/data_benthos/maps/ggmap_REBENT_loire.jpg")
+```
+
+```{r}
+ggmap_REBENT_seine <- gg_map_parametre_data_benthos(data = data, 
+                                estuaire = "011 - Estuaire de la Seine",
+                                color = ggplot2_colors(3)[1])
+ggmap_REBENT_seine
+ # ggsave(plot = ggmap_REBENT_seine, filename = "../inst/results/data_benthos/maps/ggmap_REBENT_seine.jpg")
+```
+
+
+### Types of benthic sampler and their surface
+
+Two types of benthic sampler: intertidal corers & subtidal grab
+  - "Benne Smith Mc Intyre": Smith Mc Intyre grab 0.1m²
+  - "Benne Van Veen": Van Veen grab 0.1m²
+  - "Carottier PVC SIM DCE (0,029 m²)"
+
+354 types of PRELEVEMENT_DESCRIPTION
+```{r eval=FALSE, include=FALSE}
+data |>
+  distinct(PRELEVEMENT_DESCRIPTION)
+```
+
+Extract "Mnémonique", "Engin, "Taille du prélèvement", "Commentaires"
+```{r}
+data_full <- data |>  
+  # sample "TAG"
+  mutate(mnemonique = str_extract(PRELEVEMENT_DESCRIPTION, "Mnémonique\\s*:\\s*([^\\-]+)")) |> 
+  mutate(mnemonique = str_trim(str_remove(mnemonique, "Mnémonique\\s*:\\s*"))) |> 
+  # sampler type
+  mutate(sampler_type = str_extract(PRELEVEMENT_DESCRIPTION, "Engin\\s*:\\s*([^\\-]+)")) |> 
+  mutate(sampler_type = str_trim(str_remove(sampler_type, "Engin\\s*:\\s*"))) |> 
+    # sampler surface
+  mutate(sampler_surface = str_extract(PRELEVEMENT_DESCRIPTION, "Taille du prélèvement\\s*:\\s*([^\\-]+)")) |> 
+  mutate(sampler_surface = str_extract(sampler_surface, "\\d+\\.?\\d*") |> as.numeric()) |> 
+  # comment
+  mutate(comment = str_extract(PRELEVEMENT_DESCRIPTION, "Commentaires\\s*:\\s*([^\\-]+)")) |>
+  mutate(comment = str_trim(str_remove(comment, "Commentaires\\s*:\\s*")))
+```
+
+Cleaning of "Engin" and corresponding "Taille du prélèvement"
+```{r}
+# Check combination sampler_type & sampler surface
+  data_full |>  
+    count(sampler_type, sampler_surface) 
+  # => incoherence between sampler type and sampler surface for "011-P-056" in Seine estuary
+  # => absence of sampler surface for "Carottier PVC diam. 19 cm (0,028 m²)"
+
+# For which "LIEU_MNEMONIQUE" the sampler type and surface are incoherent?
+  data_full |>  
+    filter(sampler_type == "Carottier PVC diam. 19 cm (0,028 m²)", 
+           sampler_surface == 0.1) |> 
+    distinct(ZONE_MARINE_QUADRIGE, LIEU_MNEMONIQUE, DATE)
+  # => for "011-P-056" in Seine estuary
+
+# Which distinct sampler_type exist for "011-P-056" in Seine estuary
+  data_full |> 
+    filter(LIEU_MNEMONIQUE == "011-P-056") |> 
+    distinct(sampler_type)
+  # => only "Carottier PVC diam. 19 cm (0,028 m²)" => it is sampler_surface that is wrong
+```
+
+```{r}
+# Correction of sampler surface: "Carottier PVC diam. 19 cm (0,028 m²)" is always "0.028" m²
+data_full <- data_full |> 
+  mutate(sampler_surface = case_when(
+    sampler_type == "Carottier PVC diam. 19 cm (0,028 m²)" ~ 0.028,
+    TRUE ~ sampler_surface
+  )
+)
+```
+
+Extract "tidal" information
+```{r}
+data_full <- data_full |> 
+  mutate(tidal = case_when(
+    str_detect(sampler_type, pattern = "Carottier") ~ "intertidal",
+    str_detect(sampler_type, pattern = "Benne") ~ "subtidal",
+    TRUE ~ NA
+  ))
+
+data_full |> 
+  count(tidal)
+```
+
+### Get species taxonomy
+
+- Total: 201 species
+```{r eval=FALSE, include=FALSE}
+data_full |>
+  distinct(TAXON_LIBELLE) |> dim()
+```
+
+```{r}
+data_full_taxonomy <- data_full |> 
+  separate(TAXON_LIBELLE, c("species", "AphiaID"), sep = " \\(") |> 
+  mutate(AphiaID = AphiaID |> str_remove("AphiaID : "),
+         AphiaID = AphiaID |> str_remove("\\)")) |> 
+  mutate(AphiaID = case_when(
+    species == "Nemertea sp2" ~ "152391",
+    TRUE ~ AphiaID
+  ))
+```
+
+```{r}
+# A vector of AphiaID we wan't to match
+AphiaIDToMatch <- data_full_taxonomy |> distinct(AphiaID) |>  pull(AphiaID) |>  as.numeric()
+
+# Build the URL to get the data from
+url <- ""
+for (index in 1:length(AphiaIDToMatch)) {
+  url <- rbind(url, sprintf("https://www.marinespecies.org/rest/AphiaClassificationByAphiaID/%d", AphiaIDToMatch[index]))
+}
+url <- url[-1]
+
+# Get the classification tree from the URL of each AphiaID
+classificationTree <- lapply(url, fromJSON)
+
+# Handle the data (each requested name has an list of results)
+results <- matrix(data = NA, ncol = 4)
+for (matchesindex in 1:length(AphiaIDToMatch)) {
+  # Get the classification tree for the current index
+  currentResultList = classificationTree[[matchesindex]]
+  
+  # Extract the necessary information
+  results <- rbind(
+    results,
+    c(
+      "AphiaID" = AphiaIDToMatch[[matchesindex]],
+      "phylum" = currentResultList[["child"]][["child"]]$scientificname,
+      "class" = ifelse(is.null(currentResultList[["child"]][["child"]][["child"]]$scientificname),
+                       yes = NA, no = currentResultList[["child"]][["child"]][["child"]]$scientificname),
+      "order" = ifelse(is.null(currentResultList[["child"]][["child"]][["child"]][["child"]]$scientificname),
+                       yes = NA, no = currentResultList[["child"]][["child"]][["child"]][["child"]]$scientificname)
+    )
+  )
+}
+results <- results |> as_tibble() |>drop_na()
+```
+
+```{r}
+data_full_taxonomy_done <- left_join(data_full_taxonomy, results, by = "AphiaID")
+```
+
+### Export cleaned dataset for benthos
+```{r}
+data_benthos_cleaned <- data_full_taxonomy_done |> 
+  mutate(ESTUARY = case_when(
+    ZONE_MARINE_QUADRIGE == "085 - Estuaire de la Gironde" ~ "Gironde",
+    ZONE_MARINE_QUADRIGE == "070 - Estuaire de la Loire" ~ "Loire",
+    ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine" ~ "Seine"
+  )) |> 
+  select(-c(ZONE_MARINE_QUADRIGE, SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE, LIEU_IDENTIFIANT),
+         -c(SUPPORT_NIVEAU_PRELEVEMENT, PARAMETRE_LIBELLE_COMPLET, PARAMETRE_CODE),
+         -c(GROUPE_TAXON_LIBELLE, UNITE, NIVEAU_QUALITE, QUALITE_DESCRIPTION, NUMERO_INDIVIDU_OBSERVATION))
+
+usethis::use_data(data_benthos_cleaned, overwrite = TRUE)
+write_xlsx(data_benthos_cleaned, "../inst/results/data_benthos/data_benthos_cleaned.xlsx")
+```
+
+## Indicators
+
+### Species richness
+
+```{r}
+# nb distinct species ever found per estuary
+data_benthos_n_tot <- data_benthos_cleaned |> 
+  group_by(ZONE_MARINE_QUADRIGE, tidal) |> 
+  distinct(TAXON_LIBELLE) |> 
+  summarise(species_n_tot = n(), .groups = "drop")
+
+# nb of distinct species found for each year and each estuary
+REBENT_richness <- data_benthos_cleaned |> 
+  mutate(ZONE_MARINE_QUADRIGE = as.factor(ZONE_MARINE_QUADRIGE),
+         TAXON_LIBELLE = as.factor(TAXON_LIBELLE)) |>  
+  group_by(ZONE_MARINE_QUADRIGE, YEAR, tidal) |> 
+  distinct(TAXON_LIBELLE) |> 
+  summarise(species_per_year = n(), .groups = "drop") |> 
+  left_join(data_benthos_n_tot) |> 
+  mutate(percent_species_occ = species_per_year / species_n_tot * 100)
+```
+
+```{r}
+ggplot_REBENT_richness <- ggplot(data = REBENT_richness) +
+  aes(x = YEAR, y = species_per_year, color = ZONE_MARINE_QUADRIGE, 
+      linetype = tidal, shape = tidal) +
+  geom_line(position = "dodge") +
+  geom_point() +
+  labs(title = "REBENT: macrobenthic fauna", 
+       x = NULL, 
+       y = "Species Richness (#/year)",
+       color = "Estuary")
+
+ggsave(plot = ggplot_REBENT_richness,
+       "../inst/results/1.parameter_screaning_benthos/ggplot_REBENT_richness.jpg",
+       width = 17, height = 10, units = "cm")
+
+ggplot_REBENT_richness
+```
+
+```{r}
+ggplot_REBENT_richness_percent <- ggplot(data = REBENT_richness) +
+  aes(x = YEAR, y = percent_species_occ, color = ZONE_MARINE_QUADRIGE,
+      linetype = tidal, shape = tidal) +
+  geom_line(position = "dodge") +
+  geom_point() +
+  labs(title = "REBENT: macrobenthic fauna", 
+       x = NULL, 
+       y = "Percentage of Species Richness (% of total #/year)",
+       color = "Estuary")
+
+ggsave(plot = ggplot_REBENT_richness_percent,
+       "../inst/results/1.parameter_screaning_benthos/ggplot_REBENT_richness_percent.jpg",
+       width = 17, height = 10, units = "cm")
+
+ggplot_REBENT_richness_percent
+```
+
+### Total abundance
+
+```{r}
+REBENT_tot_abundance <- data_benthos_cleaned |> 
+  group_by(ZONE_MARINE_QUADRIGE, YEAR, tidal) |> 
+  summarise(tot_abundance = sum(RESULTAT))
+
+ggplot_REBENT_tot_abundance <- ggplot(data = REBENT_tot_abundance) +
+  aes(x = YEAR, y = tot_abundance, color = ZONE_MARINE_QUADRIGE,
+      linetype = tidal, shape = tidal) +
+  geom_point() +
+  geom_line()  +
+  labs(title = "REBENT: macrobenthic fauna", 
+       x = NULL, 
+       y = "Total abundance (# individual / year)",
+       color = "Estuary")
+
+
+ggsave(plot = ggplot_REBENT_tot_abundance,
+       "../inst/results/1.parameter_screaning_benthos/ggplot_REBENT_tot_abundance.jpg",
+       width = 17, height = 10, units = "cm")
+
+ggplot_REBENT_tot_abundance
+```
+
+### Density
+
+#### Number of individual per m2 at a given LIEU_MNEMONIQUE & DATE
+
+One line per species: nb of individuals
+```{r}
+data_benthos_ind_species_m2 <- data_benthos_cleaned |> 
+  # nb of sub-sample per LIEU_MNEMONIQUE & DATE & sampler_type
+  group_by(ZONE_MARINE_QUADRIGE, LIEU_MNEMONIQUE, DATE, sampler_type, tidal) |> 
+  mutate(nb_samples_lieu_mnemonique_date = unique(mnemonique) |>  length()) |> 
+  # summarise nb of ind per species at a given LIEU_MNEMONIQUE & DATE & sampler_type
+  group_by(ZONE_MARINE_QUADRIGE, LIEU_MNEMONIQUE, DATE, sampler_type, sampler_surface,
+           tidal, nb_samples_lieu_mnemonique_date, TAXON_LIBELLE) |> 
+  summarise(nb_ind_species_lieu_mnemonique_date = sum(RESULTAT)) |> 
+  # compute nb of in per species for the total surface of LIEU_MNEMONIQUE 
+  mutate(nb_ind_species_per_m2 = nb_ind_species_lieu_mnemonique_date / (sampler_surface * nb_samples_lieu_mnemonique_date)) |> 
+  ungroup()
+
+data_benthos_ind_species_m2
+```
+
+Yearly mean of individuals per surface
+```{r}
+data_benthos_ind_m2 <- data_benthos_ind_species_m2 |> 
+  mutate(YEAR = year(DATE)) |> 
+  group_by(ZONE_MARINE_QUADRIGE, YEAR, DATE, LIEU_MNEMONIQUE, tidal) |> 
+  summarise(nb_ind_per_m2 = sum(nb_ind_species_per_m2)) |> 
+  group_by(ZONE_MARINE_QUADRIGE, YEAR, tidal) |> 
+  summarise(mean_abundance_m2 = mean(nb_ind_per_m2)) |> 
+  ungroup()
+```
+
+
+```{r}
+ggplot_REBENT_density <- ggplot(data_benthos_ind_m2) +
+  aes(x = YEAR, y = mean_abundance_m2, color = ZONE_MARINE_QUADRIGE,
+      linetype = tidal, shape = tidal) +
+  geom_line(position = "dodge") +
+  geom_point() +
+  labs(title = "REBENT: macrobenthic fauna", 
+       x = NULL, 
+       y = "Density (mean nb ind/m²)",
+       color = "Estuary")
+
+ggsave(plot = ggplot_REBENT_density,
+       "../inst/results/1.parameter_screaning_benthos/ggplot_REBENT_density.jpg",
+       width = 17, height = 10, units = "cm")
+
+ggplot_REBENT_density
+```
+
+#### Species richness per square metre
+
+```{r}
+# Number of species per sample
+data_n_species_by_sample <- data_benthos_ind_species_m2 |> 
+  group_by(ZONE_MARINE_QUADRIGE, LIEU_MNEMONIQUE, DATE, tidal) |> 
+  summarise(n_species = n(), .groups = "drop")
+
+# Sample surface
+data_sample_surface <- data_benthos_ind_species_m2 |> 
+  distinct(ZONE_MARINE_QUADRIGE, LIEU_MNEMONIQUE, DATE, sampler_type, sampler_surface, tidal, nb_samples_lieu_mnemonique_date) |> 
+  mutate(surface_sample = sampler_surface * nb_samples_lieu_mnemonique_date)
+
+# Compute species richness by m²
+data_species_richness <- left_join(data_n_species_by_sample, data_sample_surface) |> 
+  mutate(n_species_per_m2 = n_species / surface_sample)
+
+# Summarise per estuary and year
+data_species_richness_year <- data_species_richness |> 
+  mutate(YEAR = year(DATE)) |> 
+  group_by(ZONE_MARINE_QUADRIGE, YEAR, tidal) |> 
+  summarise(mean_year_n_species_per_m2 = mean(n_species_per_m2), 
+            sum_sample_surface = sum(surface_sample), .groups = "drop")
+
+# Impact of total surface sampled variability on estimated species richness
+
+  ## Total surface sampled variability
+  ggplot_surface_variability <- ggplot(data = data_species_richness_year) +
+    aes(x = YEAR, y = sum_sample_surface, color = ZONE_MARINE_QUADRIGE,
+        linetype = tidal, shape = tidal) +
+    geom_point() + geom_line() +
+    labs(x = NULL, y = "Total surface sampled (m²)", 
+         title = "Total surface sampled variability")
+  ggplot_surface_variability
+  ggsave(plot = ggplot_surface_variability, filename = "../inst/results/1.parameter_screaning_benthos/ggplot_surface_variability.jpg",
+         width = 15, height = 6, units = "cm")
+
+  # ## Correlation between species richness and total surface sampled
+  # model_lm <- lm(data = data_species_richness_year, 
+  #    formula = mean_year_n_species_per_m2 ~ sum_sample_surface)
+  # summary(model_lm) 
+  
+  ggplot_surface_richness_correlation <- ggplot(data = data_species_richness_year) +
+    aes(x = sum_sample_surface, y = mean_year_n_species_per_m2, 
+        color = ZONE_MARINE_QUADRIGE, linetype = tidal, shape = tidal) +
+    geom_point() +
+    labs(x = "Total surface sampled", y = "Species richness",
+         title = "Correlation between yearly total surface sampled and species richness")
+  ggplot_surface_richness_correlation
+  ggsave(plot = ggplot_surface_richness_correlation, filename = "../inst/results/1.parameter_screaning_benthos/ggplot_surface_richness_correlation.jpg",
+           width = 15, height = 6, units = "cm")
+  
+# Plot of species richness per m² per estuary and year
+ggplot_species_richness_year <- ggplot(data_species_richness_year) +
+  aes(x = YEAR, y = mean_year_n_species_per_m2, color = ZONE_MARINE_QUADRIGE,
+      linetype = tidal, shape = tidal) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Benthos - Species richness per square metre", 
+       x = NULL, y = "Mean number of species per m²",
+       color = "Estuary")
+ggplot_species_richness_year
+ggsave(plot = ggplot_species_richness_year, filename = "../inst/results/1.parameter_screaning_benthos/ggplot_species_richness_year.jpg",
+       width = 15, height = 6, units = "cm")
+```

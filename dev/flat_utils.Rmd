@@ -1,0 +1,54 @@
+---
+title: "flat_utils.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# ggplot2_colors
+    
+```{r function-ggplot2_colors}
+#' ggplot2 colors
+#' 
+#' Reproduce a vector of colors like those from {ggplot2}
+#' 
+#' @param n number of colors needed
+#'
+#' @return vector of hexadecimal colors
+#' 
+#' @export
+ggplot2_colors <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+```
+  
+```{r example-ggplot2_colors}
+ggplot2_colors(1)
+```
+  
+```{r tests-ggplot2_colors}
+test_that("ggplot2_colors works", {
+  expect_true(inherits(ggplot2_colors, "function")) 
+  expect_equal(object = ggplot2_colors(1),
+               expected = c("#F8766D"))
+})
+```
+  
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_utils.Rmd", vignette_name = NULL, check = FALSE)
+```
+

@@ -1,0 +1,89 @@
+---
+title: "flat_data_benthos.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+# gg_map_parametre_data_benthos
+    
+```{r development-gg_map_parametre_data_benthos}
+# You can prepare the code of the gg_map_parametre_data_benthos() function here
+```
+  
+```{r function-gg_map_parametre_data_benthos}
+#' Title
+#' 
+#' Description
+#' 
+#' @param data 
+#' @param estuaire 
+#' @param color 
+#'
+#' @return ggplot
+#' 
+#' @export
+gg_map_parametre_data_benthos <- function(data, estuaire, color) {
+  
+  # Convert to spatial object
+  points_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326) |>
+    filter(ZONE_MARINE_QUADRIGE == estuaire)
+  
+  # Define spatial window around points
+  bbox <- st_bbox(points_sf)
+  marge <- 0.1
+  xlim <- c(bbox["xmin"] - marge, bbox["xmax"] + marge)
+  ylim <- c(bbox["ymin"] - marge, bbox["ymax"] + marge)
+  
+  # Create a table with annotations: number of points per year
+  annot_df <- points_sf |>
+    st_drop_geometry() |>
+    group_by(YEAR) |>
+    summarise(n = n()) |>
+    mutate(
+      label = paste("n =", n),
+      longitude = xlim[1] + 0.01,  # Fix position
+      latitude = ylim[2] - 0.01
+    )
+  
+  # Plot
+  plot <- ggplot() +
+    geom_sf(data = esteem.overview::fr_map, fill = "grey95", color = "grey50") +
+    geom_sf(data = points_sf, size = 1, color = color) +
+    geom_text(data = annot_df, aes(x = longitude, y = latitude, label = label), 
+              inherit.aes = FALSE, hjust = 0, vjust = 1, size = 4, fontface = "bold") +
+    coord_sf(xlim = xlim, ylim = ylim, expand = FALSE) +
+    facet_wrap(vars(YEAR)) +
+    labs(title = str_extract(estuaire, "(?<=\\bla\\s)\\w+")) +
+    theme_minimal()
+  
+  return(plot)
+}
+```
+  
+```{r example-gg_map_parametre_data_benthos}
+# gg_map_parametre_data_benthos()
+```
+  
+```{r tests-gg_map_parametre_data_benthos}
+test_that("gg_map_parametre_data_benthos works", {
+  expect_true(inherits(gg_map_parametre_data_benthos, "function")) 
+})
+```
+  
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_data_benthos.Rmd", vignette_name = NULL, check = FALSE)
+```

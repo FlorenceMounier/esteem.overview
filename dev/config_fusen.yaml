@@ -1,0 +1,30 @@
+flat_data_benthos.Rmd:
+  path: dev/flat_data_benthos.Rmd
+  state: active
+  R: R/gg_map_parametre_data_benthos.R
+  tests: tests/testthat/test-gg_map_parametre_data_benthos.R
+  vignettes: []
+  inflate:
+    flat_file: dev/flat_data_benthos.Rmd
+    vignette_name: ~
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
+flat_utils.Rmd:
+  path: dev/flat_utils.Rmd
+  state: active
+  R: R/ggplot2_colors.R
+  tests: tests/testthat/test-ggplot2_colors.R
+  vignettes: []
+  inflate:
+    flat_file: dev/flat_utils.Rmd
+    vignette_name: ~
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
