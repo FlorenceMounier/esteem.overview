@@ -15,9 +15,20 @@ library(httr) # install.packages("httr")
 # ---------------------------------------------------------------------------
 # Read raw data from {quadrige.explorer} ----
 
-data <- esteem.overview::data_benthos_REBENT |>
+data_REBENT <- esteem.overview::data_benthos |>
   mutate(YEAR = year(DATE)) |>
-  mutate(year_month = paste0(year(DATE), "-", month(DATE)))
+  mutate(year_month = paste0(year(DATE), "-", month(DATE))) |>
+  mutate(ESTUARY = case_when(
+    ZONE_MARINE_QUADRIGE == "085 - Estuaire de la Gironde" ~ "Gironde",
+    ZONE_MARINE_QUADRIGE == "070 - Estuaire de la Loire" ~ "Loire",
+    ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine" ~ "Seine"
+  ))
+
+
+# ---------------------------------------------------------------------------
+# Biota
+
+data <- data_REBENT |> filter(PARAMETRE_GROUPE == "Biologie")
 
 # ---------------------------------------------------------------------------
 # Campaign period and frequencies ----
@@ -25,8 +36,8 @@ data <- esteem.overview::data_benthos_REBENT |>
 # Campains are organized each 3 years, once in autumn, except for 2007: april in Seine only, april&may in Gironde as well as october the same year.
 
 data |>
-  distinct(ZONE_MARINE_QUADRIGE, year_month) |>
-  arrange(ZONE_MARINE_QUADRIGE, year_month)
+  distinct(ESTUARY, year_month) |>
+  arrange(ESTUARY, year_month)
 
 # We keep only autumn:
 
@@ -38,9 +49,9 @@ data <- data |>
 # Campaign spatio-temporal measurments ----
 
 data |>
-  select(ZONE_MARINE_QUADRIGE, LIEU_MNEMONIQUE, latitude, longitude) |>
+  select(ESTUARY, LIEU_MNEMONIQUE, latitude, longitude) |>
   distinct() |>
-  group_by(ZONE_MARINE_QUADRIGE) |>
+  group_by(ESTUARY) |>
   summarise(lat_stat = paste0(min(latitude), " - ", max(latitude)),
             lon_stat = paste0(min(longitude), " - ", max(longitude)))
 
@@ -55,19 +66,22 @@ data <- data |>
 
 ### Gironde
 ggmap_REBENT_gironde <- gg_map_parametre_data_benthos(data = data,
-                                                      estuaire = "085 - Estuaire de la Gironde",
+                                                      estuaire = "Gironde",
                                                       color = ggplot2_colors(3)[3])
-ggsave(plot = ggmap_REBENT_gironde, filename = "inst/results/data_benthos/maps/ggmap_REBENT_gironde.jpg")
+ggmap_REBENT_gironde
+# ggsave(plot = ggmap_REBENT_gironde, filename = "inst/results/data_benthos/maps/ggmap_REBENT_gironde.jpg")
 
 ### Loire
 ggmap_REBENT_loire <- gg_map_parametre_data_benthos(data = data,
-                                                    estuaire = "070 - Estuaire de la Loire",
+                                                    estuaire = "Loire",
                                                     color = ggplot2_colors(3)[2])
-ggsave(plot = ggmap_REBENT_loire, filename = "inst/results/data_benthos/maps/ggmap_REBENT_loire.jpg")
+ggmap_REBENT_loire
+
+# ggsave(plot = ggmap_REBENT_loire, filename = "inst/results/data_benthos/maps/ggmap_REBENT_loire.jpg")
 
 ### Seine
 ggmap_REBENT_seine <- gg_map_parametre_data_benthos(data = data,
-                                                    estuaire = "011 - Estuaire de la Seine",
+                                                    estuaire = "Seine",
                                                     color = ggplot2_colors(3)[1])
 ggmap_REBENT_seine
 
@@ -81,10 +95,10 @@ ggmap_REBENT_seine
 data <- data |>  filter(LIEU_MNEMONIQUE %!in% c("011-P-049", "011-P-050"))
 
 ggmap_REBENT_seine <- gg_map_parametre_data_benthos(data = data,
-                                                    estuaire = "011 - Estuaire de la Seine",
+                                                    estuaire = "Seine",
                                                     color = ggplot2_colors(3)[1])
 ggmap_REBENT_seine
-ggsave(plot = ggmap_REBENT_seine, filename = "inst/results/data_benthos/maps/ggmap_REBENT_seine.jpg")
+# ggsave(plot = ggmap_REBENT_seine, filename = "inst/results/data_benthos/maps/ggmap_REBENT_seine.jpg")
 
 # ---------------------------------------------------------------------------
 # Types of benthic sampler and their surface ----
@@ -174,6 +188,7 @@ data_full_taxonomy <- data_full |>
 
 ## The vector of AphiaID we wan't to match
 AphiaIDToMatch <- data_full_taxonomy |> distinct(AphiaID) |>  pull(AphiaID) |>  as.numeric()
+species <- data_full_taxonomy |> distinct(species) |>  pull(species)
 
 ## Build the URL to get the data from
 url <- ""
@@ -186,7 +201,7 @@ url <- url[-1]
 classificationTree <- lapply(url, fromJSON)
 
 ## Handle the data (each requested name has an list of results)
-results_taxonomy <- matrix(data = NA, ncol = 4)
+results_taxonomy <- matrix(data = NA, ncol = 5)
 for (matchesindex in 1:length(AphiaIDToMatch)) {
   # Get the classification tree for the current index
   currentResultList = classificationTree[[matchesindex]]
@@ -200,7 +215,8 @@ for (matchesindex in 1:length(AphiaIDToMatch)) {
       "class" = ifelse(is.null(currentResultList[["child"]][["child"]][["child"]]$scientificname),
                        yes = NA, no = currentResultList[["child"]][["child"]][["child"]]$scientificname),
       "order" = ifelse(is.null(currentResultList[["child"]][["child"]][["child"]][["child"]]$scientificname),
-                       yes = NA, no = currentResultList[["child"]][["child"]][["child"]][["child"]]$scientificname)
+                       yes = NA, no = currentResultList[["child"]][["child"]][["child"]][["child"]]$scientificname),
+      "species" = species[[matchesindex]]
     )
   )
 }
@@ -210,22 +226,27 @@ results_taxonomy <- results_taxonomy |> as_tibble() |> drop_na()
 usethis::use_data(results_taxonomy, overwrite = TRUE)
 
 ## Join taxonomy table with data
-data_full_taxonomy_done <- left_join(data_full_taxonomy, results, by = "AphiaID")
+data_full_taxonomy_done <- left_join(data_full_taxonomy, results_taxonomy, by = c("AphiaID", "species"))
 
 
 # ---------------------------------------------------------------------------
 # Export cleaned dataset for benthos ----
 
 data_benthos_REBENT_cleaned <- data_full_taxonomy_done |>
-  mutate(ESTUARY = case_when(
-    ZONE_MARINE_QUADRIGE == "085 - Estuaire de la Gironde" ~ "Gironde",
-    ZONE_MARINE_QUADRIGE == "070 - Estuaire de la Loire" ~ "Loire",
-    ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine" ~ "Seine"
-  )) |>
   select(-c(ZONE_MARINE_QUADRIGE, SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE, LIEU_IDENTIFIANT),
          -c(SUPPORT_NIVEAU_PRELEVEMENT, PARAMETRE_LIBELLE_COMPLET, PARAMETRE_CODE),
-         -c(GROUPE_TAXON_LIBELLE, UNITE, NIVEAU_QUALITE, QUALITE_DESCRIPTION, NUMERO_INDIVIDU_OBSERVATION))
+         -c(GROUPE_TAXON_LIBELLE, NIVEAU_QUALITE, QUALITE_DESCRIPTION, NUMERO_INDIVIDU_OBSERVATION))
 
 usethis::use_data(data_benthos_REBENT_cleaned, overwrite = TRUE)
 write_xlsx(data_benthos_REBENT_cleaned, "inst/results/data_benthos/data_benthos_REBENT_cleaned.xlsx")
 
+map_tidal <- data_benthos_REBENT_cleaned |>
+  distinct(LIEU_MNEMONIQUE, tidal)
+
+# ---------------------------------------------------------------------------
+# Sediment
+data_sediment <- data_REBENT |>
+    filter(PARAMETRE_GROUPE != "Biologie") |>
+  left_join(map_tidal)
+
+usethis::use_data(data_sediment, overwrite = TRUE)

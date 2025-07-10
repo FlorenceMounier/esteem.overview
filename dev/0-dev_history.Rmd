@@ -103,6 +103,7 @@ checkhelper::use_data_doc()
 
 ## Vignette ----
 usethis::use_vignette("data_benthos")
+usethis::use_vignette("data_sediment")
 usethis::use_vignette("data_contamination")
 devtools::build_vignettes()
 

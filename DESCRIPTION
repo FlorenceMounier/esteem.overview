@@ -12,6 +12,9 @@ BugReports: https://github.com/FlorenceMounier/esteem.overview/issues
 Depends: 
     R (>= 3.5)
 Suggests: 
+    benthos,
+    httr,
+    jsonlite,
     knitr,
     rmarkdown,
     sf,

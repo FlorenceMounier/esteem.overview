@@ -36,7 +36,7 @@ gg_map_parametre_data_benthos <- function(data, estuaire, color) {
   
   # Convert to spatial object
   points_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326) |>
-    filter(ZONE_MARINE_QUADRIGE == estuaire)
+    filter(ESTUARY == estuaire)
   
   # Define spatial window around points
   bbox <- st_bbox(points_sf)
@@ -63,7 +63,7 @@ gg_map_parametre_data_benthos <- function(data, estuaire, color) {
               inherit.aes = FALSE, hjust = 0, vjust = 1, size = 4, fontface = "bold") +
     coord_sf(xlim = xlim, ylim = ylim, expand = FALSE) +
     facet_wrap(vars(YEAR)) +
-    labs(title = str_extract(estuaire, "(?<=\\bla\\s)\\w+")) +
+    labs(title = estuaire) +
     theme_minimal()
   
   return(plot)
