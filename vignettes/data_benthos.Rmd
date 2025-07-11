@@ -98,7 +98,10 @@ abundance_prop <- nb_ind_sp |>
   mutate(abundance_prop = n_ind_sp / n_ind_tot * 100) |> 
   ungroup() |> 
   drop_na()
+```
 
+
+```{r}
 abundance_prop_species <- abundance_prop |> 
   filter(abundance_prop > 10) |> 
   arrange(ESTUARY, tidal, phylum, class, order, desc(abundance_prop)) |> 
@@ -106,6 +109,34 @@ abundance_prop_species <- abundance_prop |>
 abundance_prop_species
 
 write_xlsx(abundance_prop_species, "../inst/results/data_benthos/abundance_prop_species.xlsx")
+```
+
+```{r}
+abundance_prop_species_5 <- abundance_prop |> 
+  filter(abundance_prop > 5) |> 
+  arrange(ESTUARY, tidal, phylum, class, order, desc(abundance_prop)) |> 
+  select(-c(n_ind_sp, n_ind_tot))
+abundance_prop_species_5
+
+ggplot_REBENT_abundance_species <- abundance_prop_species_5 |> 
+  filter(phylum %in% c("Annelida", "Arthropoda", "Mollusca")) |>
+  mutate(species_grouped = paste(phylum, species, sep=": ")) |> 
+  ggplot() +
+  aes(x = phylum, y = abundance_prop, fill = species_grouped) +
+  geom_col() +
+  facet_grid(rows = vars(ESTUARY), cols = vars(tidal)) +
+  theme(legend.position = "bottom") +
+  guides(fill = guide_legend(ncol = 2)) +
+  scale_fill_manual(values = c("pink", "forestgreen", "lightblue", "gold1", "red", "blue", "purple", "green", "orange", "yellow", "gold4", "blue4", "coral", "grey", "royalblue", "pink3","green2", "orange3", "black"),
+                    guide = guide_legend(title = "Species (by Phylum)")) +
+  labs(title = "REBENT macrobenthic fauna: Species composition", 
+       x = NULL, 
+       y = "Abundance (%)",
+       fill = "Species")
+
+ggplot_REBENT_abundance_species
+
+ggsave(plot = ggplot_REBENT_abundance_species, "../inst/results/data_benthos/indicators/ggplot_REBENT_abundance_species.jpg",height = 10, width = 8)
 ```
 
 
@@ -394,9 +425,16 @@ ggplot_BEQI_index <- ggplot(BEQI) +
       linetype = tidal, shape = tidal) +
   geom_point() +
   geom_line() +
+  geom_hline(yintercept = 0.86) +
+  geom_hline(yintercept = 0.67) +
+  geom_hline(yintercept = 0.4) +
   labs(title = "REBENT macrobenthic fauna - BEQI-FR", 
-       x = NULL, y = "French Benthic Ecosystem Quality Index (BEQI-FR)",
-       color = "Estuary")
+       x = NULL, y = "Benthic Ecosystem Quality Index (BEQI-FR)",
+       color = "Estuary") +
+  annotate("text", x = 2015, y = 0.92, label = "High", size = 4, color = "black") +
+  annotate("text", x = 2015, y = 0.76, label = "Good", size = 4, color = "black") +
+  annotate("text", x = 2015, y = 0.53, label = "Moderate", size = 4, color = "black")
+
 ggplot_BEQI_index
 ggsave(plot = ggplot_BEQI_index, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_BEQIFR_index.jpg",
        width = 15, height = 6, units = "cm")
