@@ -13,12 +13,16 @@ Depends:
     R (>= 3.5)
 Suggests: 
     benthos,
+    dplyr,
+    here,
     httr,
     jsonlite,
     knitr,
     rmarkdown,
+    segmented,
     sf,
     testthat,
+    tidyverse,
     writexl
 VignetteBuilder: 
     knitr

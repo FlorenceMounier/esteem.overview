@@ -13,6 +13,25 @@ flat_data_benthos.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
+flat_data_contamination.Rmd:
+  path: dev/flat_data_contamination.Rmd
+  state: active
+  R:
+  - R/fun_seg_model.R
+  - R/get_kruskal_periods_results.R
+  tests:
+  - tests/testthat/test-fun_seg_model.R
+  - tests/testthat/test-get_kruskal_periods_results.R
+  vignettes: []
+  inflate:
+    flat_file: dev/flat_data_contamination.Rmd
+    vignette_name: ~
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
 flat_utils.Rmd:
   path: dev/flat_utils.Rmd
   state: active
