@@ -27,10 +27,22 @@ pkgload::load_all(export_all = FALSE)
 #' 
 #' Description
 #' 
-#' @return
+#' @param data 
+#' @param estuary 
+#' @param chemical 
+#' @param folder 
+#' @param n_break 
+#' @param plot_save 
+#'
+#' @return tibble results of segmented models
 #' 
 #' @export
-fun_seg_model <- function(data, estuary, chemical, folder = "metals", n_break = 1, plot_save = TRUE){
+fun_seg_model <- function(data, 
+                          estuary, 
+                          chemical, 
+                          folder, 
+                          n_break = 1, 
+                          plot_save = TRUE){
       
   # Data filtering
   data_estuary_chemical <- data |>  filter(ESTUARY == estuary, PARAMETRE_LIBELLE == chemical)
@@ -223,6 +235,6 @@ test_that("get_kruskal_periods_results works", {
 ```{r development-inflate, eval=FALSE}
 # Run but keep eval=FALSE to avoid infinite loop
 # Execute in the console directly
-fusen::inflate(flat_file = "dev/flat_data_contamination.Rmd", vignette_name = NULL, check = FALSE)
+fusen::inflate(flat_file = "dev/flat_data_contamination.Rmd", vignette_name = NULL, document = FALSE, check = FALSE)
 ```
 

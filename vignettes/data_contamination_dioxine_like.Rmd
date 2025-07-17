@@ -1,0 +1,270 @@
+---
+title: "data_contamination_dioxine_like"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_contamination_dioxine_like}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+library(esteem.overview)
+library(segmented)
+library(tidyverse)
+library(here)
+```
+
+# Get raw data for Dioxine_like compounds => thresholds in ng/g TEQ
+```{r}
+dioxine_like_names <- tibble(PARAMETRE_LIBELLE = c(
+  # DL-compounds: 12 DL-PCB
+  "CB 77", "CB 81", "CB 105", "CB 114", "CB 118", "CB 123",
+  "CB 126", "CB 156", "CB 157", "CB 167", "CB 169", "CB 189",
+  # DL-compounds: 7 polychlorinated dibenzo-p-dioxins (PCDDs)
+  "2,3,7,8-tetrachlorodibenzo-p-dioxine",
+  "1,2,3,7,8-pentachlorodibenzo-p-dioxine",
+  "1,2,3,4,7,8-hexachlorodibenzo-p-dioxine",
+  "1,2,3,6,7,8-hexachlorodibenzo-p-dioxine",
+  "1,2,3,7,8,9-hexachlorodibenzo-p-dioxine",
+  "1,2,3,4,6,7,8-heptachlorodibenzo-p-dioxine",
+  "octachlorodibenzo-p-dioxine", # OCDD 1,2,3,4,6,7,8,9-O8CDD
+  # DL-compounds: 10 polychlorinated dibenzofurans (PCDFs)
+  "2,3,7,8-tetrachlorodibenzofuran",
+  "1,2,3,7,8-pentachlorodibenzofuran",
+  "2,3,4,7,8-pentachlorodibenzofuran",
+  "1,2,3,4,7,8-hexachlorodibenzofuran",
+  "1,2,3,6,7,8-hexachlorodibenzofuran",
+  "1,2,3,7,8,9-hexachlorodibenzofuran",
+  "2,3,4,6,7,8-hexachlorodibenzofuran",
+  "1,2,3,4,6,7,8-heptachlorodibenzofuran",
+  "1,2,3,4,7,8,9-heptachlorodibenzofuran",
+  "octachlorodibenzofuranne")) # OCDF 1,2,3,4,6,7,8,9-O8CDF
+
+# Check if names in .xlsx are alike with the vector of names
+# dioxine_like <- dioxine_like_names |> 
+#   left_join(TEF_dioxine_like, by = c("PARAMETRE_LIBELLE" = "CHEMICAL"))
+
+
+data_dioxine_like <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
+  filter(support == "Bivalve") |> 
+  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |> 
+  filter(PARAMETRE_LIBELLE %in% dioxine_like$PARAMETRE_LIBELLE) |> 
+  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY") |> 
+  left_join(TEF_dioxine_like, by = c("PARAMETRE_LIBELLE" = "CHEMICAL"))
+```
+
+## Get the same unit of measurment
+
+Different units:
+
+- 1992-2007: µg.kg-1 (eq ng.g-1)
+- 2008-2016: PCDDs & PCDFs: ng.kg-1 ; PCBs: µg.kg-1
+- 2017-2024: ng.g-1, p.h. 
+```{r}
+data_dioxine_like |> 
+  distinct(UNITE)
+
+data_dioxine_like |> 
+  mutate(YEAR = as.factor(YEAR)) |> 
+  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "dioxine_like units")
+```
+
+Transform all results in ng/g dw (same as µg/kg):
+```{r}
+data_dioxine_like_dw <- data_dioxine_like |>
+  # transformation into dw concentrations
+  mutate(RESULTAT = case_when(
+    UNITE == "ng.g-1, p.h." ~ RESULTAT / (`Matière sèche_%` / 100),
+    UNITE == "µg.kg-1" ~ RESULTAT,
+    UNITE == "ng.kg-1" ~ RESULTAT / 1000
+  )) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g dw") |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 7))
+
+# # Checking
+# data_dioxine_like |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "octachlorodibenzofuranne")
+# data_dioxine_like_dw |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "octachlorodibenzofuranne")
+```
+
+Transform all results in ng/g TEQ:
+```{r}
+data_dioxine_like_TEQ <- data_dioxine_like_dw |> 
+  # transformation into lw concentrations
+  mutate(RESULTAT = RESULTAT * `TEF OMS 2005`) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g TEQ") |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 7))
+
+# # Checking => should be the same (TEF=1)
+# data_dioxine_like_dw |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "1,2,3,7,8-pentachlorodibenzo-p-dioxine")
+# data_dioxine_like_TEQ |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "1,2,3,7,8-pentachlorodibenzo-p-dioxine")
+
+# # Checking => should be 10% (TEF=0.1)
+# data_dioxine_like_dw |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "1,2,3,4,7,8-hexachlorodibenzo-p-dioxine")
+# data_dioxine_like_TEQ |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "1,2,3,4,7,8-hexachlorodibenzo-p-dioxine")
+```
+
+## Compute the sum
+```{r}
+data_sum_dioxine_like_TEQ <- data_dioxine_like_TEQ |> 
+  group_by(ESTUARY, YEAR, espece) |> 
+  summarise(
+    RESULTAT = sum(RESULTAT), 
+    .groups = "drop") |> 
+  mutate(PARAMETRE_LIBELLE = "sum_dioxine_like")
+```
+
+
+## Importance of the species matrix
+
+- Gironde : only C. gigas
+- Seine : only M. edulis
+- Loire : 
+  - 1992-2021: M. edulis
+  - 2022-2024: M. edulis + M.galloprovincialis
+  - 2018, 2021, 2024: Crassostrea gigas
+```{r}
+data_sum_dioxine_like_TEQ |> 
+  distinct(ESTUARY, espece)
+
+data_sum_dioxine_like_TEQ |> 
+  filter(ESTUARY == "Loire") |> 
+  distinct(ESTUARY, YEAR, espece)
+```
+
+Don't know what I can conclude from that:
+```{r}
+data_sum_dioxine_like_TEQ |> 
+  filter(ESTUARY == "Loire", YEAR > 2010) |>
+  ggplot() +
+  aes(x = YEAR, y = RESULTAT, colour = espece) +
+  geom_line() +
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+```
+
+Simplify with two species groups
+```{r}
+data_sum_dioxine_like_TEQ <- data_sum_dioxine_like_TEQ |> 
+    mutate(SPECIES = case_when(
+    espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
+    espece %in% c("Mytilus edulis (moule commune)",
+                  "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
+  ))
+```
+
+## Identify first and last periods
+
+Identify the first and last 5 years of measurement
+```{r}
+# Compute minimal and maximal year of measurement by compounds and estuary
+min_max_year <- data_sum_dioxine_like_TEQ |> 
+  group_by(PARAMETRE_LIBELLE, ESTUARY) |> 
+  summarise(min_year = min(YEAR),
+            max_year = max(YEAR), .groups = "drop")
+
+# Identify the first and last 5 years of measurement
+data_sum_dioxine_like_TEQ <- data_sum_dioxine_like_TEQ |> 
+  left_join(min_max_year, by = c("PARAMETRE_LIBELLE", "ESTUARY"))  |> 
+  mutate(periode = case_when(
+    YEAR <= min_year + 5 ~ "First 5 years",
+    YEAR >= max_year - 5 ~ "Last 5 years",
+    TRUE ~ NA
+  ))
+```
+
+# Time series graphs
+```{r}
+data_sum_dioxine_like_TEQ |>  
+ggplot() +
+  aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
+  geom_line() +
+  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL)
+```
+
+```{r}
+fun_seg_model_sum_dioxine_like <- function(chemical, estuary, n_break){
+  fun_seg_model(data = data_sum_dioxine_like_TEQ,
+                folder = "dioxine_like",
+                chemical = "sum_dioxine_like", 
+                estuary = estuary, n_break = n_break)
+}
+  
+res_sum_dioxine_like_lw_trends <- rbind(
+  fun_seg_model_sum_dioxine_like(estuary = "Seine", n_break = 2),
+  fun_seg_model_sum_dioxine_like(estuary = "Loire", n_break = 1),
+  fun_seg_model_sum_dioxine_like(estuary = "Gironde", n_break = 1)
+)
+```
+
+```{r}
+ggplot_dioxine_like_TEQ <- ggplot(data_sum_dioxine_like_TEQ) +
+  aes(x = YEAR,
+      y = RESULTAT,
+      colour = ESTUARY) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  theme(legend.position = "bottom") +
+  facet_grid(vars(PARAMETRE_LIBELLE)) +
+  labs(colour = "Estuary", y = "Contamination level in ng/g TEQ", x = NULL) +
+# Add last break dates of segmented models and arrows for significant last trends
+  geom_vline(data = res_sum_dioxine_like_lw_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
+  geom_text(
+    data = res_sum_dioxine_like_lw_trends,
+    aes(x = last_year+1, y = last_resultat, label = symbol), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE) +
+# Add environmental threshold when existing => UC QS(HH)
+  geom_text(
+    data = res_sum_dioxine_like_lw_trends,  
+    aes(x = last_year+1, y = 0.0065*1.1, label = "0.0065"),
+    color = "red", size = 2.5
+  ) +
+  geom_hline(
+    data = res_sum_dioxine_like_lw_trends,
+    aes(yintercept = 0.0065),
+    color = "red", linetype = "dashed"
+  )
+
+ggplot_dioxine_like_TEQ
+
+ggsave(plot = ggplot_dioxine_like_TEQ, "../inst/results/data_contam/dioxine_like/ggplot_dioxine_like_TEQ_time_series.jpg",
+       width = 10, height = 10, units = "cm")
+```
+
+# First vs last period graphs
+```{r}
+res_kruskal_dioxine_like <- get_kruskal_periods_results(
+  data_with_periode = data_sum_dioxine_like_TEQ, 
+  chemicals = "sum_dioxine_like")
+```
+
+```{r}
+plot_dioxine_like_periode <- data_sum_dioxine_like_TEQ |> 
+  drop_na(periode) |> # keep only data from first and last 5-years periods
+  ggplot() +
+  aes(x = ESTUARY, y = RESULTAT, colour = periode) +
+  geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
+  scale_color_manual(values = c("purple", "deeppink")) +
+  facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL, y = "Concentration in ng/g TEQ", colour = "Period") +
+  theme(legend.position = "bottom") +
+# Add long term trends if significant
+  geom_text(data = res_kruskal_dioxine_like, 
+            inherit.aes = FALSE, 
+            aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE)
+
+plot_dioxine_like_periode
+
+ggsave(plot = plot_dioxine_like_periode, "../inst/results/data_contam/dioxine_like/ggplot_dioxine_like_TEQ_periods.jpg", 
+       width = 10, height = 10, units = "cm")
+```

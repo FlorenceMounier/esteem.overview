@@ -1,0 +1,84 @@
+---
+title: "data_contamination_biometrics"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_contamination_biometrics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, include=FALSE}
+library(esteem.overview)
+library(tidyverse)
+```
+
+
+# Get raw data
+```{r}
+data <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() 
+
+data_ices_conversion_factors <- tribble(
+  ~ "SPECIES", ~ "percent_dw", ~ "percent_lw",
+  "M. edulis", 16.4, 1.4,
+  "M. galloprovincialis", 19.0, 2.0,
+  "C. gigas", 18.0, 1.9
+)
+```
+
+# Biometric information by estuary, year and species
+```{r}
+data_ROCCHMV_bio_long <- data |> 
+  filter(PARAMETRE_LIBELLE %in% c("Matière sèche", "Taille de l'individu", "Lipides totaux")) |>
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE, UNITE, espece) |> 
+  summarise(RESULTAT = mean(RESULTAT), .groups = "drop") |> 
+  unite(col = "PARAMETRE_LIBELLE_UNITE", PARAMETRE_LIBELLE, UNITE, sep = "_", remove = TRUE)
+```
+
+# Results for dry content
+
+ICES: M.edulis 16.4%, M. galloprovincialis 19.0%, C. gigas 18.0%
+
+Stronger difference between estuaries than between species
+```{r}
+data_ROCCHMV_bio_long |> 
+  filter(PARAMETRE_LIBELLE_UNITE == "Matière sèche_%") |> 
+  ggplot(aes(x = YEAR, y = RESULTAT, colour = ESTUARY, linetype = espece, shape = espece)) +
+  geom_line()+
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ 1, se = FALSE) +
+  labs(title = "Dry content comparison",
+       x = NULL, y = "Dry content (%)")
+```
+
+
+# Results for lipid content
+
+ICES: M.edulis 1.4 %lipww , M. galloprovincialis 2.0%lipww, C. gigas 1.9%lipww
+ICES: M.edulis 8.54 %lipdw , M. galloprovincialis 10.53%lipdw, C. gigas 10.56%lipdw
+
+```{r}
+data_ROCCHMV_bio_long |> 
+  filter(PARAMETRE_LIBELLE_UNITE == "Lipides totaux_%") |> 
+  ggplot(aes(x = YEAR, y = RESULTAT, colour = ESTUARY, linetype = espece, shape = espece)) +
+  geom_line()+
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ 1, se = FALSE) +
+  labs(title = "Lipid content comparison",
+       x = NULL, y = "Lipid content (%)")
+```
+
+```{r}
+data_ROCCHMV_bio <- data_ROCCHMV_bio_long |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE_UNITE) |> 
+  summarise(RESULTAT = mean(RESULTAT), .groups = "drop") |> 
+  pivot_wider(names_from = PARAMETRE_LIBELLE_UNITE, values_from = RESULTAT)
+```
+
+
+```{r}
+usethis::use_data(data_ROCCHMV_bio, overwrite = TRUE)
+```

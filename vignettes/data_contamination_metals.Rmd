@@ -2,19 +2,19 @@
 title: "data_contamination_metals"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{data_contamination}
+  %\VignetteIndexEntry{data_contamination_metals}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
 ```
 
-```{r setup}
+```{r libraries}
 library(esteem.overview)
 library(segmented)
 library(tidyverse)
@@ -119,30 +119,9 @@ data_metaux <- data_metaux |>
   ))
 ```
 
-## Biometric information
-
-Check biometric information
-```{r}
-data_metaux_bio <- data |> 
-  filter(PARAMETRE_LIBELLE %in% c("Matière sèche", "Taille de l'individu", "Lipides totaux")) |>
-  filter(espece %in% c("Mytilus edulis (moule commune)",
-                  "Mytilus edulis + galloprovincialis (moule)")) |> 
-  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE, UNITE) |> 
-  summarise(RESULTAT = mean(RESULTAT))
-
-data_metaux_bio |> 
-  filter(PARAMETRE_LIBELLE == "Matière sèche") |> 
-  ggplot(aes(x = YEAR, y = RESULTAT, colour = ESTUARY)) +
-  geom_line()+
-  geom_smooth(method = "lm", formula = y ~ 1, se = FALSE) +
-  geom_hline(yintercept = 16.4, size = 1.2) +
-  labs(title = "Dry content comparison with OSPAR value",
-       x = NULL, y = "Dry content (%)")
-```
-
 ## Get unit of measurment
 
-Conclusion : original unit in mg/kg dw (equivalent in µg/g dw)
+Conclusion : original unit in mg/kg dw (equivalent in µg/g)
 
 - 1979-2019 : "mg.kg-1"
 - 2020-2024 : "mg/(kg MS)" and "mg.kg-1" or only "mg/(kg MS)"
@@ -189,14 +168,29 @@ data_metaux <- data_metaux |>
 ```{r}
 data_metaux1 <- data_metaux |> filter(PARAMETRE_LIBELLE %in% df_metal1$PARAMETRE_LIBELLE_EN)
 
-ggplot(data_metaux1) +
-  aes(x = YEAR, y = log(RESULTAT), color = ESTUARY) +
-  geom_line() +
-  facet_grid(vars(fct_relevel(PARAMETRE_LIBELLE, df_metal1$PARAMETRE_LIBELLE_EN)), scales = "free_y") +
-  labs(x = NULL)
+# ggplot(data_metaux1) +
+#   aes(x = YEAR, y = log(RESULTAT), color = ESTUARY) +
+#   geom_line() +
+#   facet_grid(vars(fct_relevel(PARAMETRE_LIBELLE, df_metal1$PARAMETRE_LIBELLE_EN)), scales = "free_y") +
+#   labs(x = NULL)
 ```
 
+## Time series graphs
 ```{r}
+fun_seg_model_metals1 <- function(chemical, estuary){
+  fun_seg_model(data = data_metaux1,
+                folder = "metals",
+                chemical = chemical, 
+                estuary = estuary)
+}
+  
+metals1_names <- df_metal1$PARAMETRE_LIBELLE_EN
+estuary_names <- c("Gironde", "Loire", "Seine")
+params <- expand.grid(estuary_names, metals1_names)
+
+res_metals1_trends <- pmap_dfr(params, ~ fun_seg_model_metals1(estuary = ..1, chemical = ..2))
+
+
 # res_metals1_trends <- rbind(
 #   fun_seg_model(data = data_metaux1, chemical = "Mercury", estuary = "Gironde", n_break = 2),
 #   fun_seg_model(data = data_metaux1, chemical = "Mercury", estuary = "Loire", n_break = 2),
@@ -259,6 +253,7 @@ ggsave(plot = ggplot_metaux1, "../inst/results/data_contam/metals/ggplot_metals1
        width = 10, height = 15, units = "cm")
 ```
 
+## First vs last period graphs
 ```{r}
 res_kruskal_metaux1 <- get_kruskal_periods_results(data_with_periode = data_metaux1, 
                              chemicals = df_metal1$PARAMETRE_LIBELLE_EN)
@@ -298,6 +293,7 @@ ggplot(data_metaux2) +
   labs(x = NULL)
 ```
 
+## Time series graphs
 ```{r}
 # res_metals2_trends <- rbind(
 #   fun_seg_model(data = data_metaux2, chemical = "Nickel", estuary = "Gironde", n_break = 2),
@@ -345,6 +341,7 @@ ggsave(plot = ggplot_metaux2, "../inst/results/data_contam/metals/ggplot_metals2
        width = 10, height = 15, units = "cm")
 ```
 
+## First vs last period graphs
 ```{r}
 res_kruskal_metaux2 <- get_kruskal_periods_results(data_with_periode = data_metaux2, 
                              chemicals = df_metal2$PARAMETRE_LIBELLE_EN)

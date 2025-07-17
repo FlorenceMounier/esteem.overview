@@ -1,0 +1,234 @@
+---
+title: "data_contamination_PCBi"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_contamination_PCBi}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+library(esteem.overview)
+library(segmented)
+library(tidyverse)
+library(here)
+```
+
+# Get raw data for Polychlorinated biphenyls indicators (PCBi) => thresholds in ng/g lw
+```{r}
+PCBi <- data.frame(PARAMETRE_LIBELLE = c("CB 28", "CB 52", "CB 101", "CB 118", "CB 138", "CB 153", "CB 180"),
+                   EAC_OSPAR = c(67, 108, 121, 25, 317, 1585, 469),
+                   UNITE = rep.int("ng/g lw", times = 7)
+)
+
+data_PCBi <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
+  filter(support == "Bivalve") |> 
+  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |> 
+  filter(PARAMETRE_LIBELLE %in% PCBi$PARAMETRE_LIBELLE) |> 
+  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
+```
+
+## Get the same unit of measurment
+
+Different units:
+
+- 1993-2016: µg.kg-1				
+- 2017-2024: ng.g-1, p.h. (eq µg.kg-1, p.h.)
+```{r}
+data_PCBi |> 
+  distinct(UNITE)
+
+data_PCBi |> 
+  mutate(YEAR = as.factor(YEAR)) |> 
+  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "PCBi units")
+```
+
+Transform all results in ng/g dw (same as µg/kg):
+```{r}
+data_PCBi_dw <- data_PCBi |>
+  # transformation into dw concentrations
+  mutate(RESULTAT = case_when(
+    UNITE == "ng.g-1, p.h." ~ RESULTAT / (`Matière sèche_%` / 100),
+    UNITE == "µg.kg-1" ~ RESULTAT
+  )) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g dw") |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 3))
+
+# # Checking
+# data_PCBi |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "CB 153")
+# data_PCBi_dw |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "CB 153")
+```
+
+Transform all results in ng/g lw:
+```{r}
+data_PCBi_lw <- data_PCBi_dw |> 
+  # transformation into lw concentrations
+  mutate(RESULTAT = case_when(
+    UNITE == "ng/g dw" ~ RESULTAT / (`Lipides totaux_%` / 100),
+    TRUE ~ RESULTAT
+  )) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g lw") |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 3))
+
+# # Checking
+# data_PCBi_dw |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "CB 153")
+# data_PCBi_lw |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "CB 153")
+```
+
+## Importance of the species matrix
+
+- Gironde : only C. gigas
+- Seine : only M. edulis
+- Loire : 
+  - 1992-2021: M. edulis
+  - 2022-2023: M. edulis + M.galloprovincialis
+  - 2018, 2021, 2024: Crassostrea gigas
+```{r}
+data_PCBi_lw |> 
+  distinct(ESTUARY, espece)
+
+data_PCBi_lw |> 
+  filter(ESTUARY == "Loire") |> 
+  distinct(ESTUARY, YEAR, espece)
+```
+
+```{r}
+data_PCBi_lw |> 
+  filter(ESTUARY == "Loire", YEAR > 2010) |>
+  ggplot() +
+  aes(x = YEAR, y = RESULTAT, colour = espece) +
+  geom_line() +
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+```
+
+Simplify with two species groups
+```{r}
+data_PCBi_lw <- data_PCBi_lw |> 
+    mutate(SPECIES = case_when(
+    espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
+    espece %in% c("Mytilus edulis (moule commune)",
+                  "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
+  ))
+```
+
+## Identify first and last periods
+
+Identify the first and last 5 years of measurement
+```{r}
+# Compute minimal and maximal year of measurement by compounds and estuary
+min_max_year <- data_PCBi_lw |> 
+  group_by(PARAMETRE_LIBELLE, ESTUARY) |> 
+  summarise(min_year = min(YEAR),
+            max_year = max(YEAR), .groups = "drop")
+
+# Identify the first and last 5 years of measurement
+data_PCBi_lw <- data_PCBi_lw |> 
+  left_join(min_max_year, by = c("PARAMETRE_LIBELLE", "ESTUARY"))  |> 
+  mutate(periode = case_when(
+    YEAR <= min_year + 5 ~ "First 5 years",
+    YEAR >= max_year - 5 ~ "Last 5 years",
+    TRUE ~ NA
+  ))
+```
+
+# Time series graphs
+```{r}
+data_PCBi_lw |>  
+ggplot() +
+  aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
+  geom_line() +
+  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL)
+```
+
+```{r}
+fun_seg_model_PCBi <- function(chemical, estuary){
+  fun_seg_model(data = data_PCBi_lw,
+                folder = "PCBi",
+                chemical = chemical, 
+                estuary = estuary)
+}
+  
+PCBi_names <- PCBi$PARAMETRE_LIBELLE 
+estuary_names <- c("Gironde", "Loire", "Seine")
+params <- expand.grid(estuary_names, PCBi_names)
+
+res_PCBi_lw_trends <- pmap_dfr(params, ~ fun_seg_model_PCBi(estuary = ..1, chemical = ..2))
+
+res_PCBi_lw_trends <- res_PCBi_lw_trends |> 
+  left_join(PCBi, by = "PARAMETRE_LIBELLE")
+```
+
+```{r}
+ggplot_PCBi_lw <- ggplot(data_PCBi_lw) +
+  aes(x = YEAR,
+      y = log(RESULTAT),
+      colour = ESTUARY) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  theme(legend.position = "bottom") +
+  facet_grid(rows = vars(
+    fct_relevel(PARAMETRE_LIBELLE, PCBi_names)
+  ), scales = "free_y") +
+  labs(colour = "Estuary", y = "Contamination level in ng/g lw", x = NULL) +
+# Add last break dates of segmented models and arrows for significant last trends
+  geom_vline(data = res_PCBi_lw_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
+  geom_text(
+    data = res_PCBi_lw_trends,
+    aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE) +
+# Add environmental threshold when existing => EAC OSPAR 2023
+  geom_text(
+    data = res_PCBi_lw_trends,  
+    aes(x = last_year+1, y = max(log(last_resultat))*1.1, label = sprintf("%.2f", log(EAC_OSPAR))),
+    color = "red", size = 2.5
+  ) +
+  geom_hline(
+    data = res_PCBi_lw_trends,
+    aes(yintercept = log(EAC_OSPAR)),
+    color = "red", linetype = "dashed"
+  )
+
+ggplot_PCBi_lw
+
+ggsave(plot = ggplot_PCBi_lw, "../inst/results/data_contam/PCBi/ggplot_PCBi_lw_time_series.jpg",
+       width = 10, height = 15, units = "cm")
+```
+
+# First vs last period graphs
+```{r}
+res_kruskal_PCBi_lw <- get_kruskal_periods_results(data_with_periode = data_PCBi_lw, 
+                             chemicals = PCBi$PARAMETRE_LIBELLE)
+```
+
+```{r}
+plot_PCBi_lw_periode <- data_PCBi_lw |> 
+  drop_na(periode) |> # keep only data from first and last 5-years periods
+  ggplot() +
+  aes(x = ESTUARY, y = RESULTAT, colour = periode) +
+  geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
+  scale_color_manual(values = c("purple", "deeppink")) +
+  facet_grid(rows = vars(fct_relevel(PARAMETRE_LIBELLE, PCBi$PARAMETRE_LIBELLE)), scales = "free_y") +
+  labs(x = NULL, y = "Concentration in ng/g lw", colour = "Period") +
+  theme(legend.position = "bottom") +
+# Add long term trends if significant
+  geom_text(data = res_kruskal_PCBi_lw, 
+            inherit.aes = FALSE, 
+            aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE)
+
+plot_PCBi_lw_periode
+
+ggsave(plot = plot_PCBi_lw_periode, "../inst/results/data_contam/PCBi/ggplot_PCBi_lw_periods.jpg", 
+       width = 10, height = 15, units = "cm")
+```

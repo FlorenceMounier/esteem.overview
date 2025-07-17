@@ -4,12 +4,24 @@
 #' 
 #' Description
 #' 
-#' @return
+#' @param data 
+#' @param estuary 
+#' @param chemical 
+#' @param folder 
+#' @param n_break 
+#' @param plot_save 
+#'
+#' @return tibble results of segmented models
 #' 
 #' @export
 #' @examples
 #' # fun_seg_model()
-fun_seg_model <- function(data, estuary, chemical, folder = "metals", n_break = 1, plot_save = TRUE){
+fun_seg_model <- function(data, 
+                          estuary, 
+                          chemical, 
+                          folder, 
+                          n_break = 1, 
+                          plot_save = TRUE){
       
   # Data filtering
   data_estuary_chemical <- data |>  filter(ESTUARY == estuary, PARAMETRE_LIBELLE == chemical)
@@ -65,12 +77,34 @@ fun_seg_model <- function(data, estuary, chemical, folder = "metals", n_break = 
   } else {}
 
   
-  # Table
-  tibble(
+  # Output table
+  res_trends <- tibble(
     ESTUARY = estuary,
     PARAMETRE_LIBELLE = chemical,
     break_dates = break_dates[length(break_dates)],
     last_p_value = slope_df$p_value[length(slope_df$p_value)],
     last_slope = slope_df$Estimate[length(slope_df$Estimate)]
   )
+  
+  # add tendency depending on p-value and slope of last period of segmented models
+  res_trends <- res_trends |> 
+      mutate(symbol = case_when(
+    last_p_value > 0.05 ~ "\u2192",
+    last_slope > 0 ~ "↑",
+    last_slope < 0 ~ "↓",
+    TRUE ~ NA
+  ))
+  
+  # extract last year and last value for each ESTUARY, PARAMETRE_LIBELLE
+  last_points <- data_estuary_chemical |>
+    group_by(ESTUARY, PARAMETRE_LIBELLE) |>
+    summarise(
+      last_year = max(YEAR),
+      last_resultat = median(RESULTAT[which(YEAR == max(YEAR))]),
+      .groups = "drop"
+    )
+  
+  trends <- left_join(res_trends, last_points)
+  
+  return(trends)
 }

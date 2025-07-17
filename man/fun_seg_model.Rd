@@ -13,6 +13,22 @@ fun_seg_model(
   plot_save = TRUE
 )
 }
+\arguments{
+\item{data}{}
+
+\item{estuary}{}
+
+\item{chemical}{}
+
+\item{folder}{}
+
+\item{n_break}{}
+
+\item{plot_save}{}
+}
+\value{
+tibble results of segmented models
+}
 \description{
 Description
 }
