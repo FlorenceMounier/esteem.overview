@@ -1,0 +1,254 @@
+---
+title: "data_contamination_brominated"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_contamination_brominated}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+library(esteem.overview)
+library(segmented)
+library(tidyverse)
+library(here)
+```
+
+# Get raw data for brominated flame retardand compounds => thresholds in ng/g ww
+```{r}
+data <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
+  filter(support == "Bivalve") |> 
+  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau))
+```
+
+Hexabromocyclododecane isomers (HBCDD)
+```{r}
+HBCDD_names <- c("Alpha-HBCDD", "Beta-HBCDD", "Gamma-HBCDD")
+data_HBCDD <- data |> filter(PARAMETRE_LIBELLE %in% HBCDD_names)
+```
+
+Total sum PBDE congeners
+```{r}
+PBDE_names <- c("PBDE 28", "PBDE 47", "PBDE 99", "PBDE 100", "PBDE 153", "PBDE 154")
+data_PBDE <- data |> filter(PARAMETRE_LIBELLE %in% PBDE_names) 
+```
+
+Brominated flame retardant
+```{r}
+data_brominated <- full_join(data_HBCDD, data_PBDE)  |> 
+  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
+```
+
+## Get the same unit of measurment
+
+Different units:
+
+- 2008-2014: ng.kg-1
+- 2015-2016: ng.kg-1 & µg/(kg MS)
+- 2017: ng.g-1, p.h.& ng.kg-1
+- 2018-2024: ng.g-1, p.h.
+```{r}
+data_brominated |> 
+  distinct(UNITE)
+
+data_brominated |> 
+  mutate(YEAR = as.factor(YEAR)) |> 
+  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "Brominated units")
+```
+
+Transform all results in ng/g ww (same as µg/kg):
+```{r}
+data_brominated_ww <- data_brominated |>
+  # transformation into dw concentrations
+  mutate(RESULTAT = case_when(
+    UNITE == "ng.g-1, p.h." ~ RESULTAT,
+    UNITE == "ng.kg-1" ~ RESULTAT / 1000 * (`Matière sèche_%` / 100) ,
+    UNITE == "µg/(kg MS)" ~ RESULTAT * (`Matière sèche_%` / 100)
+  )) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g ww") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 4))
+
+# # Checking
+# data_brominated |> filter(YEAR %in% c(2015, 2017,2019, 2021), ESTUARY == "Gironde", PARAMETRE_LIBELLE == "sum_DDT")
+# data_brominated_ww |> filter(YEAR %in% c(2015, 2017,2019, 2021), ESTUARY == "Gironde", PARAMETRE_LIBELLE == "sum_DDT")
+```
+
+## Importance of the species matrix
+
+- Gironde : only C. gigas
+- Seine : only M. edulis
+- Loire : 
+  - 2008-2021: M. edulis
+  - 2022-2024: M. edulis + M.galloprovincialis
+```{r}
+data_brominated_ww |> 
+  distinct(ESTUARY, espece)
+
+data_brominated_ww |> 
+  filter(ESTUARY == "Loire") |> 
+  distinct(ESTUARY, YEAR, espece)
+```
+
+No comparison possible between oysters and mussels (no oysters in Loire)
+Strong difference possible for Beta-HBCDD for M. galloprovincialis but no parallel measurments
+```{r}
+data_brominated_ww |> 
+  filter(ESTUARY == "Loire") |>
+  ggplot() +
+  aes(x = YEAR, y = RESULTAT, colour = espece) +
+  geom_line() +
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+```
+
+Simplify with two species groups
+```{r}
+data_brominated_ww <- data_brominated_ww |> 
+    mutate(SPECIES = case_when(
+    espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
+    espece %in% c("Mytilus edulis (moule commune)",
+                  "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
+  ))
+```
+
+## Compute the sum of PBDE isomers
+```{r}
+data_PBDE_ww <- data_brominated_ww |> 
+  filter(PARAMETRE_LIBELLE %in% PBDE_names) |>
+  group_by(ESTUARY, YEAR, espece, UNITE) |>
+  summarise(
+    RESULTAT = sum(RESULTAT),
+    .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "sum_PBDE")
+  
+data_HBCDD_ww <- data_brominated_ww |> 
+  filter(PARAMETRE_LIBELLE %in% HBCDD_names) |> 
+  select(ESTUARY, YEAR, espece, UNITE, PARAMETRE_LIBELLE, RESULTAT)
+
+data_brominated_ww <- full_join(data_PBDE_ww, data_HBCDD_ww) |> 
+  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
+
+brominated_names <- c(HBCDD_names, "sum_PBDE")
+brominated <- data.frame(PARAMETRE_LIBELLE = brominated_names,
+                         EQS_EC_ng_gww = c(167, 167, 167, 0.0085))
+```
+
+## Identify first and last periods
+
+Identify the first and last 3 years of measurement
+```{r}
+# Compute minimal and maximal year of measurement by compounds and estuary
+min_max_year <- data_brominated_ww |> 
+  group_by(PARAMETRE_LIBELLE, ESTUARY) |> 
+  summarise(min_year = min(YEAR),
+            max_year = max(YEAR), .groups = "drop")
+
+# Identify the first and last 2 years of measurement
+data_brominated_ww <- data_brominated_ww |> 
+  left_join(min_max_year, by = c("PARAMETRE_LIBELLE", "ESTUARY"))  |> 
+  mutate(periode = case_when(
+    YEAR <= min_year + 2 ~ "First 2 years",
+    YEAR >= max_year - 2 ~ "Last 2 years",
+    TRUE ~ NA
+  ))
+```
+
+# Time series graphs
+```{r}
+data_brominated_ww |>  
+ggplot() +
+  aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
+  geom_line() +
+  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL)
+```
+
+```{r}
+fun_seg_model_brominated <- function(chemical, estuary, n_break){
+  fun_seg_model(data = data_brominated_ww,
+                folder = "brominated",
+                chemical = chemical, 
+                estuary = estuary, n_break = n_break)
+}
+
+estuary_names <- c("Gironde", "Loire", "Seine")
+params <- expand.grid(estuary_names, brominated_names)
+
+res_brominated_ww_trends <- pmap_dfr(params, ~ fun_seg_model_brominated(estuary = ..1, chemical = ..2))
+
+res_brominated_ww_trends <- res_brominated_ww_trends |> 
+  left_join(brominated, by = "PARAMETRE_LIBELLE")
+```
+
+```{r}
+ggplot_brominated_ww <- ggplot(data_brominated_ww) +
+  aes(x = YEAR,
+      y = log(RESULTAT),
+      colour = ESTUARY) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  theme(legend.position = "bottom") +
+  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(colour = "Estuary", y = "Contamination level in ng/g ww", x = NULL) +
+# Add last break dates of segmented models and arrows for significant last trends
+  geom_vline(data = res_brominated_ww_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
+  geom_text(
+    data = res_brominated_ww_trends,
+    aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE)+
+# Add environmental threshold when existing => UC QS(HH)
+  geom_text(
+    data = res_brominated_ww_trends,
+    aes(x = last_year+1, y = log(EQS_EC_ng_gww)*1.3,
+        label = sprintf("%.2f", log(EQS_EC_ng_gww))),
+    color = "red", size = 2.5
+  ) +
+  geom_hline(
+    data = res_brominated_ww_trends,
+    aes(yintercept = log(EQS_EC_ng_gww)),
+    color = "red", linetype = "dashed"
+  )
+
+ggplot_brominated_ww
+
+ggsave(plot = ggplot_brominated_ww, "../inst/results/data_contam/brominated/ggplot_brominated_ww_time_series.jpg",
+       width = 10, height = 10, units = "cm")
+```
+
+# First vs last period graphs
+```{r}
+res_kruskal_brominated <- get_kruskal_periods_results(
+  data_with_periode = data_brominated_ww, 
+  chemicals = brominated_names)
+```
+
+```{r}
+plot_brominated_periode <- data_brominated_ww |> 
+  drop_na(periode) |> # keep only data from first and last 5-years periods
+  ggplot() +
+  aes(x = ESTUARY, y = RESULTAT, colour = periode) +
+  geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
+  scale_color_manual(values = c("purple", "deeppink")) +
+  facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL, y = "Concentration in ng/g ww", colour = "Period") +
+  theme(legend.position = "bottom") +
+# Add long term trends if significant
+  geom_text(data = res_kruskal_brominated, 
+            inherit.aes = FALSE, 
+            aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE)
+
+plot_brominated_periode
+
+ggsave(plot = plot_brominated_periode, "../inst/results/data_contam/brominated/ggplot_brominated_ww_periods.jpg", 
+       width = 10, height = 10, units = "cm")
+```
