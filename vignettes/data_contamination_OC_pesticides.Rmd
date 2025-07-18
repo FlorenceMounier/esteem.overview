@@ -25,33 +25,16 @@ data <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |>
   select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau))
 ```
 
-Lindane (gamma-HCH)
+Organochlorine pesticides: Lindane (gamma-HCH) and DDT isomers
 ```{r}
-data_lindane <- data |> filter(PARAMETRE_LIBELLE == "Gamma-HCH")
-```
+lindane <- c("Gamma-HCH")
+data_lindane <- data |> filter(PARAMETRE_LIBELLE %in% lindane)
 
-Total sum DDT isomers
-```{r}
 DDT <- c("p,p'-DDT", "o,p'-DDT", "p,p'-DDE", "p,p'-DDD")
-data_DDT <- data |> 
-  filter(PARAMETRE_LIBELLE %in% DDT) |> 
-  group_by(ESTUARY, YEAR, espece, UNITE) |> 
-  summarise(
-    RESULTAT = sum(RESULTAT), 
-    .groups = "drop") |> 
-  mutate(PARAMETRE_LIBELLE = "sum_DDT")
-```
+data_DDT <- data |> filter(PARAMETRE_LIBELLE %in% DDT)
 
-Organochlorine pesticides
-```{r}
-OC_pesticides_names <- c("Gamma-HCH", "sum_DDT")
 data_OC_pesticides <- full_join(data_lindane, data_DDT)  |> 
   left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
-
-OC_pesticides <- data.frame(PARAMETRE_LIBELLE = OC_pesticides_names,
-                   NQE = c(0.29, 1282),
-                   UNITE = rep.int("ng/g ww", times = 2)
-)
 ```
 
 ## Get the same unit of measurment
@@ -83,12 +66,15 @@ data_OC_pesticides_ww <- data_OC_pesticides |>
   )) |>  
   # Change to unified unit
   mutate(UNITE = "ng/g ww") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |> 
+  mutate(RESULTAT = mean(RESULTAT)) |> 
   # Round result values
   mutate(RESULTAT = round(RESULTAT, digits = 4))
 
 # # Checking
-# data_OC_pesticides |> filter(YEAR %in% c(2015, 2017,2019, 2021), ESTUARY == "Gironde", PARAMETRE_LIBELLE == "sum_DDT")
-# data_OC_pesticides_ww |> filter(YEAR %in% c(2015, 2017,2019, 2021), ESTUARY == "Gironde", PARAMETRE_LIBELLE == "sum_DDT")
+# data_OC_pesticides |> filter(YEAR %in% c(2015, 2017,2019, 2021), ESTUARY == "Gironde", PARAMETRE_LIBELLE == "Gamma-HCH")
+# data_OC_pesticides_ww |> filter(YEAR %in% c(2015, 2017,2019, 2021), ESTUARY == "Gironde", PARAMETRE_LIBELLE == "Gamma-HCH")
 ```
 
 ## Importance of the species matrix
@@ -125,6 +111,31 @@ data_OC_pesticides_ww <- data_OC_pesticides_ww |>
     espece %in% c("Mytilus edulis (moule commune)",
                   "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
   ))
+```
+
+## Compute the sum of DDT
+
+```{r}
+data_DDT_ww <- data_OC_pesticides_ww |> 
+  filter(PARAMETRE_LIBELLE %in% DDT) |>
+  group_by(ESTUARY, YEAR, espece, UNITE) |>
+  summarise(
+    RESULTAT = sum(RESULTAT),
+    .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "sum_DDT")
+
+data_lindane_ww <- data_OC_pesticides_ww |> 
+  filter(PARAMETRE_LIBELLE %in% lindane)
+
+data_OC_pesticides_ww <- full_join(data_lindane_ww, data_DDT_ww)  |> 
+  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
+
+OC_pesticides_names <- c("Gamma-HCH", "sum_DDT")
+
+OC_pesticides <- data.frame(PARAMETRE_LIBELLE = OC_pesticides_names,
+                   NQE = c(0.29, 1282),
+                   UNITE = rep.int("ng/g ww", times = 2)
+)
 ```
 
 ## Identify first and last periods
