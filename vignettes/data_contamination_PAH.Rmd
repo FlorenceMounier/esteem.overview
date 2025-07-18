@@ -16,6 +16,7 @@ library(esteem.overview)
 library(segmented)
 library(tidyverse)
 library(here)
+library(writexl)
 ```
 
 # Get raw data for Polycyclic Aromatic Hydrocarbon (PAH) => thresholds in ng/g dw and ng/g ww
@@ -63,6 +64,8 @@ data_PAH_dw <- data_PAH |>
   )) |>  
   # Change to unified unit
   mutate(UNITE = "ng/g dw") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
   # Round result values
   mutate(RESULTAT = round(RESULTAT, digits = 3))
 ```
@@ -77,6 +80,8 @@ data_PAH_ww <- data_PAH |>
   )) |>  
   # Change to unified unit
   mutate(UNITE = "ng/g ww") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
   # Round result values
   mutate(RESULTAT = round(RESULTAT, digits = 3))
 ```
@@ -111,6 +116,13 @@ data_PAH_dw |>
 Simplify with two species groups
 ```{r}
 data_PAH_dw <- data_PAH_dw |> 
+    mutate(SPECIES = case_when(
+    espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
+    espece %in% c("Mytilus edulis (moule commune)",
+                  "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
+  ))
+
+data_PAH_ww <- data_PAH_ww |> 
     mutate(SPECIES = case_when(
     espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
     espece %in% c("Mytilus edulis (moule commune)",
@@ -204,7 +216,7 @@ ggplot_PAH_dw <- ggplot(data_PAH_dw) +
   facet_grid(rows = vars(
     fct_relevel(PARAMETRE_LIBELLE, PAH_names)
   ), scales = "free_y") +
-  labs(colour = "Estuary", y = "Contamination level in ng/g dw", x = NULL) +
+  labs(colour = "Estuary", y = "Contamination level in log ng/g dw", x = NULL) +
 # Add last break dates of segmented models and arrows for significant last trends
   geom_vline(data = res_PAH_dw_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
   geom_text(
@@ -243,7 +255,7 @@ ggplot_PAH_ww <- data_PAH_ww |>
   facet_grid(rows = vars(
     fct_relevel(PARAMETRE_LIBELLE, PAH_names)
   ), scales = "free_y") +
-  labs(colour = "Estuary", y = "Contamination level in ng/g ww", x = NULL) +
+  labs(colour = "Estuary", y = "Contamination level in log ng/g ww", x = NULL) +
 # Add last break dates of segmented models and arrows for significant last trends
   geom_vline(data = res_PAH_ww_trends |> filter(PARAMETRE_LIBELLE %in% PAH$PARAMETRE_LIBELLE[1:4]), 
              aes(xintercept = break_dates, colour = ESTUARY)) +
@@ -274,19 +286,23 @@ ggsave(plot = ggplot_PAH_ww, "../inst/results/data_contam/PAH/ggplot_PAH_ww_time
 
 In dw
 ```{r}
-res_kruskal_PAH_dw <- get_kruskal_periods_results(data_with_periode = data_PAH_dw, 
+data_PAH_dw_norm_relative <- data_PAH_dw |> 
+  left_join(PAH) |> 
+  mutate(RESULTAT = RESULTAT / EAC_OSPAR_ng_gdw * 100)
+
+res_kruskal_PAH_dw <- get_kruskal_periods_results(data_with_periode = data_PAH_dw_norm_relative, 
                              chemicals = PAH$PARAMETRE_LIBELLE)
 ```
 
 ```{r}
-plot_PAH_dw_periode <- data_PAH_dw |> 
+plot_PAH_dw_periode <- data_PAH_dw_norm_relative |> 
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
   geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
   scale_color_manual(values = c("purple", "deeppink")) +
   facet_grid(rows = vars(fct_relevel(PARAMETRE_LIBELLE, PAH$PARAMETRE_LIBELLE)), scales = "free_y") +
-  labs(x = NULL, y = "Concentration in ng/g dw", colour = "Period") +
+  labs(x = NULL, y = "Deviation from limit value (% ng/g dw)", colour = "Period") +
   theme(legend.position = "bottom") +
 # Add long term trends if significant
   geom_text(data = res_kruskal_PAH_dw, 
@@ -304,12 +320,17 @@ ggsave(plot = plot_PAH_dw_periode, "../inst/results/data_contam/PAH/ggplot_PAH_d
 In ww
 
 ```{r}
-res_kruskal_PAH_ww <- get_kruskal_periods_results(data_with_periode = data_PAH_ww, 
-                             chemicals = PAH$PARAMETRE_LIBELLE)
+data_PAH_ww_norm_relative <- data_PAH_ww |> 
+  left_join(PAH) |> 
+  mutate(RESULTAT = RESULTAT / EQS_VGE_ng_gww * 100) |> 
+  drop_na(RESULTAT)
+
+res_kruskal_PAH_ww <- get_kruskal_periods_results(data_with_periode = data_PAH_ww_norm_relative, 
+                             chemicals = PAH$PARAMETRE_LIBELLE[1:4])
 ```
 
 ```{r}
-plot_PAH_ww_periode <- data_PAH_ww |> 
+plot_PAH_ww_periode <- data_PAH_ww_norm_relative |> 
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
@@ -328,5 +349,58 @@ plot_PAH_ww_periode <- data_PAH_ww |>
 plot_PAH_ww_periode
 
 ggsave(plot = plot_PAH_ww_periode, "../inst/results/data_contam/PAH/ggplot_PAH_ww_periods.jpg", 
-       width = 10, height = 15, units = "cm")
+       width = 10, height = 10, units = "cm")
+```
+
+# General evaluation
+
+In ww
+```{r}
+short_last_trend_PAH_ww <- res_PAH_ww_trends |> 
+  filter(PARAMETRE_LIBELLE %in% PAH$PARAMETRE_LIBELLE[1:4]) |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, symbol) |> 
+  rename(short_last_trend = symbol) 
+
+long_term_PAH_ww <- res_kruskal_PAH_ww |> 
+  mutate(status = case_when(
+    median_2 >= 0 & median_2 < 50 ~ "blue",
+    median_2 >= 50 & median_2 < 100 ~ "green",
+    median_2 >= 100 & median_2 < 150 ~ "orange",
+    median_2 >= 150 ~ "red"
+  )) |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, trend, status) |> 
+  rename(long_term_trend = trend)
+
+general_eval_PAH_ww <- full_join(long_term_PAH_ww, short_last_trend_PAH_ww)  |>
+  unite(col = eval, long_term_trend, short_last_trend, status, sep = "  ") |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, eval) |> 
+  pivot_wider(names_from = ESTUARY, values_from = eval)
+
+writexl::write_xlsx(x = general_eval_PAH_ww, 
+                    path = "../inst/results/data_contam/PAH/general_eval_PAH_ww.xlsx")
+```
+
+In dw
+```{r}
+short_last_trend_PAH_dw <- res_PAH_dw_trends |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, symbol) |> 
+  rename(short_last_trend = symbol) 
+
+long_term_PAH_dw <- res_kruskal_PAH_dw |> 
+  mutate(status = case_when(
+    median_2 >= 0 & median_2 < 50 ~ "blue",
+    median_2 >= 50 & median_2 < 100 ~ "green",
+    median_2 >= 100 & median_2 < 150 ~ "orange",
+    median_2 >= 150 ~ "red"
+  )) |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, trend, status) |> 
+  rename(long_term_trend = trend)
+
+general_eval_PAH_dw <- full_join(long_term_PAH_dw, short_last_trend_PAH_dw) |>
+  unite(col = eval, long_term_trend, short_last_trend, status, sep = "  ") |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, eval) |> 
+  pivot_wider(names_from = ESTUARY, values_from = eval)
+  
+writexl::write_xlsx(x = general_eval_PAH_dw, 
+                    path = "../inst/results/data_contam/PAH/general_eval_PAH_dw.xlsx")
 ```
