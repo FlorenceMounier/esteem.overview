@@ -133,9 +133,7 @@ data_OC_pesticides_ww <- full_join(data_lindane_ww, data_DDT_ww)  |>
 OC_pesticides_names <- c("Gamma-HCH", "sum_DDT")
 
 OC_pesticides <- data.frame(PARAMETRE_LIBELLE = OC_pesticides_names,
-                   NQE = c(0.29, 1282),
-                   UNITE = rep.int("ng/g ww", times = 2)
-)
+                   NQE_ng_gww = c(0.29, 1282))
 ```
 
 ## Identify first and last periods
@@ -205,13 +203,13 @@ ggplot_OC_pesticides_ww <- ggplot(data_OC_pesticides_ww) +
 # Add environmental threshold when existing => UC QS(HH)
   geom_text(
     data = res_OC_pesticides_ww_trends,
-    aes(x = last_year+1, y = log(NQE)*1.3,
-        label = sprintf("%.2f", NQE)),
+    aes(x = last_year+1, y = log(NQE_ng_gww)*1.3,
+        label = sprintf("%.2f", NQE_ng_gww)),
     color = "red", size = 2.5
   ) +
   geom_hline(
     data = res_OC_pesticides_ww_trends,
-    aes(yintercept = log(NQE)),
+    aes(yintercept = log(NQE_ng_gww)),
     color = "red", linetype = "dashed"
   )
 
@@ -223,20 +221,25 @@ ggsave(plot = ggplot_OC_pesticides_ww, "../inst/results/data_contam/OC_pesticide
 
 # First vs last period graphs
 ```{r}
+data_OC_pesticides_ww_norm_relative <- data_OC_pesticides_ww |> 
+  left_join(OC_pesticides) |> 
+  mutate(RESULTAT = RESULTAT / NQE_ng_gww * 100) |> 
+  drop_na(RESULTAT)
+
 res_kruskal_OC_pesticides <- get_kruskal_periods_results(
-  data_with_periode = data_OC_pesticides_ww, 
+  data_with_periode = data_OC_pesticides_ww_norm_relative, 
   chemicals = OC_pesticides_names)
 ```
 
 ```{r}
-plot_OC_pesticides_periode <- data_OC_pesticides_ww |> 
+plot_OC_pesticides_periode <- data_OC_pesticides_ww_norm_relative |> 
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
   geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
   scale_color_manual(values = c("purple", "deeppink")) +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(x = NULL, y = "Concentration in ng/g ww", colour = "Period") +
+  labs(x = NULL, y = "Deviation from limit value (% ng/g ww)", colour = "Period") +
   theme(legend.position = "bottom") +
 # Add long term trends if significant
   geom_text(data = res_kruskal_OC_pesticides, 
@@ -249,4 +252,13 @@ plot_OC_pesticides_periode
 
 ggsave(plot = plot_OC_pesticides_periode, "../inst/results/data_contam/OC_pesticides/ggplot_OC_pesticides_ww_periods.jpg", 
        width = 10, height = 10, units = "cm")
+```
+
+# General evaluation
+
+```{r}
+get_general_evaluation(family = "OC_pesticides",
+                       suffix = "_ww",
+                       res_family_trends = res_OC_pesticides_ww_trends,
+                       res_kruskal = res_kruskal_OC_pesticides)
 ```

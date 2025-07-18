@@ -18,10 +18,12 @@ flat_data_contamination.Rmd:
   state: active
   R:
   - R/fun_seg_model.R
+  - R/get_general_evaluation.R
   - R/get_kruskal_periods_results.R
   tests:
   - tests/testthat/test-fun_seg_model.R
   - tests/testthat/test-get_kruskal_periods_results.R
+  - tests/testthat/test-get_general_evaluation.R
   vignettes: []
   inflate:
     flat_file: dev/flat_data_contamination.Rmd

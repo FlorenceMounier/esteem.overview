@@ -181,6 +181,7 @@ ggplot() +
 PAH_names <- PAH$PARAMETRE_LIBELLE 
 estuary_names <- c("Gironde", "Loire", "Seine")
 params <- expand.grid(estuary_names, PAH_names)
+params_ww <- expand.grid(estuary_names, PAH_names[1:4])
 
 # in dw
 fun_seg_model_PAH_dw <- function(chemical, estuary){
@@ -200,7 +201,7 @@ fun_seg_model_PAH_ww <- function(chemical, estuary){
                 chemical = chemical, 
                 estuary = estuary)
 }
-res_PAH_ww_trends <- pmap_dfr(params, ~ fun_seg_model_PAH_ww(estuary = ..1, chemical = ..2))
+res_PAH_ww_trends <- pmap_dfr(params_ww, ~ fun_seg_model_PAH_ww(estuary = ..1, chemical = ..2))
 res_PAH_ww_trends <- res_PAH_ww_trends |> 
   left_join(PAH, by = "PARAMETRE_LIBELLE")
 ```
@@ -337,7 +338,7 @@ plot_PAH_ww_periode <- data_PAH_ww_norm_relative |>
   geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
   scale_color_manual(values = c("purple", "deeppink")) +
   facet_grid(rows = vars(fct_relevel(PARAMETRE_LIBELLE, PAH$PARAMETRE_LIBELLE)), scales = "free_y") +
-  labs(x = NULL, y = "Concentration in ng/g ww", colour = "Period") +
+  labs(x = NULL, y = "Deviation from limit value (% ng/g ww)", colour = "Period") +
   theme(legend.position = "bottom") +
 # Add long term trends if significant
   geom_text(data = res_kruskal_PAH_ww, 
@@ -356,51 +357,16 @@ ggsave(plot = plot_PAH_ww_periode, "../inst/results/data_contam/PAH/ggplot_PAH_w
 
 In ww
 ```{r}
-short_last_trend_PAH_ww <- res_PAH_ww_trends |> 
-  filter(PARAMETRE_LIBELLE %in% PAH$PARAMETRE_LIBELLE[1:4]) |> 
-  select(ESTUARY, PARAMETRE_LIBELLE, symbol) |> 
-  rename(short_last_trend = symbol) 
-
-long_term_PAH_ww <- res_kruskal_PAH_ww |> 
-  mutate(status = case_when(
-    median_2 >= 0 & median_2 < 50 ~ "blue",
-    median_2 >= 50 & median_2 < 100 ~ "green",
-    median_2 >= 100 & median_2 < 150 ~ "orange",
-    median_2 >= 150 ~ "red"
-  )) |> 
-  select(ESTUARY, PARAMETRE_LIBELLE, trend, status) |> 
-  rename(long_term_trend = trend)
-
-general_eval_PAH_ww <- full_join(long_term_PAH_ww, short_last_trend_PAH_ww)  |>
-  unite(col = eval, long_term_trend, short_last_trend, status, sep = "  ") |> 
-  select(ESTUARY, PARAMETRE_LIBELLE, eval) |> 
-  pivot_wider(names_from = ESTUARY, values_from = eval)
-
-writexl::write_xlsx(x = general_eval_PAH_ww, 
-                    path = "../inst/results/data_contam/PAH/general_eval_PAH_ww.xlsx")
+get_general_evaluation(family = "PAH",
+                       suffix = "_ww",
+                       res_family_trends = res_PAH_ww_trends,
+                       res_kruskal = res_kruskal_PAH_ww)
 ```
 
 In dw
 ```{r}
-short_last_trend_PAH_dw <- res_PAH_dw_trends |> 
-  select(ESTUARY, PARAMETRE_LIBELLE, symbol) |> 
-  rename(short_last_trend = symbol) 
-
-long_term_PAH_dw <- res_kruskal_PAH_dw |> 
-  mutate(status = case_when(
-    median_2 >= 0 & median_2 < 50 ~ "blue",
-    median_2 >= 50 & median_2 < 100 ~ "green",
-    median_2 >= 100 & median_2 < 150 ~ "orange",
-    median_2 >= 150 ~ "red"
-  )) |> 
-  select(ESTUARY, PARAMETRE_LIBELLE, trend, status) |> 
-  rename(long_term_trend = trend)
-
-general_eval_PAH_dw <- full_join(long_term_PAH_dw, short_last_trend_PAH_dw) |>
-  unite(col = eval, long_term_trend, short_last_trend, status, sep = "  ") |> 
-  select(ESTUARY, PARAMETRE_LIBELLE, eval) |> 
-  pivot_wider(names_from = ESTUARY, values_from = eval)
-  
-writexl::write_xlsx(x = general_eval_PAH_dw, 
-                    path = "../inst/results/data_contam/PAH/general_eval_PAH_dw.xlsx")
+get_general_evaluation(family = "PAH",
+                       suffix = "_dw",
+                       res_family_trends = res_PAH_dw_trends,
+                       res_kruskal = res_kruskal_PAH_dw)
 ```
