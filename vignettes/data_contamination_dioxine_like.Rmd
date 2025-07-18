@@ -45,8 +45,8 @@ dioxine_like_names <- tibble(PARAMETRE_LIBELLE = c(
   "octachlorodibenzofuranne")) # OCDF 1,2,3,4,6,7,8,9-O8CDF
 
 # Check if names in .xlsx are alike with the vector of names
-# dioxine_like <- dioxine_like_names |> 
-#   left_join(TEF_dioxine_like, by = c("PARAMETRE_LIBELLE" = "CHEMICAL"))
+dioxine_like <- dioxine_like_names |>
+  left_join(esteem.overview::TEF_dioxine_like, by = c("PARAMETRE_LIBELLE" = "CHEMICAL"))
 
 
 data_dioxine_like <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
@@ -84,6 +84,8 @@ data_dioxine_like_dw <- data_dioxine_like |>
   )) |>  
   # Change to unified unit
   mutate(UNITE = "ng/g dw") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
   # Round result values
   mutate(RESULTAT = round(RESULTAT, digits = 7))
 
