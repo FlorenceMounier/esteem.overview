@@ -1,0 +1,332 @@
+---
+title: "data_contamination_PAH"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_contamination_PAH}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+library(esteem.overview)
+library(segmented)
+library(tidyverse)
+library(here)
+```
+
+# Get raw data for Polycyclic Aromatic Hydrocarbon (PAH) => thresholds in ng/g dw and ng/g ww
+```{r}
+PAH <- data.frame(PARAMETRE_LIBELLE = c("Fluoranthène", "Benzo(a)pyrène", "Anthracène", 
+                                        "Naphtalène", "Phénanthrène", "Pyrène",
+                                        "Benzo(a)anthracène",  "Benzo(g,h,i)pérylène"),
+                   EAC_OSPAR_ng_gdw = c(110, 600, 290, 340, 1700, 100, 80, 110),
+                   EQS_VGE_ng_gww = c(30, 5, 47.47, 19.7, NA, NA, NA, NA)
+)
+
+data_PAH <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
+  filter(support == "Bivalve") |> 
+  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |> 
+  filter(PARAMETRE_LIBELLE %in% PAH$PARAMETRE_LIBELLE) |> 
+  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
+```
+
+## Get the same unit of measurment
+
+Different units:
+
+- 1994-2016: µg.kg-1				
+- 2018-2024: µg.kg-1, p.h. (eq ng.g-1, p.h.)
+```{r}
+data_PAH |> 
+  distinct(UNITE)
+
+data_PAH |> 
+  mutate(YEAR = as.factor(YEAR)) |> 
+  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "PAH units")
+
+# # Check difference dw ww for a common YEAR x ESTUARY x chemical
+# data_PAH |> 
+#   filter(YEAR == 2020, ESTUARY == "Loire", PARAMETRE_LIBELLE == "Benzo(a)anthracène")
+```
+
+Transform all results in ng/g dw (same as µg/kg):
+```{r}
+data_PAH_dw <- data_PAH |>
+  # transformation into dw concentrations
+  mutate(RESULTAT = case_when(
+    UNITE == "µg.kg-1, p.h." ~ RESULTAT / (`Matière sèche_%` / 100),
+    UNITE == "µg.kg-1" ~ RESULTAT
+  )) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g dw") |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 3))
+```
+
+Transform all results in ng/g ww (same as µg/kg):
+```{r}
+data_PAH_ww <- data_PAH |>
+  # transformation into ww concentrations
+  mutate(RESULTAT = case_when(
+    UNITE == "µg.kg-1, p.h." ~ RESULTAT,
+    UNITE == "µg.kg-1" ~ RESULTAT * (`Matière sèche_%` / 100)
+  )) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g ww") |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 3))
+```
+
+## Importance of the species matrix
+
+- Gironde : only C. gigas
+- Seine : only M. edulis
+- Loire : 
+  - 1994-2021: M. edulis
+  - 2022-2024: M. edulis + M.galloprovincialis
+  - 2018, 2021, 2024: Crassostrea gigas
+```{r}
+data_PAH_dw |> 
+  distinct(ESTUARY, espece)
+
+data_PAH_dw |> 
+  filter(ESTUARY == "Loire") |> 
+  distinct(ESTUARY, YEAR, espece)
+```
+
+No species effect
+```{r}
+data_PAH_dw |> 
+  filter(ESTUARY == "Loire", YEAR > 2010) |>
+  ggplot() +
+  aes(x = YEAR, y = RESULTAT, colour = espece) +
+  geom_line() +
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+```
+
+Simplify with two species groups
+```{r}
+data_PAH_dw <- data_PAH_dw |> 
+    mutate(SPECIES = case_when(
+    espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
+    espece %in% c("Mytilus edulis (moule commune)",
+                  "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
+  ))
+```
+
+## Identify first and last periods
+
+Identify the first and last 5 years of measurement
+```{r}
+# Compute minimal and maximal year of measurement by compounds and estuary
+min_max_year <- data_PAH_dw |> 
+  group_by(PARAMETRE_LIBELLE, ESTUARY) |> 
+  summarise(min_year = min(YEAR),
+            max_year = max(YEAR), .groups = "drop")
+
+# Identify the first and last 5 years of measurement
+data_PAH_dw <- data_PAH_dw |> 
+  left_join(min_max_year, by = c("PARAMETRE_LIBELLE", "ESTUARY"))  |> 
+  mutate(periode = case_when(
+    YEAR <= min_year + 5 ~ "First 5 years",
+    YEAR >= max_year - 5 ~ "Last 5 years",
+    TRUE ~ NA
+  ))
+```
+
+```{r}
+# Compute minimal and maximal year of measurement by compounds and estuary
+min_max_year <- data_PAH_ww |> 
+  group_by(PARAMETRE_LIBELLE, ESTUARY) |> 
+  summarise(min_year = min(YEAR),
+            max_year = max(YEAR), .groups = "drop")
+
+# Identify the first and last 5 years of measurement
+data_PAH_ww <- data_PAH_ww |> 
+  left_join(min_max_year, by = c("PARAMETRE_LIBELLE", "ESTUARY"))  |> 
+  mutate(periode = case_when(
+    YEAR <= min_year + 5 ~ "First 5 years",
+    YEAR >= max_year - 5 ~ "Last 5 years",
+    TRUE ~ NA
+  ))
+```
+
+# Time series graphs
+```{r}
+data_PAH_dw |>  
+ggplot() +
+  aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
+  geom_line() +
+  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL)
+```
+
+```{r}
+PAH_names <- PAH$PARAMETRE_LIBELLE 
+estuary_names <- c("Gironde", "Loire", "Seine")
+params <- expand.grid(estuary_names, PAH_names)
+
+# in dw
+fun_seg_model_PAH_dw <- function(chemical, estuary){
+  fun_seg_model(data = data_PAH_dw,
+                folder = "PAH",
+                chemical = chemical, 
+                estuary = estuary)
+}
+res_PAH_dw_trends <- pmap_dfr(params, ~ fun_seg_model_PAH_dw(estuary = ..1, chemical = ..2))
+res_PAH_dw_trends <- res_PAH_dw_trends |> 
+  left_join(PAH, by = "PARAMETRE_LIBELLE")
+
+# in ww
+fun_seg_model_PAH_ww <- function(chemical, estuary){
+  fun_seg_model(data = data_PAH_ww,
+                folder = "PAH",
+                chemical = chemical, 
+                estuary = estuary)
+}
+res_PAH_ww_trends <- pmap_dfr(params, ~ fun_seg_model_PAH_ww(estuary = ..1, chemical = ..2))
+res_PAH_ww_trends <- res_PAH_ww_trends |> 
+  left_join(PAH, by = "PARAMETRE_LIBELLE")
+```
+
+```{r}
+ggplot_PAH_dw <- ggplot(data_PAH_dw) +
+  aes(x = YEAR,
+      y = log(RESULTAT),
+      colour = ESTUARY) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  theme(legend.position = "bottom") +
+  facet_grid(rows = vars(
+    fct_relevel(PARAMETRE_LIBELLE, PAH_names)
+  ), scales = "free_y") +
+  labs(colour = "Estuary", y = "Contamination level in ng/g dw", x = NULL) +
+# Add last break dates of segmented models and arrows for significant last trends
+  geom_vline(data = res_PAH_dw_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
+  geom_text(
+    data = res_PAH_dw_trends,
+    aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE) +
+# Add environmental threshold when existing => EAC OSPAR 2023
+  geom_text(
+    data = res_PAH_dw_trends,  
+    aes(x = last_year+1, y = max(log(last_resultat))*1.1, label = sprintf("%.2f", log(EAC_OSPAR_ng_gdw))),
+    color = "red", size = 2.5
+  ) +
+  geom_hline(
+    data = res_PAH_dw_trends,
+    aes(yintercept = log(EAC_OSPAR_ng_gdw)),
+    color = "red", linetype = "dashed"
+  )
+
+ggplot_PAH_dw
+
+ggsave(plot = ggplot_PAH_dw, "../inst/results/data_contam/PAH/ggplot_PAH_dw_time_series.jpg",
+       width = 10, height = 15, units = "cm")
+```
+
+```{r}
+ggplot_PAH_ww <- data_PAH_ww |> 
+  filter(PARAMETRE_LIBELLE %in% PAH$PARAMETRE_LIBELLE[1:4])|> 
+  ggplot() +
+  aes(x = YEAR,
+      y = log(RESULTAT),
+      colour = ESTUARY) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  theme(legend.position = "bottom") +
+  facet_grid(rows = vars(
+    fct_relevel(PARAMETRE_LIBELLE, PAH_names)
+  ), scales = "free_y") +
+  labs(colour = "Estuary", y = "Contamination level in ng/g ww", x = NULL) +
+# Add last break dates of segmented models and arrows for significant last trends
+  geom_vline(data = res_PAH_ww_trends |> filter(PARAMETRE_LIBELLE %in% PAH$PARAMETRE_LIBELLE[1:4]), 
+             aes(xintercept = break_dates, colour = ESTUARY)) +
+  geom_text(
+    data = res_PAH_ww_trends |> filter(PARAMETRE_LIBELLE %in% PAH$PARAMETRE_LIBELLE[1:4]),
+    aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE) +
+# Add environmental threshold when existing => EAC OSPAR 2023
+  geom_text(
+    data = res_PAH_ww_trends |> filter(PARAMETRE_LIBELLE %in% PAH$PARAMETRE_LIBELLE[1:4]),  
+    aes(x = last_year+1, y = max(log(last_resultat))*1.1, label = sprintf("%.2f", log(EQS_VGE_ng_gww))),
+    color = "red", size = 2.5
+  ) +
+  geom_hline(
+    data = res_PAH_ww_trends |> filter(PARAMETRE_LIBELLE %in% PAH$PARAMETRE_LIBELLE[1:4]),
+    aes(yintercept = log(EQS_VGE_ng_gww)),
+    color = "red", linetype = "dashed"
+  )
+
+ggplot_PAH_ww
+
+ggsave(plot = ggplot_PAH_ww, "../inst/results/data_contam/PAH/ggplot_PAH_ww_time_series.jpg",
+       width = 10, height = 10, units = "cm")
+```
+
+# First vs last period graphs
+
+In dw
+```{r}
+res_kruskal_PAH_dw <- get_kruskal_periods_results(data_with_periode = data_PAH_dw, 
+                             chemicals = PAH$PARAMETRE_LIBELLE)
+```
+
+```{r}
+plot_PAH_dw_periode <- data_PAH_dw |> 
+  drop_na(periode) |> # keep only data from first and last 5-years periods
+  ggplot() +
+  aes(x = ESTUARY, y = RESULTAT, colour = periode) +
+  geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
+  scale_color_manual(values = c("purple", "deeppink")) +
+  facet_grid(rows = vars(fct_relevel(PARAMETRE_LIBELLE, PAH$PARAMETRE_LIBELLE)), scales = "free_y") +
+  labs(x = NULL, y = "Concentration in ng/g dw", colour = "Period") +
+  theme(legend.position = "bottom") +
+# Add long term trends if significant
+  geom_text(data = res_kruskal_PAH_dw, 
+            inherit.aes = FALSE, 
+            aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE)
+
+plot_PAH_dw_periode
+
+ggsave(plot = plot_PAH_dw_periode, "../inst/results/data_contam/PAH/ggplot_PAH_dw_periods.jpg", 
+       width = 10, height = 15, units = "cm")
+```
+
+In ww
+
+```{r}
+res_kruskal_PAH_ww <- get_kruskal_periods_results(data_with_periode = data_PAH_ww, 
+                             chemicals = PAH$PARAMETRE_LIBELLE)
+```
+
+```{r}
+plot_PAH_ww_periode <- data_PAH_ww |> 
+  drop_na(periode) |> # keep only data from first and last 5-years periods
+  ggplot() +
+  aes(x = ESTUARY, y = RESULTAT, colour = periode) +
+  geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
+  scale_color_manual(values = c("purple", "deeppink")) +
+  facet_grid(rows = vars(fct_relevel(PARAMETRE_LIBELLE, PAH$PARAMETRE_LIBELLE)), scales = "free_y") +
+  labs(x = NULL, y = "Concentration in ng/g ww", colour = "Period") +
+  theme(legend.position = "bottom") +
+# Add long term trends if significant
+  geom_text(data = res_kruskal_PAH_ww, 
+            inherit.aes = FALSE, 
+            aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE)
+
+plot_PAH_ww_periode
+
+ggsave(plot = plot_PAH_ww_periode, "../inst/results/data_contam/PAH/ggplot_PAH_ww_periods.jpg", 
+       width = 10, height = 15, units = "cm")
+```
