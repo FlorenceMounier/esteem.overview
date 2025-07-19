@@ -225,13 +225,18 @@ ggsave(plot = ggplot_brominated_ww, "../inst/results/data_contam/brominated/ggpl
 
 # First vs last period graphs
 ```{r}
+data_brominated_ww_norm_relative <- data_brominated_ww |> 
+  left_join(brominated) |> 
+  mutate(RESULTAT = RESULTAT / EQS_EC_ng_gww * 100) |> 
+  drop_na(RESULTAT)
+
 res_kruskal_brominated <- get_kruskal_periods_results(
-  data_with_periode = data_brominated_ww, 
+  data_with_periode = data_brominated_ww_norm_relative, 
   chemicals = brominated_names)
 ```
 
 ```{r}
-plot_brominated_periode <- data_brominated_ww |> 
+plot_brominated_periode <- data_brominated_ww_norm_relative |> 
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
@@ -251,4 +256,12 @@ plot_brominated_periode
 
 ggsave(plot = plot_brominated_periode, "../inst/results/data_contam/brominated/ggplot_brominated_ww_periods.jpg", 
        width = 10, height = 10, units = "cm")
+```
+
+# General evaluation
+```{r}
+get_general_evaluation(family = "brominated",
+                       suffix = "_ww",
+                       res_family_trends = res_brominated_ww_trends,
+                       res_kruskal = res_kruskal_brominated)
 ```
