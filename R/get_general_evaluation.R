@@ -30,8 +30,10 @@ get_general_evaluation <- function(family,
       status = case_when(
         median_2 >= 0 & median_2 < 50 ~ "blue",
         median_2 >= 50 & median_2 < 100 ~ "green",
-        median_2 >= 100 & median_2 < 150 ~ "orange",
-        median_2 >= 150 ~ "red"
+        median_2 >= 100 & median_2 < 150 ~ "yellow",
+        median_2 >= 150 & median_2 < 300 ~ "orange",
+        median_2 >= 300 & median_2 < 500 ~ "red",
+        median_2 >= 500 ~ "black"
       )
     ) |>
     rename(long_term_trend = trend) |>
@@ -41,8 +43,9 @@ get_general_evaluation <- function(family,
 
   general_eval_family_table <- general_eval_family  |>
     unite(col = eval, long_term_trend, short_last_trend, status, sep = "  ") |>
-    select(ESTUARY, PARAMETRE_LIBELLE, eval) |>
-    pivot_wider(names_from = ESTUARY, values_from = eval)
+    select(ESTUARY, PARAMETRE_LIBELLE, eval) |> 
+    arrange(ESTUARY) |>
+    pivot_wider(names_from = ESTUARY, values_from = eval) 
   
   writexl::write_xlsx(x = list(general_eval_family_table, general_eval_family), 
                     path = paste0("../inst/results/data_contam/", family, "/general_eval_", family, suffix, ".xlsx"))
