@@ -1,0 +1,204 @@
+---
+title: "data_contamination_PFOS"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_contamination_PFOS}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+library(esteem.overview)
+library(segmented)
+library(tidyverse)
+library(here)
+```
+
+# Get raw data for Polychlorinated biphenyls indicators (PFOS) => thresholds in ng/g lw
+```{r}
+PFOS <- data.frame(PARAMETRE_LIBELLE = "PFOS",
+                   EQS_EC_ng_gww = 9.1)
+
+data_PFOS <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
+  filter(support == "Bivalve") |> 
+  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |> 
+  filter(PARAMETRE_LIBELLE %in% PFOS$PARAMETRE_LIBELLE) |> 
+  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
+
+```
+
+## Get the same unit of measurment
+
+Different units:
+
+- 2010-2017: ng.g-1				
+- 2018-2024: µg.kg-1, p.h.				
+- 2021 Seine: ng.kg-1, p.h.
+```{r}
+data_PFOS |> 
+  distinct(UNITE)
+
+data_PFOS |> 
+  mutate(YEAR = as.factor(YEAR)) |> 
+  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "PFOS units")
+```
+
+Transform all results in ng/g ww (same as µg/kg):
+```{r}
+data_PFOS_ww <- data_PFOS |>
+  # transformation into ww concentrations
+  mutate(RESULTAT = case_when(
+    UNITE == "µg.kg-1, p.h." ~ RESULTAT,
+    UNITE == "ng.kg-1, p.h." ~ RESULTAT / 1000,
+    UNITE == "ng.g-1" ~ RESULTAT * (`Matière sèche_%` / 100),
+  )) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g ww") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
+  mutate(RESULTAT = mean(RESULTAT)) |> 
+  ungroup() |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 3))
+```
+
+```{r}
+data_PFOS_ww |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(mean = mean(RESULTAT))
+```
+
+
+## Importance of the species matrix
+
+- Gironde : only C. gigas
+- Seine : only M. edulis
+- Loire : 
+  - 2010-2018: M. edulis
+  - 2023-2024: M. edulis + M.galloprovincialis
+  - 2024: C. gigas
+```{r}
+data_PFOS_ww |> 
+  distinct(ESTUARY, espece)
+
+data_PFOS_ww |> 
+  filter(ESTUARY == "Loire") |> 
+  distinct(ESTUARY, YEAR, espece)
+```
+
+```{r}
+data_PFOS_ww |> 
+  filter(ESTUARY == "Loire") |>
+  ggplot() +
+  aes(x = YEAR, y = RESULTAT, colour = espece) +
+  geom_line() +
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+```
+
+Simplify with two species groups
+```{r}
+data_PFOS_ww <- data_PFOS_ww |> 
+    mutate(SPECIES = case_when(
+    espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
+    espece %in% c("Mytilus edulis (moule commune)",
+                  "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
+  ))
+```
+
+# Time series graphs
+```{r}
+data_PFOS_ww |>  
+ggplot() +
+  aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
+  geom_line() +
+  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL)
+```
+
+```{r}
+fun_seg_model_PFOS <- function(chemical, estuary){
+  fun_seg_model(data = data_PFOS_ww,
+                folder = "PFOS",
+                chemical = chemical, 
+                estuary = estuary)
+}
+  
+PFOS_names <- PFOS$PARAMETRE_LIBELLE 
+estuary_names <- c("Gironde", "Loire", "Seine")
+params <- expand.grid(estuary_names, PFOS_names)
+
+res_PFOS_ww_trends <- pmap_dfr(params, ~ fun_seg_model_PFOS(estuary = ..1, chemical = ..2))
+
+res_PFOS_ww_trends <- res_PFOS_ww_trends |> 
+  left_join(PFOS, by = "PARAMETRE_LIBELLE")
+```
+
+```{r}
+ggplot_PFOS_ww <- ggplot(data_PFOS_ww) +
+  aes(x = YEAR,
+      y = log(RESULTAT),
+      colour = ESTUARY) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  theme(legend.position = "bottom") +
+  facet_grid(rows = vars(
+    fct_relevel(PARAMETRE_LIBELLE, PFOS_names)
+  ), scales = "free_y") +
+  labs(colour = "Estuary", y = "Contamination level in log ng/g ww", x = NULL) +
+# Add last break dates of segmented models and arrows for significant last trends
+  geom_text(
+    data = res_PFOS_ww_trends,
+    aes(x = max(last_year)+1, y = log(last_resultat), label = symbol), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE) +
+# Add environmental threshold when existing
+  geom_text(
+    data = res_PFOS_ww_trends,  
+    aes(x = max(last_year)+1, y = log(EQS_EC_ng_gww) +0.5, label = sprintf("%.2f", log(EQS_EC_ng_gww))),
+    color = "red", size = 2.5
+  ) +
+  geom_hline(
+    data = res_PFOS_ww_trends,
+    aes(yintercept = log(EQS_EC_ng_gww)),
+    color = "red", linetype = "dashed"
+  )
+
+ggplot_PFOS_ww
+
+ggsave(plot = ggplot_PFOS_ww, "../inst/results/data_contam/PFOS/ggplot_PFOS_ww_time_series.jpg",
+       width = 10, height = 10, units = "cm")
+```
+
+# First vs last period graphs
+```{r}
+data_PFOS_ww_norm_relative <- data_PFOS_ww |> 
+  left_join(PFOS) |> 
+  mutate(RESULTAT = RESULTAT / EQS_EC_ng_gww * 100)
+```
+
+```{r}
+plot_PFOS_ww_periode <- data_PFOS_ww_norm_relative |> 
+  ggplot() +
+  aes(x = ESTUARY, y = RESULTAT) +
+  geom_boxplot(width = 0.6, colour = "deeppink") +
+  facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL, y = "Deviation from limit value (% ng/g ww)", colour = "Period") +
+  theme(legend.position = "bottom")
+
+plot_PFOS_ww_periode
+
+ggsave(plot = plot_PFOS_ww_periode, "../inst/results/data_contam/PFOS/ggplot_PFOS_ww_periods.jpg", 
+       width = 10, height = 10, units = "cm")
+```
+
+# General evaluation
+```{r}
+data_PFOS_ww_norm_relative |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median = median(RESULTAT))
+```
+
