@@ -243,20 +243,25 @@ ggsave(plot = ggplot_dioxine_like_TEQ, "../inst/results/data_contam/dioxine_like
 
 # First vs last period graphs
 ```{r}
+data_sum_dioxine_like_TEQ_norm_relative <- data_sum_dioxine_like_TEQ |> 
+  mutate(QS_HH = 0.0065) |> 
+  mutate(RESULTAT = RESULTAT / QS_HH * 100) |> 
+  drop_na(RESULTAT)
+
 res_kruskal_dioxine_like <- get_kruskal_periods_results(
-  data_with_periode = data_sum_dioxine_like_TEQ, 
+  data_with_periode = data_sum_dioxine_like_TEQ_norm_relative, 
   chemicals = "sum_dioxine_like")
 ```
 
 ```{r}
-plot_dioxine_like_periode <- data_sum_dioxine_like_TEQ |> 
+plot_dioxine_like_periode <- data_sum_dioxine_like_TEQ_norm_relative |> 
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
   geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
   scale_color_manual(values = c("purple", "deeppink")) +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(x = NULL, y = "Concentration in ng/g TEQ", colour = "Period") +
+  labs(x = NULL, y = "Deviation from limit value (% ng/g TEQ)", colour = "Period") +
   theme(legend.position = "bottom") +
 # Add long term trends if significant
   geom_text(data = res_kruskal_dioxine_like, 
@@ -269,4 +274,13 @@ plot_dioxine_like_periode
 
 ggsave(plot = plot_dioxine_like_periode, "../inst/results/data_contam/dioxine_like/ggplot_dioxine_like_TEQ_periods.jpg", 
        width = 10, height = 10, units = "cm")
+```
+
+# General evaluation
+
+```{r}
+get_general_evaluation(family = "dioxine_like",
+                       suffix = "_TEQ",
+                       res_family_trends = res_sum_dioxine_like_lw_trends,
+                       res_kruskal = res_kruskal_dioxine_like)
 ```
