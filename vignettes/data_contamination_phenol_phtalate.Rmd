@@ -1,0 +1,202 @@
+---
+title: "data_contamination_tributyltin"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_contamination_tributyltin}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+library(esteem.overview)
+library(segmented)
+library(tidyverse)
+library(here)
+```
+
+# Get raw data for Polychlorinated biphenyls indicators (tributyltin) => thresholds in ng/g lw
+```{r}
+tributyltin <- data.frame(PARAMETRE_LIBELLE = "Tributylétain cation",
+                   EAC_ng_gdw = 12)
+
+data_tributyltin <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
+  filter(support == "Bivalve") |> 
+  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |> 
+  filter(PARAMETRE_LIBELLE %in% tributyltin$PARAMETRE_LIBELLE) |> 
+  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
+
+```
+
+## Get the same unit of measurment
+
+Different units:
+
+- 2019-2020: µg/(kg MS)				
+- 2021-2024: µg.kg-1, p.h.
+```{r}
+data_tributyltin |> 
+  distinct(UNITE)
+
+data_tributyltin |> 
+  mutate(YEAR = as.factor(YEAR)) |> 
+  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "tributyltin units")
+```
+
+Transform all results in ng/g ww (same as µg/kg):
+```{r}
+data_tributyltin_dw <- data_tributyltin |>
+  # transformation into dw concentrations
+  mutate(RESULTAT = case_when(
+    UNITE == "µg.kg-1, p.h." ~ RESULTAT / (`Matière sèche_%` / 100),
+    UNITE == "µg/(kg MS)" ~ RESULTAT ,
+  )) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g dw") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
+  mutate(RESULTAT = mean(RESULTAT)) |> 
+  ungroup() |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 3))
+
+```
+
+```{r}
+data_tributyltin_dw |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(mean = mean(RESULTAT))
+```
+
+
+## Importance of the species matrix
+
+- Gironde : only C. gigas
+- Seine : only M. edulis
+- Loire : 
+  - 2021: M. edulis
+  - 2022-2024: M. edulis + M.galloprovincialis
+```{r}
+data_tributyltin_dw |> 
+  distinct(ESTUARY, espece)
+
+data_tributyltin_dw |> 
+  filter(ESTUARY == "Loire") |> 
+  distinct(ESTUARY, YEAR, espece)
+```
+
+```{r}
+data_tributyltin_dw |> 
+  filter(ESTUARY == "Loire") |>
+  ggplot() +
+  aes(x = YEAR, y = RESULTAT, colour = espece) +
+  geom_line() +
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+```
+
+Simplify with two species groups
+```{r}
+data_tributyltin_dw <- data_tributyltin_dw |> 
+    mutate(SPECIES = case_when(
+    espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
+    espece %in% c("Mytilus edulis (moule commune)",
+                  "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
+  ))
+```
+
+# Time series graphs
+```{r}
+data_tributyltin_dw |>  
+ggplot() +
+  aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
+  geom_line() +
+  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL)
+```
+
+```{r}
+fun_seg_model_tributyltin <- function(chemical, estuary){
+  fun_seg_model(data = data_tributyltin_dw,
+                folder = "tributyltin",
+                chemical = chemical, 
+                estuary = estuary)
+}
+  
+tributyltin_names <- tributyltin$PARAMETRE_LIBELLE 
+estuary_names <- c("Gironde", "Loire", "Seine")
+params <- expand.grid(estuary_names, tributyltin_names)
+
+res_tributyltin_dw_trends <- pmap_dfr(params, ~ fun_seg_model_tributyltin(estuary = ..1, chemical = ..2))
+
+res_tributyltin_dw_trends <- res_tributyltin_dw_trends |> 
+  left_join(tributyltin, by = "PARAMETRE_LIBELLE")
+```
+
+```{r}
+ggplot_tributyltin_dw <- ggplot(data_tributyltin_dw) +
+  aes(x = YEAR,
+      y = RESULTAT,
+      colour = ESTUARY) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  theme(legend.position = "bottom") +
+  facet_grid(rows = vars(
+    fct_relevel(PARAMETRE_LIBELLE, tributyltin_names)
+  ), scales = "free_y") +
+  labs(colour = "Estuary", y = "Contamination level in ng/g lw", x = NULL) +
+# Add last break dates of segmented models and arrows for significant last trends
+  geom_text(
+    data = res_tributyltin_dw_trends,
+    aes(x = max(last_year)+1, y = last_resultat, label = symbol), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE) +
+# Add environmental threshold when existing
+  geom_text(
+    data = res_tributyltin_dw_trends,  
+    aes(x = max(last_year)+1, y = EAC_ng_gdw +0.5, label = sprintf("%.2f", EAC_ng_gdw)),
+    color = "red", size = 2.5
+  ) +
+  geom_hline(
+    data = res_tributyltin_dw_trends,
+    aes(yintercept = EAC_ng_gdw),
+    color = "red", linetype = "dashed"
+  )
+
+ggplot_tributyltin_dw
+
+ggsave(plot = ggplot_tributyltin_dw, "../inst/results/data_contam/tributyltin/ggplot_tributyltin_dw_time_series.jpg",
+       width = 10, height = 10, units = "cm")
+```
+
+# First vs last period graphs
+```{r}
+data_tributyltin_dw_norm_relative <- data_tributyltin_dw |> 
+  left_join(tributyltin) |> 
+  mutate(RESULTAT = RESULTAT / EAC_ng_gdw * 100)
+```
+
+```{r}
+plot_tributyltin_dw_periode <- data_tributyltin_dw_norm_relative |> 
+  ggplot() +
+  aes(x = ESTUARY, y = RESULTAT) +
+  geom_boxplot(width = 0.6, colour = "deeppink") +
+  facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL, y = "Deviation from limit value (% ng/g dw)", colour = "Period") +
+  theme(legend.position = "bottom")
+
+plot_tributyltin_dw_periode
+
+ggsave(plot = plot_tributyltin_dw_periode, "../inst/results/data_contam/tributyltin/ggplot_tributyltin_dw_periods.jpg", 
+       width = 10, height = 10, units = "cm")
+```
+
+# General evaluation
+```{r}
+data_tributyltin_dw_norm_relative |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median = median(RESULTAT))
+```
+
