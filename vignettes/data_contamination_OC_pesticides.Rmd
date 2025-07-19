@@ -69,6 +69,7 @@ data_OC_pesticides_ww <- data_OC_pesticides |>
   # Get only one value per year
   group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |> 
   mutate(RESULTAT = mean(RESULTAT)) |> 
+  ungroup() |> 
   # Round result values
   mutate(RESULTAT = round(RESULTAT, digits = 4))
 

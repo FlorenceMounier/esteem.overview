@@ -86,6 +86,8 @@ data_dioxine_like_dw <- data_dioxine_like |>
   mutate(UNITE = "ng/g dw") |> 
   # Get only one value per year
   group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
+  mutate(RESULTAT = mean(RESULTAT)) |> 
+  ungroup() |> 
   # Round result values
   mutate(RESULTAT = round(RESULTAT, digits = 7))
 

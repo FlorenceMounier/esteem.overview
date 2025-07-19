@@ -82,6 +82,8 @@ data_PAH_ww <- data_PAH |>
   mutate(UNITE = "ng/g ww") |> 
   # Get only one value per year
   group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
+  mutate(RESULTAT = mean(RESULTAT)) |> 
+  ungroup() |> 
   # Round result values
   mutate(RESULTAT = round(RESULTAT, digits = 3))
 ```
