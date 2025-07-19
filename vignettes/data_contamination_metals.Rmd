@@ -7,14 +7,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
-```
 
-```{r libraries}
+```{r libraries, include = FALSE}
 library(esteem.overview)
 library(segmented)
 library(tidyverse)
@@ -28,34 +22,20 @@ data <- esteem.overview::data_ROCCHMV_cleaned |> ungroup()
 
 # Data for metals
 ```{r}
-# Historical once
-df_metal1 <- data.frame(PARAMETRE_LIBELLE_FR = c("Mercure", "Cadmium", "Plomb", "Zinc", "Cuivre"),
-                        PARAMETRE_LIBELLE_EN = c("Mercury", "Cadmium", "Lead", "Zinc", "Copper"),
-                        intercept1 = c(90/1000, 960/1000, 1300/1000, NA, NA),
-                        intercept2 = c(3049/1000, 305/1000, 9146/1000, NA, NA),
-                        unit = c("µg/g dw", "µg/g dw", "µg/g dw", NA, NA))
+metaux <- data.frame(
+  PARAMETRE_LIBELLE = c("Mercure", "Cadmium", "Plomb", "Zinc", "Cuivre"),
+  EC_MPC_µg_gww = c(0.5, 1, 1.5, NA, NA)
+  )
 
-# More recently monitored
-df_metal2 <- data.frame(PARAMETRE_LIBELLE_FR = c("Nickel", "Vanadium", "Argent", "Chrome total"),
-                        PARAMETRE_LIBELLE_EN = c("Nickel", "Vanadium", "Silver", "Chromium"))
-
-# All of them
-metaux <- full_join(df_metal1, df_metal2)
+data_metaux <- data |> 
+  filter(support == "Bivalve") |> 
+  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |> 
+  filter(PARAMETRE_LIBELLE %in% metaux$PARAMETRE_LIBELLE)
 ```
 
 ## Importance of the species matrix
 
 Only for Bivalves (no interesting results for fish)
-
-Filtering bivalves and study the influence of species matrix
-```{r}
-data_metaux <- data |> 
-  filter(PARAMETRE_LIBELLE %in% metaux$PARAMETRE_LIBELLE_FR) |> 
-  filter(support == "Bivalve") |> 
-  left_join(metaux, by = c("PARAMETRE_LIBELLE" = "PARAMETRE_LIBELLE_FR")) |> 
-  mutate(PARAMETRE_LIBELLE = factor(PARAMETRE_LIBELLE_EN, levels = metaux$PARAMETRE_LIBELLE_EN)) |>
-  dplyr::select(-PARAMETRE_LIBELLE_EN)
-```
 
 - Gironde : only C. gigas
 - Seine : only M. edulis
@@ -131,7 +111,7 @@ Conclusion : original unit in mg/kg dw (equivalent in µg/g)
 
 data_metaux |> 
   filter(ESTUARY == "Gironde", PARAMETRE_LIBELLE == "Mercury") |> 
-ggplot() +
+  ggplot() +
   aes(x = YEAR, y = RESULTAT, colour = UNITE) +
   geom_point()
 # => seems to be in the same range of values
@@ -139,7 +119,29 @@ ggplot() +
 
 ```{r}
 data_metaux <- data_metaux |> 
-  mutate(UNITE = "µg/g dw")
+  mutate(UNITE = "µg/g dw") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
+  mutate(RESULTAT = mean(RESULTAT)) |> 
+  ungroup() |> 
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 3))
+```
+
+Transform all results in µg/g ww (same as µg/kg):
+```{r}
+data_metaux_ww <- data_metaux |>
+  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY") |> 
+  # transformation into ww concentrations
+  mutate(RESULTAT = RESULTAT * (`Matière sèche_%` / 100)) |>  
+  # Change to unified unit
+  mutate(UNITE = "µg/g ww") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE)  |>
+  mutate(RESULTAT = mean(RESULTAT)) |> 
+  ungroup() |>
+  # Round result values
+  mutate(RESULTAT = round(RESULTAT, digits = 3))
 ```
 
 ## Identify first and last periods
@@ -147,13 +149,13 @@ data_metaux <- data_metaux |>
 Identify the first and last 5 years of measurement
 ```{r}
 # Compute minimal and maximal year of measurement by metal and estuary
-min_max_year <- data_metaux |> 
+min_max_year <- data_metaux_ww |> 
   group_by(PARAMETRE_LIBELLE, ESTUARY) |> 
   summarise(min_year = min(YEAR),
             max_year = max(YEAR), .groups = "drop")
 
 # Identify the first and last 5 years of measurement
-data_metaux <- data_metaux |> 
+data_metaux_ww <- data_metaux_ww |> 
   left_join(min_max_year, by = c("PARAMETRE_LIBELLE", "ESTUARY"))  |> 
   mutate(periode = case_when(
     YEAR <= min_year + 5 ~ "First 5 years",
@@ -162,212 +164,188 @@ data_metaux <- data_metaux |>
   ))
 ```
 
-
-# Historical heavy metals
-
+# Time series graphs
 ```{r}
-data_metaux1 <- data_metaux |> filter(PARAMETRE_LIBELLE %in% df_metal1$PARAMETRE_LIBELLE_EN)
-
-# ggplot(data_metaux1) +
-#   aes(x = YEAR, y = log(RESULTAT), color = ESTUARY) +
-#   geom_line() +
-#   facet_grid(vars(fct_relevel(PARAMETRE_LIBELLE, df_metal1$PARAMETRE_LIBELLE_EN)), scales = "free_y") +
-#   labs(x = NULL)
-```
-
-## Time series graphs
-```{r}
-fun_seg_model_metals1 <- function(chemical, estuary){
-  fun_seg_model(data = data_metaux1,
+fun_seg_model_metaux <- function(chemical, estuary, n_break){
+  fun_seg_model(data = data_metaux_ww,
                 folder = "metals",
                 chemical = chemical, 
-                estuary = estuary)
+                estuary = estuary,
+                n_break = n_break)
 }
-  
-metals1_names <- df_metal1$PARAMETRE_LIBELLE_EN
-estuary_names <- c("Gironde", "Loire", "Seine")
-params <- expand.grid(estuary_names, metals1_names)
 
-res_metals1_trends <- pmap_dfr(params, ~ fun_seg_model_metals1(estuary = ..1, chemical = ..2))
+res_metaux_trends <- rbind(
+  fun_seg_model_metaux(chemical = "Mercure", estuary = "Gironde", n_break = 2),
+  fun_seg_model_metaux(chemical = "Mercure", estuary = "Loire", n_break = 3),
+  fun_seg_model_metaux(chemical = "Mercure", estuary = "Seine", n_break = 2),
+  fun_seg_model_metaux(chemical = "Cadmium", estuary = "Gironde"),
+  fun_seg_model_metaux(chemical = "Cadmium", estuary = "Loire"),
+  fun_seg_model_metaux(chemical = "Cadmium", estuary = "Seine", n_break = 2),
+  fun_seg_model_metaux(chemical = "Plomb", estuary = "Gironde"),
+  fun_seg_model_metaux(chemical = "Plomb", estuary = "Loire"),
+  fun_seg_model_metaux(chemical = "Plomb", estuary = "Seine"),
+  fun_seg_model_metaux(chemical = "Zinc", estuary = "Gironde"),
+  fun_seg_model_metaux(chemical = "Zinc", estuary = "Loire"),
+  fun_seg_model_metaux(chemical = "Zinc", estuary = "Seine"),
+  fun_seg_model_metaux(chemical = "Cuivre", estuary = "Gironde"),
+  fun_seg_model_metaux(chemical = "Cuivre", estuary = "Loire"),
+  fun_seg_model_metaux(chemical = "Cuivre", estuary = "Seine")
+  )
 
-
-# res_metals1_trends <- rbind(
-#   fun_seg_model(data = data_metaux1, chemical = "Mercury", estuary = "Gironde", n_break = 2),
-#   fun_seg_model(data = data_metaux1, chemical = "Mercury", estuary = "Loire", n_break = 2),
-#   fun_seg_model(data = data_metaux1, chemical = "Mercury", estuary = "Seine", n_break = 2),
-#   fun_seg_model(data = data_metaux1, chemical = "Cadmium", estuary = "Gironde"),
-#   fun_seg_model(data = data_metaux1, chemical = "Cadmium", estuary = "Loire"),
-#   fun_seg_model(data = data_metaux1, chemical = "Cadmium", estuary = "Seine", n_break = 2),
-#   fun_seg_model(data = data_metaux1, chemical = "Lead", estuary = "Gironde"),
-#   fun_seg_model(data = data_metaux1, chemical = "Lead", estuary = "Loire"),
-#   fun_seg_model(data = data_metaux1, chemical = "Lead", estuary = "Seine"),
-#   fun_seg_model(data = data_metaux1, chemical = "Zinc", estuary = "Gironde"),
-#   fun_seg_model(data = data_metaux1, chemical = "Zinc", estuary = "Loire"),
-#   fun_seg_model(data = data_metaux1, chemical = "Zinc", estuary = "Seine"),
-#   fun_seg_model(data = data_metaux1, chemical = "Copper", estuary = "Gironde"),
-#   fun_seg_model(data = data_metaux1, chemical = "Copper", estuary = "Loire"),
-#   fun_seg_model(data = data_metaux1, chemical = "Copper", estuary = "Seine")
-#   )
-
-# usethis::use_data(res_metals1_trends, overwrite = TRUE)
-
-esteem.overview::res_metals1_trends
+res_metaux_trends <- res_metaux_trends |> 
+  left_join(metaux, by = "PARAMETRE_LIBELLE")
 ```
 
+## For metals with norm values
 ```{r}
-ggplot_metaux1 <- ggplot(data_metaux1) +
+res_metaux_norm_trends <- res_metaux_trends |> 
+  filter(PARAMETRE_LIBELLE %in% c("Mercure", "Cadmium", "Plomb"))
+
+ggplot_metaux_norm_ww <- data_metaux_ww |> 
+  filter(PARAMETRE_LIBELLE %in% c("Mercure", "Cadmium", "Plomb")) |> 
+  ggplot() +
   aes(x = YEAR,
       y = log(RESULTAT),
       colour = ESTUARY) +
   geom_line() +
   geom_smooth(se = FALSE) +
-  theme(legend.position = "bottom") +
-  facet_grid(rows = vars(
-    fct_relevel(PARAMETRE_LIBELLE, df_metal1$PARAMETRE_LIBELLE_EN)
-  ), scales = "free_y") +
-  labs(colour = "Estuary", y = "Contamination level in log µg/g dw", x = NULL) +
+    theme(legend.position = "none",      # no legend
+        axis.text.x = element_blank()) + # no x labels
+  facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(colour = "Estuary", y = "Contamination level in log µg/g ww", x = NULL) +
 # Add last break dates of segmented models and arrows for significant last trends
-  geom_vline(data = res_metals1_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
+  geom_vline(data = res_metaux_norm_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
   geom_text(
-    data = res_metals1_trends,
+    data = res_metaux_norm_trends,
     aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
     family = "DejaVu Sans",   # specify the font that contains arrows
     show.legend = FALSE) +
 # Add environmental threshold when existing
-  # => BAC mussel
-  geom_hline(
-    data = df_metal1 |> rename(PARAMETRE_LIBELLE = PARAMETRE_LIBELLE_EN),
-    aes(yintercept = log(intercept1)),
-    color = "black", linetype = "dashed"
+  geom_text(
+    data = res_metaux_norm_trends,  
+    aes(x = max(last_year)+1, 
+        y = log(EC_MPC_µg_gww) - 0.2, 
+        label = sprintf("%.2f", log(EC_MPC_µg_gww))),
+    color = "red", size = 2.5
   ) +
-  # => EC MPC
   geom_hline(
-    data = df_metal1 |> rename(PARAMETRE_LIBELLE = PARAMETRE_LIBELLE_EN),
-    aes(yintercept = log(intercept2)),
+    data = res_metaux_norm_trends,
+    aes(yintercept = log(EC_MPC_µg_gww)),
     color = "red", linetype = "dashed"
-   )
+  )
 
-ggplot_metaux1
+ggplot_metaux_norm_ww
 
-ggsave(plot = ggplot_metaux1, "../inst/results/data_contam/metals/ggplot_metals1_time_series.jpg",
-       width = 10, height = 15, units = "cm")
+ggsave(plot = ggplot_metaux_norm_ww, "../inst/results/data_contam/metals/ggplot_metaux_norm_ww_time_series.jpg",
+       width = 10, height = 8, units = "cm")
 ```
 
-## First vs last period graphs
+## For the others
 ```{r}
-res_kruskal_metaux1 <- get_kruskal_periods_results(data_with_periode = data_metaux1, 
-                             chemicals = df_metal1$PARAMETRE_LIBELLE_EN)
-```
+res_metaux_trends_2 <- res_metaux_trends |> 
+  filter(PARAMETRE_LIBELLE %in% c("Zinc", "Cuivre"))
 
-```{r}
-plot_metals1_periode <- data_metaux1 |> 
-  drop_na(periode) |> # keep only data from first and last 5-years periods
+ggplot_metaux_ww <- data_metaux_ww |> 
+  filter(PARAMETRE_LIBELLE %in% c("Zinc", "Cuivre")) |> 
   ggplot() +
-  aes(x = ESTUARY, y = RESULTAT, colour = periode) +
-  geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
-  scale_color_manual(values = c("purple", "deeppink")) +
-  facet_grid(rows = vars(fct_relevel(PARAMETRE_LIBELLE, df_metal1$PARAMETRE_LIBELLE_EN)), scales = "free_y") +
-  labs(x = NULL, y = "Concentration in µg/g dw", colour = "Period") +
-  theme(legend.position = "bottom") +
-# Add long term trends if significant
-  geom_text(data = res_kruskal_metaux1, 
-            inherit.aes = FALSE, 
-            aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
-    family = "DejaVu Sans",   # specify the font that contains arrows
-    show.legend = FALSE)
-
-plot_metals1_periode
-
-ggsave(plot = plot_metals1_periode, "../inst/results/data_contam/metals/ggplot_metals1_periods.jpg", 
-       width = 10, height = 15, units = "cm")
-```
-
-# Other metals original
-
-```{r}
-data_metaux2 <- data_metaux |> filter(PARAMETRE_LIBELLE %in% df_metal2$PARAMETRE_LIBELLE_EN)
-ggplot(data_metaux2) +
-  aes(x = YEAR, y = log(RESULTAT), color = ESTUARY) +
-  geom_line() +
-  facet_grid(vars(fct_relevel(PARAMETRE_LIBELLE, df_metal2$PARAMETRE_LIBELLE_EN)), scales = "free_y") +
-  labs(x = NULL)
-```
-
-## Time series graphs
-```{r}
-# res_metals2_trends <- rbind(
-#   fun_seg_model(data = data_metaux2, chemical = "Nickel", estuary = "Gironde", n_break = 2),
-#   fun_seg_model(data = data_metaux2, chemical = "Nickel", estuary = "Loire", n_break = 3),
-#   fun_seg_model(data = data_metaux2, chemical = "Nickel", estuary = "Seine", n_break = 2),
-#   fun_seg_model(data = data_metaux2, chemical = "Vanadium", estuary = "Gironde"),
-#   fun_seg_model(data = data_metaux2, chemical = "Vanadium", estuary = "Loire"),
-#   fun_seg_model(data = data_metaux2, chemical = "Vanadium", estuary = "Seine"),
-#   fun_seg_model(data = data_metaux2, chemical = "Silver", estuary = "Gironde"),
-#   fun_seg_model(data = data_metaux2, chemical = "Silver", estuary = "Loire"),
-#   fun_seg_model(data = data_metaux2, chemical = "Silver", estuary = "Seine"),
-#   fun_seg_model(data = data_metaux2, chemical = "Chromium", estuary = "Gironde", n_break = 2),
-#   fun_seg_model(data = data_metaux2, chemical = "Chromium", estuary = "Loire"),
-#   fun_seg_model(data = data_metaux2, chemical = "Chromium", estuary = "Seine", n_break = 2)
-#   )
-# 
-# usethis::use_data(res_metals2_trends, overwrite = TRUE)
-
-esteem.overview::res_metals2_trends
-```
-
-```{r}
-ggplot_metaux2 <- ggplot(data_metaux2) +
   aes(x = YEAR,
       y = log(RESULTAT),
       colour = ESTUARY) +
   geom_line() +
   geom_smooth(se = FALSE) +
   theme(legend.position = "bottom") +
-  facet_grid(rows = vars(
-    fct_relevel(PARAMETRE_LIBELLE, df_metal2$PARAMETRE_LIBELLE_EN)
-  ), scales = "free_y") +
-  labs(colour = "Estuary", y = "Contamination level in log µg/g dw", x = NULL) +
+  facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(colour = "Estuary", y = "Contamination level in log µg/g ww", x = NULL) +
 # Add last break dates of segmented models and arrows for significant last trends
-  geom_vline(data = res_metals2_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
+  geom_vline(data = res_metaux_trends_2, aes(xintercept = break_dates, colour = ESTUARY)) +
   geom_text(
-    data = res_metals2_trends,
+    data = res_metaux_trends_2,
     aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
     family = "DejaVu Sans",   # specify the font that contains arrows
     show.legend = FALSE)
 
-ggplot_metaux2
+ggplot_metaux_ww
 
-ggsave(plot = ggplot_metaux2, "../inst/results/data_contam/metals/ggplot_metals2_time_series.jpg",
-       width = 10, height = 15, units = "cm")
+ggsave(plot = ggplot_metaux_ww, "../inst/results/data_contam/metals/ggplot_metaux_ww_time_series.jpg",
+       width = 10, height = 7, units = "cm")
 ```
 
 ## First vs last period graphs
+
+### For metals with norm values
+
 ```{r}
-res_kruskal_metaux2 <- get_kruskal_periods_results(data_with_periode = data_metaux2, 
-                             chemicals = df_metal2$PARAMETRE_LIBELLE_EN)
+data_metaux_norm_relative <- data_metaux_ww |> 
+  filter(PARAMETRE_LIBELLE %in% c("Mercure", "Cadmium", "Plomb")) |> 
+  left_join(metaux) |> 
+  mutate(RESULTAT = RESULTAT / EC_MPC_µg_gww * 100)
+
+res_kruskal_metaux_norm_relative <- get_kruskal_periods_results(
+  data_with_periode = data_metaux_norm_relative, 
+  chemicals = c("Mercure", "Cadmium", "Plomb"))
 ```
 
 ```{r}
-plot_metals2_periode <- data_metaux2 |> 
+plot_metaux_norm_periode <- data_metaux_norm_relative |> 
+  filter(PARAMETRE_LIBELLE %in% c("Mercure", "Cadmium", "Plomb")) |>
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
   geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
   scale_color_manual(values = c("purple", "deeppink")) +
-  facet_grid(rows = vars(fct_relevel(PARAMETRE_LIBELLE, df_metal2$PARAMETRE_LIBELLE_EN)), scales = "free_y") +
-  labs(x = NULL, y = "Concentration in µg/g dw", colour = "Period") +
+  facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL, y = "Deviation from limit value (% µg/g ww)", colour = "Period") +
+  theme(legend.position = "none",      # no legend
+        axis.text.x = element_blank()) + # no x labels
+# Add long term trends if significant
+  geom_text(data = res_kruskal_metaux_norm_relative, 
+            inherit.aes = FALSE, 
+            aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
+    family = "DejaVu Sans",   # specify the font that contains arrows
+    show.legend = FALSE) 
+
+plot_metaux_norm_periode
+
+ggsave(plot = plot_metaux_norm_periode, "../inst/results/data_contam/metals/ggplot_metaux_norm_periods.jpg", 
+       width = 10, height = 8, units = "cm")
+```
+
+### For the others
+```{r}
+res_kruskal_metaux <- get_kruskal_periods_results(
+  data_with_periode = data_metaux_ww |> filter(PARAMETRE_LIBELLE %in% c("Zinc", "Cuivre")), 
+  chemicals = c("Zinc", "Cuivre"))
+```
+
+```{r}
+plot_metaux_periode <- data_metaux_ww |> 
+  filter(PARAMETRE_LIBELLE %in% c("Zinc", "Cuivre")) |>
+  drop_na(periode) |> # keep only data from first and last 5-years periods
+  ggplot() +
+  aes(x = ESTUARY, y = RESULTAT, colour = periode) +
+  geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
+  scale_color_manual(values = c("purple", "deeppink")) +
+  facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  labs(x = NULL, y = "Concentration in µg/g ww", colour = "Period") +
   theme(legend.position = "bottom") +
 # Add long term trends if significant
-  geom_text(data = res_kruskal_metaux2, 
+  geom_text(data = res_kruskal_metaux, 
             inherit.aes = FALSE, 
             aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
     family = "DejaVu Sans",   # specify the font that contains arrows
     show.legend = FALSE)
 
-plot_metals2_periode
+plot_metaux_periode
 
-ggsave(plot = plot_metals2_periode, "../inst/results/data_contam/metals/ggplot_metals2_periods.jpg", 
-       width = 10, height = 15, units = "cm")
+ggsave(plot = plot_metaux_periode, "../inst/results/data_contam/metals/ggplot_metaux_periods.jpg", 
+       width = 10, height = 7, units = "cm")
 ```
 
-
+# General evaluation
+```{r}
+get_general_evaluation(
+  family = "metals",
+  suffix = "_µg_ww",
+  res_family_trends = res_metaux_norm_trends,
+  res_kruskal = res_kruskal_metaux_norm_relative)
+```
