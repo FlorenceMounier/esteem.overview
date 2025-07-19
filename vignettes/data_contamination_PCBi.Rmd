@@ -21,9 +21,7 @@ library(here)
 # Get raw data for Polychlorinated biphenyls indicators (PCBi) => thresholds in ng/g lw
 ```{r}
 PCBi <- data.frame(PARAMETRE_LIBELLE = c("CB 28", "CB 52", "CB 101", "CB 118", "CB 138", "CB 153", "CB 180"),
-                   EAC_OSPAR = c(67, 108, 121, 25, 317, 1585, 469),
-                   UNITE = rep.int("ng/g lw", times = 7)
-)
+                   EAC_OSPAR_ng_g_lw = c(67, 108, 121, 25, 317, 1585, 469))
 
 data_PCBi <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
   filter(support == "Bivalve") |> 
@@ -57,6 +55,8 @@ data_PCBi_dw <- data_PCBi |>
   )) |>  
   # Change to unified unit
   mutate(UNITE = "ng/g dw") |> 
+  # Get only one value per year
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
   # Round result values
   mutate(RESULTAT = round(RESULTAT, digits = 3))
 
@@ -189,12 +189,12 @@ ggplot_PCBi_lw <- ggplot(data_PCBi_lw) +
 # Add environmental threshold when existing => EAC OSPAR 2023
   geom_text(
     data = res_PCBi_lw_trends,  
-    aes(x = last_year+1, y = max(log(last_resultat))*1.1, label = sprintf("%.2f", log(EAC_OSPAR))),
+    aes(x = last_year+1, y = max(log(last_resultat))*1.1, label = sprintf("%.2f", log(EAC_OSPAR_ng_g_lw))),
     color = "red", size = 2.5
   ) +
   geom_hline(
     data = res_PCBi_lw_trends,
-    aes(yintercept = log(EAC_OSPAR)),
+    aes(yintercept = log(EAC_OSPAR_ng_g_lw)),
     color = "red", linetype = "dashed"
   )
 
@@ -206,19 +206,23 @@ ggsave(plot = ggplot_PCBi_lw, "../inst/results/data_contam/PCBi/ggplot_PCBi_lw_t
 
 # First vs last period graphs
 ```{r}
-res_kruskal_PCBi_lw <- get_kruskal_periods_results(data_with_periode = data_PCBi_lw, 
+data_PCBi_lw_norm_relative <- data_PCBi_lw |> 
+  left_join(PCBi) |> 
+  mutate(RESULTAT = RESULTAT / EAC_OSPAR_ng_g_lw * 100)
+
+res_kruskal_PCBi_lw <- get_kruskal_periods_results(data_with_periode = data_PCBi_lw_norm_relative, 
                              chemicals = PCBi$PARAMETRE_LIBELLE)
 ```
 
 ```{r}
-plot_PCBi_lw_periode <- data_PCBi_lw |> 
+plot_PCBi_lw_periode <- data_PCBi_lw_norm_relative |> 
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
   geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
   scale_color_manual(values = c("purple", "deeppink")) +
   facet_grid(rows = vars(fct_relevel(PARAMETRE_LIBELLE, PCBi$PARAMETRE_LIBELLE)), scales = "free_y") +
-  labs(x = NULL, y = "Concentration in ng/g lw", colour = "Period") +
+  labs(x = NULL, y = "Deviation from limit value (% ng/g lw)", colour = "Period") +
   theme(legend.position = "bottom") +
 # Add long term trends if significant
   geom_text(data = res_kruskal_PCBi_lw, 
@@ -232,3 +236,12 @@ plot_PCBi_lw_periode
 ggsave(plot = plot_PCBi_lw_periode, "../inst/results/data_contam/PCBi/ggplot_PCBi_lw_periods.jpg", 
        width = 10, height = 15, units = "cm")
 ```
+
+# General evaluation
+```{r}
+get_general_evaluation(family = "PCBi",
+                       suffix = "_lw",
+                       res_family_trends = res_PCBi_lw_trends,
+                       res_kruskal = res_kruskal_PCBi_lw)
+```
+
