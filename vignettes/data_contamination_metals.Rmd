@@ -23,8 +23,8 @@ data <- esteem.overview::data_ROCCHMV_cleaned |> ungroup()
 # Data for metals
 ```{r}
 metaux <- data.frame(
-  PARAMETRE_LIBELLE = c("Mercure", "Cadmium", "Plomb", "Zinc", "Cuivre"),
-  EC_MPC_µg_gww = c(0.5, 1, 1.5, NA, NA)
+  PARAMETRE_LIBELLE = c("Mercure", "Cadmium", "Plomb", "Cuivre"),
+  EC_MPC_µg_gww = c(0.5, 1, 1.5, NA)
   )
 
 data_metaux <- data |> 
@@ -184,9 +184,6 @@ res_metaux_trends <- rbind(
   fun_seg_model_metaux(chemical = "Plomb", estuary = "Gironde"),
   fun_seg_model_metaux(chemical = "Plomb", estuary = "Loire"),
   fun_seg_model_metaux(chemical = "Plomb", estuary = "Seine"),
-  fun_seg_model_metaux(chemical = "Zinc", estuary = "Gironde"),
-  fun_seg_model_metaux(chemical = "Zinc", estuary = "Loire"),
-  fun_seg_model_metaux(chemical = "Zinc", estuary = "Seine"),
   fun_seg_model_metaux(chemical = "Cuivre", estuary = "Gironde"),
   fun_seg_model_metaux(chemical = "Cuivre", estuary = "Loire"),
   fun_seg_model_metaux(chemical = "Cuivre", estuary = "Seine")
@@ -243,10 +240,10 @@ ggsave(plot = ggplot_metaux_norm_ww, "../inst/results/data_contam/metals/ggplot_
 ## For the others
 ```{r}
 res_metaux_trends_2 <- res_metaux_trends |> 
-  filter(PARAMETRE_LIBELLE %in% c("Zinc", "Cuivre"))
+  filter(PARAMETRE_LIBELLE %in% c("Cuivre"))
 
 ggplot_metaux_ww <- data_metaux_ww |> 
-  filter(PARAMETRE_LIBELLE %in% c("Zinc", "Cuivre")) |> 
+  filter(PARAMETRE_LIBELLE %in% c("Cuivre")) |> 
   ggplot() +
   aes(x = YEAR,
       y = log(RESULTAT),
@@ -255,7 +252,7 @@ ggplot_metaux_ww <- data_metaux_ww |>
   geom_smooth(se = FALSE) +
   theme(legend.position = "bottom") +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(colour = "Estuary", y = "Contamination level in log µg/g ww", x = NULL) +
+  labs(colour = "Estuary", y = "Concentration \n in log µg/g ww", x = NULL) +
 # Add last break dates of segmented models and arrows for significant last trends
   geom_vline(data = res_metaux_trends_2, aes(xintercept = break_dates, colour = ESTUARY)) +
   geom_text(
@@ -267,7 +264,7 @@ ggplot_metaux_ww <- data_metaux_ww |>
 ggplot_metaux_ww
 
 ggsave(plot = ggplot_metaux_ww, "../inst/results/data_contam/metals/ggplot_metaux_ww_time_series.jpg",
-       width = 10, height = 7, units = "cm")
+       width = 10, height = 4.7, units = "cm")
 ```
 
 ## First vs last period graphs
@@ -313,20 +310,20 @@ ggsave(plot = plot_metaux_norm_periode, "../inst/results/data_contam/metals/ggpl
 ### For the others
 ```{r}
 res_kruskal_metaux <- get_kruskal_periods_results(
-  data_with_periode = data_metaux_ww |> filter(PARAMETRE_LIBELLE %in% c("Zinc", "Cuivre")), 
-  chemicals = c("Zinc", "Cuivre"))
+  data_with_periode = data_metaux_ww |> filter(PARAMETRE_LIBELLE %in% c("Cuivre")), 
+  chemicals = c("Cuivre"))
 ```
 
 ```{r}
 plot_metaux_periode <- data_metaux_ww |> 
-  filter(PARAMETRE_LIBELLE %in% c("Zinc", "Cuivre")) |>
+  filter(PARAMETRE_LIBELLE %in% c("Cuivre")) |>
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
   geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
   scale_color_manual(values = c("purple", "deeppink")) +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(x = NULL, y = "Concentration in µg/g ww", colour = "Period") +
+  labs(x = NULL, y = "Concentration \n in µg/g ww", colour = "Period") +
   theme(legend.position = "bottom") +
 # Add long term trends if significant
   geom_text(data = res_kruskal_metaux, 
@@ -338,8 +335,25 @@ plot_metaux_periode <- data_metaux_ww |>
 plot_metaux_periode
 
 ggsave(plot = plot_metaux_periode, "../inst/results/data_contam/metals/ggplot_metaux_periods.jpg", 
-       width = 10, height = 7, units = "cm")
+       width = 10, height = 4.7, units = "cm")
 ```
+
+## General levels of contamination
+```{r}
+data_metaux_ww_levels <- data_metaux_ww |> 
+  filter(periode == "Last 5 years") |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE)
+
+data_metaux_ww_norm_relative <- res_kruskal_metaux_norm_relative |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
+
+data_metaux_general_levels <- full_join(data_metaux_ww_levels, data_metaux_ww_norm_relative)
+
+writexl::write_xlsx(x = data_metaux_general_levels, path = "../inst/results/data_contam/metals/summarised_levels_data_metaux_ww.xlsx")
+```
+
 
 # General evaluation
 ```{r}
