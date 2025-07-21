@@ -40,9 +40,9 @@ Different units:
 data_PCBi |> 
   distinct(UNITE)
 
-data_PCBi |> 
-  mutate(YEAR = as.factor(YEAR)) |> 
-  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "PCBi units")
+# data_PCBi |> 
+#   mutate(YEAR = as.factor(YEAR)) |> 
+#   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "PCBi units")
 ```
 
 Transform all results in ng/g dw (same as µg/kg):
@@ -238,6 +238,23 @@ plot_PCBi_lw_periode
 ggsave(plot = plot_PCBi_lw_periode, "../inst/results/data_contam/PCBi/ggplot_PCBi_lw_periods.jpg", 
        width = 10, height = 15, units = "cm")
 ```
+
+## General levels of contamination
+```{r}
+data_PCBi_lw_levels <- data_PCBi_lw |> 
+  filter(periode == "Last 5 years") |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_ng_glw = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE)
+
+data_PCBi_lw_norm_relative <- res_kruskal_PCBi_lw |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
+
+data_PCBi_general_levels <- full_join(data_PCBi_lw_levels, data_PCBi_lw_norm_relative)
+
+writexl::write_xlsx(x = data_PCBi_general_levels, path = "../inst/results/data_contam/PCBi/summarised_levels_data_PCBi_lw.xlsx")
+```
+
 
 # General evaluation
 ```{r}
