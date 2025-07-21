@@ -255,6 +255,23 @@ ggsave(plot = plot_OC_pesticides_periode, "../inst/results/data_contam/OC_pestic
        width = 10, height = 10, units = "cm")
 ```
 
+## General levels of contamination
+```{r}
+data_OC_pesticides_ww_levels <- data_OC_pesticides_ww |> 
+  filter(periode == "Last 5 years") |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE)
+
+data_OC_pesticides_ww_norm_relative <- res_kruskal_OC_pesticides |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
+
+data_OC_pesticides_general_levels <- full_join(data_OC_pesticides_ww_levels, data_OC_pesticides_ww_norm_relative)
+
+writexl::write_xlsx(x = data_OC_pesticides_general_levels, path = "../inst/results/data_contam/OC_pesticides/summarised_levels_data_OC_pesticides_ww.xlsx")
+```
+
+
 # General evaluation
 
 ```{r}
