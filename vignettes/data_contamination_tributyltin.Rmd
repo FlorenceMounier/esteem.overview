@@ -23,10 +23,10 @@ library(here)
 tributyltin <- data.frame(PARAMETRE_LIBELLE = "Tributylétain cation",
                    EAC_ng_gdw = 12)
 
-data_tributyltin <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
-  filter(support == "Bivalve") |> 
-  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |> 
-  filter(PARAMETRE_LIBELLE %in% tributyltin$PARAMETRE_LIBELLE) |> 
+data_tributyltin <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |>
+  filter(support == "Bivalve") |>
+  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |>
+  filter(PARAMETRE_LIBELLE %in% tributyltin$PARAMETRE_LIBELLE) |>
   left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
 
 ```
@@ -35,14 +35,14 @@ data_tributyltin <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |>
 
 Different units:
 
-- 2019-2020: µg/(kg MS)				
+- 2019-2020: µg/(kg MS)
 - 2021-2024: µg.kg-1, p.h.
 ```{r}
-data_tributyltin |> 
+data_tributyltin |>
   distinct(UNITE)
 
-data_tributyltin |> 
-  mutate(YEAR = as.factor(YEAR)) |> 
+data_tributyltin |>
+  mutate(YEAR = as.factor(YEAR)) |>
   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "tributyltin units")
 ```
 
@@ -53,21 +53,21 @@ data_tributyltin_dw <- data_tributyltin |>
   mutate(RESULTAT = case_when(
     UNITE == "µg.kg-1, p.h." ~ RESULTAT / (`Matière sèche_%` / 100),
     UNITE == "µg/(kg MS)" ~ RESULTAT ,
-  )) |>  
+  )) |>
   # Change to unified unit
-  mutate(UNITE = "ng/g dw") |> 
+  mutate(UNITE = "ng/g dw") |>
   # Get only one value per year
   group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
-  mutate(RESULTAT = mean(RESULTAT)) |> 
-  ungroup() |> 
+  mutate(RESULTAT = mean(RESULTAT)) |>
+  ungroup() |>
   # Round result values
   mutate(RESULTAT = round(RESULTAT, digits = 3))
 
 ```
 
 ```{r}
-data_tributyltin_dw |> 
-  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+data_tributyltin_dw |>
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |>
   summarise(mean = mean(RESULTAT))
 ```
 
@@ -76,20 +76,20 @@ data_tributyltin_dw |>
 
 - Gironde : only C. gigas
 - Seine : only M. edulis
-- Loire : 
+- Loire :
   - 2021: M. edulis
   - 2022-2024: M. edulis + M.galloprovincialis
 ```{r}
-data_tributyltin_dw |> 
+data_tributyltin_dw |>
   distinct(ESTUARY, espece)
 
-data_tributyltin_dw |> 
-  filter(ESTUARY == "Loire") |> 
+data_tributyltin_dw |>
+  filter(ESTUARY == "Loire") |>
   distinct(ESTUARY, YEAR, espece)
 ```
 
 ```{r}
-data_tributyltin_dw |> 
+data_tributyltin_dw |>
   filter(ESTUARY == "Loire") |>
   ggplot() +
   aes(x = YEAR, y = RESULTAT, colour = espece) +
@@ -99,7 +99,7 @@ data_tributyltin_dw |>
 
 Simplify with two species groups
 ```{r}
-data_tributyltin_dw <- data_tributyltin_dw |> 
+data_tributyltin_dw <- data_tributyltin_dw |>
     mutate(SPECIES = case_when(
     espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
     espece %in% c("Mytilus edulis (moule commune)",
@@ -109,7 +109,7 @@ data_tributyltin_dw <- data_tributyltin_dw |>
 
 # Time series graphs
 ```{r}
-data_tributyltin_dw |>  
+data_tributyltin_dw |>
 ggplot() +
   aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
   geom_line() +
@@ -121,17 +121,17 @@ ggplot() +
 fun_seg_model_tributyltin <- function(chemical, estuary){
   fun_seg_model(data = data_tributyltin_dw,
                 folder = "tributyltin",
-                chemical = chemical, 
+                chemical = chemical,
                 estuary = estuary)
 }
-  
-tributyltin_names <- tributyltin$PARAMETRE_LIBELLE 
+
+tributyltin_names <- tributyltin$PARAMETRE_LIBELLE
 estuary_names <- c("Gironde", "Loire", "Seine")
 params <- expand.grid(estuary_names, tributyltin_names)
 
 res_tributyltin_dw_trends <- pmap_dfr(params, ~ fun_seg_model_tributyltin(estuary = ..1, chemical = ..2))
 
-res_tributyltin_dw_trends <- res_tributyltin_dw_trends |> 
+res_tributyltin_dw_trends <- res_tributyltin_dw_trends |>
   left_join(tributyltin, by = "PARAMETRE_LIBELLE")
 ```
 
@@ -155,7 +155,7 @@ ggplot_tributyltin_dw <- ggplot(data_tributyltin_dw) +
     show.legend = FALSE) +
 # Add environmental threshold when existing
   geom_text(
-    data = res_tributyltin_dw_trends,  
+    data = res_tributyltin_dw_trends,
     aes(x = max(last_year)+1, y = EAC_ng_gdw +0.5, label = sprintf("%.2f", EAC_ng_gdw)),
     color = "red", size = 2.5
   ) +
@@ -173,13 +173,13 @@ ggsave(plot = ggplot_tributyltin_dw, "../inst/results/data_contam/tributyltin/gg
 
 # First vs last period graphs
 ```{r}
-data_tributyltin_dw_norm_relative <- data_tributyltin_dw |> 
-  left_join(tributyltin) |> 
+data_tributyltin_dw_norm_relative <- data_tributyltin_dw |>
+  left_join(tributyltin) |>
   mutate(RESULTAT = RESULTAT / EAC_ng_gdw * 100)
 ```
 
 ```{r}
-plot_tributyltin_dw_periode <- data_tributyltin_dw_norm_relative |> 
+plot_tributyltin_dw_periode <- data_tributyltin_dw_norm_relative |>
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT) +
   geom_boxplot(width = 0.6, colour = "deeppink") +
@@ -189,14 +189,14 @@ plot_tributyltin_dw_periode <- data_tributyltin_dw_norm_relative |>
 
 plot_tributyltin_dw_periode
 
-ggsave(plot = plot_tributyltin_dw_periode, "../inst/results/data_contam/tributyltin/ggplot_tributyltin_dw_periods.jpg", 
+ggsave(plot = plot_tributyltin_dw_periode, "../inst/results/data_contam/tributyltin/ggplot_tributyltin_dw_periods.jpg",
        width = 10, height = 10, units = "cm")
 ```
 
 # General evaluation
 ```{r}
-data_tributyltin_dw_norm_relative |> 
-  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+data_tributyltin_dw_norm_relative |>
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |>
   summarise(median = median(RESULTAT))
 ```
 
