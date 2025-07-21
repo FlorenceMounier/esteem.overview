@@ -42,9 +42,9 @@ Different units:
 data_PFOS |> 
   distinct(UNITE)
 
-data_PFOS |> 
-  mutate(YEAR = as.factor(YEAR)) |> 
-  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "PFOS units")
+# data_PFOS |> 
+#   mutate(YEAR = as.factor(YEAR)) |> 
+#   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "PFOS units")
 ```
 
 Transform all results in ng/g ww (same as µg/kg):
@@ -194,6 +194,25 @@ plot_PFOS_ww_periode
 ggsave(plot = plot_PFOS_ww_periode, "../inst/results/data_contam/PFOS/ggplot_PFOS_ww_periods.jpg", 
        width = 10, height = 10, units = "cm")
 ```
+
+## General levels of contamination
+```{r}
+data_PFOS_ww_levels <- data_PFOS_ww |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE)
+
+data_PFOS_ww_normrelative <- data_PFOS_ww_norm_relative |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_percent = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE) |>  
+  select(ESTUARY, PARAMETRE_LIBELLE, median_percent)
+
+data_PFOS_general_levels <- full_join(data_PFOS_ww_levels, data_PFOS_ww_normrelative)
+
+writexl::write_xlsx(x = data_PFOS_general_levels, path = "../inst/results/data_contam/PFOS/summarised_levels_data_PFOS_ww.xlsx")
+```
+
 
 # General evaluation
 ```{r}
