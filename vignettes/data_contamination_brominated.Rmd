@@ -144,7 +144,7 @@ brominated <- data.frame(PARAMETRE_LIBELLE = brominated_names,
 
 ## Identify first and last periods
 
-Identify the first and last 3 years of measurement
+Identify the first and last 2 years of measurement
 ```{r}
 # Compute minimal and maximal year of measurement by compounds and estuary
 min_max_year <- data_brominated_ww |> 
@@ -259,6 +259,23 @@ plot_brominated_periode
 ggsave(plot = plot_brominated_periode, "../inst/results/data_contam/brominated/ggplot_brominated_ww_periods.jpg", 
        width = 10, height = 10, units = "cm")
 ```
+
+## General levels of contamination
+```{r}
+data_brominated_ww_levels <- data_brominated_ww |> 
+  filter(periode == "Last 2 years") |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE)
+
+data_brominated_ww_norm_relative <- res_kruskal_brominated |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
+
+data_brominated_general_levels <- full_join(data_brominated_ww_levels, data_brominated_ww_norm_relative)
+
+writexl::write_xlsx(x = data_brominated_general_levels, path = "../inst/results/data_contam/brominated/summarised_levels_data_brominated_ww.xlsx")
+```
+
 
 # General evaluation
 ```{r}
