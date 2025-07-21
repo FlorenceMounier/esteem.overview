@@ -45,9 +45,9 @@ Different units:
 data_PAH |> 
   distinct(UNITE)
 
-data_PAH |> 
-  mutate(YEAR = as.factor(YEAR)) |> 
-  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "PAH units")
+# data_PAH |> 
+#   mutate(YEAR = as.factor(YEAR)) |> 
+#   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "PAH units")
 
 # # Check difference dw ww for a common YEAR x ESTUARY x chemical
 # data_PAH |> 
@@ -353,6 +353,40 @@ plot_PAH_ww_periode
 
 ggsave(plot = plot_PAH_ww_periode, "../inst/results/data_contam/PAH/ggplot_PAH_ww_periods.jpg", 
        width = 10, height = 10, units = "cm")
+```
+
+## General levels of contamination
+
+in ww
+```{r}
+data_PAH_ww_levels <- data_PAH_ww |> 
+  filter(periode == "Last 5 years") |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE)
+
+data_PAH_ww_norm_relative <- res_kruskal_PAH_ww |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
+
+data_PAH_general_levels <- full_join(data_PAH_ww_levels, data_PAH_ww_norm_relative)
+
+writexl::write_xlsx(x = data_PAH_general_levels, path = "../inst/results/data_contam/PAH/summarised_levels_data_PAH_ww.xlsx")
+```
+
+in dw
+```{r}
+data_PAH_dw_levels <- data_PAH_dw |> 
+  filter(periode == "Last 5 years") |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_ng_gdw = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE)
+
+data_PAH_dw_norm_relative <- res_kruskal_PAH_dw |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
+
+data_PAH_general_levels <- full_join(data_PAH_dw_levels, data_PAH_dw_norm_relative)
+
+writexl::write_xlsx(x = data_PAH_general_levels, path = "../inst/results/data_contam/PAH/summarised_levels_data_PAH_dw.xlsx")
 ```
 
 # General evaluation
