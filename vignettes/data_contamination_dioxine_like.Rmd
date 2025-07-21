@@ -68,9 +68,9 @@ Different units:
 data_dioxine_like |> 
   distinct(UNITE)
 
-data_dioxine_like |> 
-  mutate(YEAR = as.factor(YEAR)) |> 
-  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "dioxine_like units")
+# data_dioxine_like |> 
+#   mutate(YEAR = as.factor(YEAR)) |> 
+#   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "dioxine_like units")
 ```
 
 Transform all results in ng/g dw (same as µg/kg):
@@ -277,6 +277,23 @@ plot_dioxine_like_periode
 ggsave(plot = plot_dioxine_like_periode, "../inst/results/data_contam/dioxine_like/ggplot_dioxine_like_TEQ_periods.jpg", 
        width = 10, height = 10, units = "cm")
 ```
+
+## General levels of contamination
+```{r}
+data_dioxine_like_TEQ_levels <- data_sum_dioxine_like_TEQ |> 
+  filter(periode == "Last 5 years") |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_ng_gTEQ = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE)
+
+data_dioxine_like_TEQ_norm_relative <- res_kruskal_dioxine_like |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
+
+data_dioxine_like_general_levels <- full_join(data_dioxine_like_TEQ_levels, data_dioxine_like_TEQ_norm_relative)
+
+writexl::write_xlsx(x = data_dioxine_like_general_levels, path = "../inst/results/data_contam/dioxine_like/summarised_levels_data_dioxine_like_TEQ.xlsx")
+```
+
 
 # General evaluation
 
