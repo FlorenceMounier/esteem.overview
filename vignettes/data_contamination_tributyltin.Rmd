@@ -193,6 +193,24 @@ ggsave(plot = plot_tributyltin_dw_periode, "../inst/results/data_contam/tributyl
        width = 10, height = 10, units = "cm")
 ```
 
+## General levels of contamination
+```{r}
+data_tributyltin_dw_levels <- data_tributyltin_dw |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_ng_gdw = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE)
+
+data_tributyltin_dw_normrelative <- data_tributyltin_dw_norm_relative |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_percent = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE) |>  
+  select(ESTUARY, PARAMETRE_LIBELLE, median_percent)
+
+data_tributyltin_general_levels <- full_join(data_tributyltin_dw_levels, data_tributyltin_dw_normrelative)
+
+writexl::write_xlsx(x = data_tributyltin_general_levels, path = "../inst/results/data_contam/tributyltin/summarised_levels_data_tributyltin_dw.xlsx")
+```
+
 # General evaluation
 ```{r}
 data_tributyltin_dw_norm_relative |>
