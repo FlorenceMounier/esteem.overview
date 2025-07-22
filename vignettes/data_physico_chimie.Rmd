@@ -29,7 +29,7 @@ data <- esteem.overview::data_physchem
 data_summarized <- data |> 
   mutate(YEAR = year(DATE)) |> 
   mutate(ESTUARY = as.factor(ESTUARY)) |> 
-  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |> 
+  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE, PROGRAMME) |> 
   summarise(RESULTAT = median(RESULTAT, na.rm = TRUE), .groups = "drop")
 ```
 
@@ -48,7 +48,7 @@ ggsave(plot = ggplot_data_summarized, filename =  "../inst/results/data_physico_
 ## Start and end of measurments
 ```{r}
 data_summarized |> 
-  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE, PROGRAMME) |> 
   summarise(min_year = min(YEAR),
             max_year = max(YEAR)) |> 
   arrange(PARAMETRE_LIBELLE)
@@ -153,6 +153,18 @@ ggsave(plot = pca_physicochemistry_ind_ESTUARY_DECADE, filename = "../inst/resul
        width = 20, height = 20, units = "cm")
 ```
 
+## cos²
+```{r}
+fviz_pca_var(res_pca, col.var = "cos2") # variables
+```
+
+
+```{r}
+fviz_pca_ind(res_pca, col.ind = "cos2") # individus
+```
+```{r}
+fviz_pca_ind(res_pca, col.ind = "contrib")
+```
 
 
 # Nitrogen cycle
