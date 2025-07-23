@@ -20,8 +20,10 @@ flat_data_contamination.Rmd:
   - R/get_general_evaluation.R
   - R/get_kruskal_periods_results.R
   - R/get_last_trend_info.R
+  - R/gg_map_data_contamination_rocchmv.R
   - R/spearman_test.R
   tests:
+  - tests/testthat/test-gg_map_data_contamination_rocchmv.R
   - tests/testthat/test-spearman_test.R
   - tests/testthat/test-get_last_trend_info.R
   - tests/testthat/test-get_kruskal_periods_results.R

@@ -8,13 +8,74 @@ editor_options:
 ```{r development, include=FALSE}
 library(testthat)
 library(here)
-library(segmented)
 ```
 
 ```{r development-load}
 # Load already included functions if relevant
 pkgload::load_all(export_all = FALSE)
 ```
+
+# gg_map_data_contamination_rocchmv
+
+```{r function-gg_map_data_contamination_rocchmv}
+#' Title
+#' 
+#' Description
+#' 
+#' @param data 
+#' @param estuary 
+#' @param color 
+#'
+#' @return ggplot
+#' 
+#' @export
+gg_map_data_contamination_rocchmv <- function(data, estuary, color) {
+  
+  data <- data |>
+   count(ESTUARY, YEAR, LIEU_MNEMONIQUE, latitude, longitude)
+  
+  data_summarized <- data |>
+    count(ESTUARY, LIEU_MNEMONIQUE, latitude, longitude)
+  
+  # Convert to spatial object
+  points_sf <- st_as_sf(data_summarized,
+                        coords = c("longitude", "latitude"),
+                        crs = 4326) |>
+    filter(ESTUARY == estuary)
+  
+  # Define spatial window around points
+  bbox <- st_bbox(points_sf)
+  marge <- 0.1
+  xlim <- c(bbox["xmin"] - marge, bbox["xmax"] + marge)
+  ylim <- c(bbox["ymin"] - marge, bbox["ymax"] + marge)
+  
+  # Plot
+  ggplot() +
+    geom_sf(data = esteem.overview::fr_map, fill = "grey95", color = "grey50") +
+    geom_sf(data = points_sf, size = 1, color = color) +
+    geom_text(
+      data = data_summarized,
+      aes(x = longitude, y = latitude, label = n),
+      inherit.aes = FALSE,
+      hjust = 0, vjust = 2, size = 4, fontface = "bold"
+    ) +
+    coord_sf(xlim = xlim, ylim = ylim, expand = FALSE) +
+    labs(title = paste0(estuary, " estuary")) +
+    theme_minimal()
+}
+```
+  
+```{r example-gg_map_data_contamination_rocchmv}
+gg_map_data_contamination_rocchmv()
+```
+  
+```{r tests-gg_map_data_contamination_rocchmv}
+test_that("gg_map_data_contamination_rocchmv works", {
+  expect_true(inherits(gg_map_data_contamination_rocchmv, "function")) 
+})
+```
+  
+
 
 # spearman_test
  

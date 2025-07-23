@@ -4,6 +4,8 @@
 library(esteem.overview)
 library(tidyverse, quietly = TRUE)
 library(writexl)
+# Maps
+library(sf)
 
 `%!in%` = Negate(`%in%`)
 
@@ -29,6 +31,24 @@ data_ROCCHMV <- data_ROCCHMV |>
             LIEU_IDENTIFIANT, PARAMETRE_LIBELLE_COMPLET, PASSAGE_DESCRIPTION,
             PASSAGE_COORDONNEES, PRELEVEMENT_COORDONNEES, PARAMETRE_CODE,
             NIVEAU_QUALITE, QUALITE_DESCRIPTION))
+
+# ---------------------------------------------------------------------------
+# Geographical points ----
+
+data_ROCCHMV |>
+  select(ESTUARY, LIEU_MNEMONIQUE, latitude, longitude) |>
+  distinct() |>
+  group_by(ESTUARY) |>
+  summarise(lat_stat = paste0(min(latitude), " - ", max(latitude)),
+            lon_stat = paste0(min(longitude), " - ", max(longitude)))
+
+ggmap_ROCCHMV_gironde <- gg_map_data_contamination_rocchmv(data = data_ROCCHMV, estuary = "Gironde", color = ggplot2_colors(3)[3])
+ggmap_ROCCHMV_loire <- gg_map_data_contamination_rocchmv(data = data_ROCCHMV, estuary = "Loire", color = ggplot2_colors(3)[2])
+ggmap_ROCCHMV_seine <- gg_map_data_contamination_rocchmv(data = data_ROCCHMV, estuary = "Seine", color = ggplot2_colors(3)[1])
+
+ggsave(plot = ggmap_ROCCHMV_gironde, filename = "inst/results/data_contam/maps/ggmap_ROCCHMV_gironde.jpg")
+ggsave(plot = ggmap_ROCCHMV_loire, filename = "inst/results/data_contam/maps/ggmap_ROCCHMV_loire.jpg")
+ggsave(plot = ggmap_ROCCHMV_seine, filename = "inst/results/data_contam/maps/ggmap_ROCCHMV_seine.jpg")
 
 # ---------------------------------------------------------------------------
 # Campaign period and frequencies ----
