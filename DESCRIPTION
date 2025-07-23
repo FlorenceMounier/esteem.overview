@@ -19,7 +19,6 @@ Suggests:
     jsonlite,
     knitr,
     rmarkdown,
-    segmented,
     sf,
     testthat,
     tidyverse,
