@@ -7,10 +7,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-
 ```{r libraries, include = FALSE}
 library(esteem.overview)
-library(segmented)
 library(tidyverse)
 library(here)
 ```
@@ -85,7 +83,8 @@ factors_metals <- data_metaux_loire |>
     factor_mussel_to_oyster = oyster / mussel
   )
 
-writexl::write_xlsx(x = factors_metals, path = "../inst/results/data_contam/metals/conversion_factors_metal.xlsx")
+## Save conversion factors
+# writexl::write_xlsx(x = factors_metals, path = "../inst/results/data_contam/metals/conversion_factors_metal.xlsx")
 ```
 
 Compute results in "equivalent mussels"
@@ -154,44 +153,30 @@ min_max_year <- data_metaux_ww |>
   summarise(min_year = min(YEAR),
             max_year = max(YEAR), .groups = "drop")
 
-# Identify the first and last 5 years of measurement
+# Identify the first and last 5 years of measurement + last 15 years
 data_metaux_ww <- data_metaux_ww |> 
   left_join(min_max_year, by = c("PARAMETRE_LIBELLE", "ESTUARY"))  |> 
   mutate(periode = case_when(
     YEAR <= min_year + 5 ~ "First 5 years",
     YEAR >= max_year - 5 ~ "Last 5 years",
     TRUE ~ NA
+  )) |> 
+  mutate(last_trend = case_when(
+    YEAR >= max_year - 15 ~ "Last 15 years",
+    TRUE ~ NA
   ))
 ```
 
 # Time series graphs
+
+## Last 15 years linear regression models
+
 ```{r}
-fun_seg_model_metaux <- function(chemical, estuary, n_break){
-  fun_seg_model(data = data_metaux_ww,
-                folder = "metals",
-                chemical = chemical, 
-                estuary = estuary,
-                n_break = n_break)
-}
+res_metaux_trends <- get_last_trend_info(data = data_metaux_ww, norm = metaux)
 
-res_metaux_trends <- rbind(
-  fun_seg_model_metaux(chemical = "Mercure", estuary = "Gironde", n_break = 2),
-  fun_seg_model_metaux(chemical = "Mercure", estuary = "Loire", n_break = 3),
-  fun_seg_model_metaux(chemical = "Mercure", estuary = "Seine", n_break = 2),
-  fun_seg_model_metaux(chemical = "Cadmium", estuary = "Gironde"),
-  fun_seg_model_metaux(chemical = "Cadmium", estuary = "Loire"),
-  fun_seg_model_metaux(chemical = "Cadmium", estuary = "Seine", n_break = 2),
-  fun_seg_model_metaux(chemical = "Plomb", estuary = "Gironde"),
-  fun_seg_model_metaux(chemical = "Plomb", estuary = "Loire"),
-  fun_seg_model_metaux(chemical = "Plomb", estuary = "Seine"),
-  fun_seg_model_metaux(chemical = "Cuivre", estuary = "Gironde"),
-  fun_seg_model_metaux(chemical = "Cuivre", estuary = "Loire"),
-  fun_seg_model_metaux(chemical = "Cuivre", estuary = "Seine")
-  )
-
-res_metaux_trends <- res_metaux_trends |> 
-  left_join(metaux, by = "PARAMETRE_LIBELLE")
+writexl::write_xlsx(res_metaux_trends, "../inst/results/data_contam/metals/recent_trends_metals_µg_ww.xlsx")
 ```
+
 
 ## For metals with norm values
 ```{r}
@@ -210,8 +195,7 @@ ggplot_metaux_norm_ww <- data_metaux_ww |>
         axis.text.x = element_blank()) + # no x labels
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
   labs(colour = "Estuary", y = "Contamination level in log µg/g ww", x = NULL) +
-# Add last break dates of segmented models and arrows for significant last trends
-  geom_vline(data = res_metaux_norm_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
+# Add arrows for significant last trends (15 years)
   geom_text(
     data = res_metaux_norm_trends,
     aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
@@ -253,8 +237,7 @@ ggplot_metaux_ww <- data_metaux_ww |>
   theme(legend.position = "bottom") +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
   labs(colour = "Estuary", y = "Concentration \n in log µg/g ww", x = NULL) +
-# Add last break dates of segmented models and arrows for significant last trends
-  geom_vline(data = res_metaux_trends_2, aes(xintercept = break_dates, colour = ESTUARY)) +
+# Add arrows for significant last trends (15 years)
   geom_text(
     data = res_metaux_trends_2,
     aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
@@ -267,9 +250,9 @@ ggsave(plot = ggplot_metaux_ww, "../inst/results/data_contam/metals/ggplot_metau
        width = 10, height = 4.7, units = "cm")
 ```
 
-## First vs last period graphs
+# First vs last period graphs
 
-### For metals with norm values
+## For metals with norm values
 
 ```{r}
 data_metaux_norm_relative <- data_metaux_ww |> 
@@ -307,7 +290,7 @@ ggsave(plot = plot_metaux_norm_periode, "../inst/results/data_contam/metals/ggpl
        width = 10, height = 8, units = "cm")
 ```
 
-### For the others
+## For the others
 ```{r}
 res_kruskal_metaux <- get_kruskal_periods_results(
   data_with_periode = data_metaux_ww |> filter(PARAMETRE_LIBELLE %in% c("Cuivre")), 
@@ -338,20 +321,24 @@ ggsave(plot = plot_metaux_periode, "../inst/results/data_contam/metals/ggplot_me
        width = 10, height = 4.7, units = "cm")
 ```
 
-## General levels of contamination
+# General levels of contamination
 ```{r}
-data_metaux_ww_levels <- data_metaux_ww |> 
-  filter(periode == "Last 5 years") |> 
-  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+data_metaux_ww_general_levels_estuary <- data_metaux_ww |> 
+  drop_na(periode) |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE, periode) |> 
   summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
-  arrange(PARAMETRE_LIBELLE)
+  arrange(PARAMETRE_LIBELLE) |> 
+  pivot_wider(names_from = periode, values_from = median_ng_gww)
 
-data_metaux_ww_norm_relative <- res_kruskal_metaux_norm_relative |> 
-  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
+data_metaux_ww_general_levels <- data_metaux_ww |> 
+  drop_na(periode) |> 
+  group_by(PARAMETRE_LIBELLE, periode) |> 
+  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE) |> 
+  pivot_wider(names_from = periode, values_from = median_ng_gww)
 
-data_metaux_general_levels <- full_join(data_metaux_ww_levels, data_metaux_ww_norm_relative)
 
-writexl::write_xlsx(x = data_metaux_general_levels, path = "../inst/results/data_contam/metals/summarised_levels_data_metaux_ww.xlsx")
+writexl::write_xlsx(x = list(data_metaux_ww_general_levels, data_metaux_ww_general_levels_estuary), path = "../inst/results/data_contam/metals/summarised_levels_data_metaux_ww.xlsx")
 ```
 
 
