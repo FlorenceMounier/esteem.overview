@@ -18,6 +18,7 @@ flat_data_contamination.Rmd:
   state: active
   R:
   - R/get_general_evaluation.R
+  - R/get_general_levels.R
   - R/get_kruskal_periods_results.R
   - R/get_last_trend_info.R
   - R/gg_map_data_contamination_rocchmv.R
@@ -27,6 +28,7 @@ flat_data_contamination.Rmd:
   - tests/testthat/test-spearman_test.R
   - tests/testthat/test-get_last_trend_info.R
   - tests/testthat/test-get_kruskal_periods_results.R
+  - tests/testthat/test-get_general_levels.R
   - tests/testthat/test-get_general_evaluation.R
   vignettes: []
   inflate:

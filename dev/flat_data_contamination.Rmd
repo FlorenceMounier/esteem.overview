@@ -253,6 +253,54 @@ test_that("get_kruskal_periods_results works", {
 ```
   
 
+# get_general_levels
+    
+```{r development-get_general_levels}
+# You can prepare the code of the get_general_levels() function here
+```
+  
+```{r function-get_general_levels}
+#' Get general levels in the original unit of measurment
+#' 
+#' @param data tibble with ESTUARY, PARAMETRE_LIBELLE, periode, RESULTAT
+#' @param family character Family folder name
+#' @param suffix character If necessary, a suffix for the output .xlsx file name
+#'
+#' @return save a .xlsx in the folder "../inst/results/data_contam/"
+#' 
+#' @export
+get_general_levels <- function(data, family, suffix){
+  
+  data_general_levels_estuary <- data |> 
+  drop_na(periode) |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE, periode) |> 
+  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE) |> 
+  pivot_wider(names_from = periode, values_from = median_ng_gww)
+
+data_general_levels <- data |> 
+  drop_na(periode) |> 
+  group_by(PARAMETRE_LIBELLE, periode) |> 
+  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE) |> 
+  pivot_wider(names_from = periode, values_from = median_ng_gww)
+
+writexl::write_xlsx(x = list(data_general_levels, data_general_levels_estuary), path = paste0("../inst/results/data_contam/", family, "/summarised_levels_data_", family, suffix, ".xlsx"))
+}
+```
+  
+```{r example-get_general_levels}
+# get_general_levels()
+```
+  
+```{r tests-get_general_levels}
+test_that("get_general_levels works", {
+  expect_true(inherits(get_general_levels, "function")) 
+})
+```
+  
+
+
 # get_general_evaluation
     
 ```{r development-get_general_evaluation}
@@ -264,8 +312,8 @@ test_that("get_kruskal_periods_results works", {
 #' 
 #' Description
 #' 
-#' @param family character Family foler name
-#' @param suffix character If necessary, a suffix for the outpute .xlsx file name
+#' @param family character Family folder name
+#' @param suffix character If necessary, a suffix for the output .xlsx file name
 #' @param res_family_trends tibble 
 #' @param res_kruskal tibble
 #'

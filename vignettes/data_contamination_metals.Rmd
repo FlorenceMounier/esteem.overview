@@ -175,7 +175,7 @@ data_metals_ww <- data_metals_ww |>
 
 # Time series graphs
 
-## Last 15 years linear regression models
+## Last 15 years Spearman's correlation coefficient + test
 
 ```{r}
 res_metals_trends <- get_last_trend_info(data = data_metals_ww, norm = metals)
@@ -329,24 +329,8 @@ ggsave(plot = plot_metals_periode, "../inst/results/data_contam/metals/ggplot_me
 
 # General levels of contamination
 ```{r}
-data_metals_ww_general_levels_estuary <- data_metals_ww |> 
-  drop_na(periode) |> 
-  group_by(ESTUARY, PARAMETRE_LIBELLE, periode) |> 
-  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
-  arrange(PARAMETRE_LIBELLE) |> 
-  pivot_wider(names_from = periode, values_from = median_ng_gww)
-
-data_metals_ww_general_levels <- data_metals_ww |> 
-  drop_na(periode) |> 
-  group_by(PARAMETRE_LIBELLE, periode) |> 
-  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
-  arrange(PARAMETRE_LIBELLE) |> 
-  pivot_wider(names_from = periode, values_from = median_ng_gww)
-
-
-writexl::write_xlsx(x = list(data_metals_ww_general_levels, data_metals_ww_general_levels_estuary), path = "../inst/results/data_contam/metals/summarised_levels_data_metals_ww.xlsx")
+get_general_levels(data = data_metals_ww, family = "metals", suffix = "_ww")
 ```
-
 
 # General evaluation
 ```{r}

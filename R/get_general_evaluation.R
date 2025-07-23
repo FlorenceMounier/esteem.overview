@@ -4,8 +4,8 @@
 #' 
 #' Description
 #' 
-#' @param family character Family foler name
-#' @param suffix character If necessary, a suffix for the outpute .xlsx file name
+#' @param family character Family folder name
+#' @param suffix character If necessary, a suffix for the output .xlsx file name
 #' @param res_family_trends tibble 
 #' @param res_kruskal tibble
 #'
