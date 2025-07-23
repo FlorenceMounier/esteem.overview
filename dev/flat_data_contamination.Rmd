@@ -16,131 +16,91 @@ library(segmented)
 pkgload::load_all(export_all = FALSE)
 ```
 
-# fun_seg_model
-    
-```{r development-fun_seg_model}
-# You can prepare the code of the fun_seg_model() function here
-```
-  
-```{r function-fun_seg_model}
-#' Title
+# spearman_test
+ 
+```{r function-spearman_test}
+#' Get results from Spearman's test
 #' 
-#' Description
+#' Save rho and p.value from Spearman's test in a tibble
 #' 
-#' @param data 
-#' @param estuary 
-#' @param chemical 
-#' @param folder 
-#' @param n_break 
-#' @param plot_save 
+#' @param x first variable
+#' @param y second variable
 #'
-#' @return tibble results of segmented models
+#' @return tibble rho and p.value from Spearman's test
 #' 
 #' @export
-fun_seg_model <- function(data, 
-                          estuary, 
-                          chemical, 
-                          folder, 
-                          n_break = 1, 
-                          plot_save = TRUE){
-      
-  # Data filtering
-  data_estuary_chemical <- data |>  filter(ESTUARY == estuary, PARAMETRE_LIBELLE == chemical)
-  
-  # Segmented model
-  lm_model <- lm(data = data_estuary_chemical, RESULTAT ~ YEAR)
-  seg_model <- segmented(lm_model, seg.Z = ~ YEAR, npsi = n_break)
-    # summary(seg_model) ## identifies the inflection point and tests whether the model is significant
-    # anova(seg_model) ## allows us to see if the inflection is significant
-    # slope(seg_model) ## details the slopes
-  
-  # Put into a data.frame
-  slope_df <- slope(seg_model)$YEAR |> as.data.frame()
-  colnames(slope_df) <- c("Estimate", "StdErr", "t_value", "CI_lower", "CI_upper")
-  rownames(slope_df) <- paste0("Segment ", seq_len(nrow(slope_df)))
-  # Calculation of the two-sided p-value
-  slope_df$p_value <- 2 * pt(-abs(slope_df$t_value), df = df.residual(seg_model))
-  # Breakpoint recovery and conversion to Date
-  break_dates <- seg_model$psi[, "Est."]
-  # Create segment terminals
-  segment_start <- c(min(data_estuary_chemical$YEAR), break_dates)
-  segment_end   <- c(break_dates, max(data_estuary_chemical$YEAR))
-  # Middle of each segment
-  slope_df$mid_date <- (as.numeric(segment_start) + as.numeric(segment_end)) / 2
-  # Label text for each segment
-  slope_df$label <- paste0(
-    "β = ", round(slope_df$Estimate, 3),
-    " [", round(slope_df$CI_lower, 3),
-    "; ", round(slope_df$CI_upper, 3),
-    "] µg/gdw / y", "\n",
-    ifelse(slope_df$p_value < 0.05, "p < 0.05", paste0("p = ", signif(slope_df$p_value, 6)))
-  )
-  
-  # Build ggplot
-  plot <- ggplot(data_estuary_chemical) +
-    aes(x = YEAR, y = RESULTAT) +
-    geom_line() +
-    geom_line(aes(y = fitted(seg_model)), color = "blue") +
-    geom_vline(xintercept = break_dates,
-               linetype = "dashed",
-               color = "blue") +
-    geom_text(data = slope_df,
-              aes(x = mid_date, y = max(data_estuary_chemical$RESULTAT), label = label),
-      vjust = -0.5, color = "darkgreen", size = 3.5) +
-    expand_limits(y = max(data_estuary_chemical$RESULTAT, na.rm = TRUE) * 1.1) +
-    labs(title = paste0("Changes in ", chemical, " contamination in the ", estuary, " estuary"),
-         x = NULL, y = paste0("Concentration in ", unique(data_estuary_chemical$UNITE)))
-  
-  # Plot saving
-  if(plot_save == TRUE){
-      filename <- paste0("segmented_models/ggplot_", chemical, "_", estuary, ".png")
-  ggsave(plot = plot, filename = here("inst/results/data_contam/", folder, filename), width = 20, height = 15, units = "cm")
-  } else {}
-
-  
-  # Output table
-  res_trends <- tibble(
-    ESTUARY = estuary,
-    PARAMETRE_LIBELLE = chemical,
-    break_dates = break_dates[length(break_dates)],
-    last_p_value = slope_df$p_value[length(slope_df$p_value)],
-    last_slope = slope_df$Estimate[length(slope_df$Estimate)]
-  )
-  
-  # add tendency depending on p-value and slope of last period of segmented models
-  res_trends <- res_trends |> 
-      mutate(symbol = case_when(
-    last_p_value > 0.05 ~ "\u2192",
-    last_slope > 0 ~ "↑",
-    last_slope < 0 ~ "↓",
-    TRUE ~ NA
-  ))
-  
-  # extract last year and last value for each ESTUARY, PARAMETRE_LIBELLE
-  last_points <- data_estuary_chemical |>
-    group_by(ESTUARY, PARAMETRE_LIBELLE) |>
-    summarise(
-      last_year = max(YEAR),
-      last_resultat = median(RESULTAT[which(YEAR == max(YEAR))]),
-      .groups = "drop"
-    )
-  
-  trends <- left_join(res_trends, last_points)
-  
-  return(trends)
+spearman_test <- function(x, y) {
+  test <- cor.test(x, y, method = "spearman")
+  tibble(rho = test$estimate, p.value = test$p.value)
 }
 ```
   
-```{r example-fun_seg_model}
-# fun_seg_model()
+```{r example-spearman_test}
+# spearman_test()
 ```
   
-```{r tests-fun_seg_model}
-test_that("fun_seg_model works", {
-  expect_true(inherits(fun_seg_model, "function")) 
+```{r tests-spearman_test}
+test_that("spearman_test works", {
+  expect_true(inherits(spearman_test, "function")) 
 })
 ```
 
+# get_last_trend_info
+
+```{r function-get_last_trend_info}
+#' Get results from Spearman's test for several estuaries and contaminant
+#' 
+#' Last 15 years trend and significance
+#' 
+#' @param data tibble with ESTUARY, PARAMETRE_LIBELLE, YEAR, RESULTAT
+#' @param norm tibble PARAMETRE_LIBELLE, NORM
+#'
+#' @return tibble ESTUARY, PARAMETRE_LIBELLE, rho, p.value, symbol, last_year, last_resultat, norm
+#' 
+#' @export
+get_last_trend_info <- function(data, norm){
+  data_last_trend <- data |> 
+  filter(last_trend == "Last 15 years")
+
+df_last_info <- data_last_trend |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(
+    last_year = max(YEAR),
+    last_resultat = median(RESULTAT[which(YEAR == max(YEAR))]),
+    .groups = "drop")
+
+resultats <- data_last_trend  |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE)  |> 
+  summarise(
+    res = list(spearman_test(x = YEAR, y = RESULTAT)),
+    .groups = "drop"
+  ) |> 
+  unnest(res) |> 
+  mutate(symbol = case_when(
+    p.value > 0.05 ~ "\u2192",
+    rho > 0 ~ "↑",
+    rho < 0 ~ "↓",
+    TRUE ~ NA
+  ))
+
+res_trends <- resultats |> 
+  left_join(df_last_info, by = c("ESTUARY", "PARAMETRE_LIBELLE")) |> 
+  left_join(norm)
+  
+return(res_trends)
+}
+```
+  
+```{r example-get_last_trend_info}
+# get_last_trend_info()
+```
+  
+```{r tests-get_last_trend_info}
+test_that("get_last_trend_info works", {
+  expect_true(inherits(get_last_trend_info, "function")) 
+})
+```
+  
 
 # get_kruskal_periods_results
     
