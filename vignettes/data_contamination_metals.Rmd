@@ -20,15 +20,21 @@ data <- esteem.overview::data_ROCCHMV_cleaned |> ungroup()
 
 # Data for metals
 ```{r}
-metaux <- data.frame(
-  PARAMETRE_LIBELLE = c("Mercure", "Cadmium", "Plomb", "Cuivre"),
+metals <- data.frame(
+  PARAMETRE_LIBELLE = c("Mercury", "Cadmium", "Lead", "Copper"),
   EC_MPC_µg_gww = c(0.5, 1, 1.5, NA)
   )
 
-data_metaux <- data |> 
+data_metals <- data |> 
   filter(support == "Bivalve") |> 
   select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |> 
-  filter(PARAMETRE_LIBELLE %in% metaux$PARAMETRE_LIBELLE)
+  mutate(PARAMETRE_LIBELLE = case_when(
+    PARAMETRE_LIBELLE == "Mercure" ~ "Mercury",
+    PARAMETRE_LIBELLE == "Plomb" ~ "Lead",
+    PARAMETRE_LIBELLE == "Cuivre" ~ "Copper",
+    TRUE ~ PARAMETRE_LIBELLE
+  )) |> 
+  filter(PARAMETRE_LIBELLE %in% metals$PARAMETRE_LIBELLE) 
 ```
 
 ## Importance of the species matrix
@@ -43,17 +49,17 @@ Only for Bivalves (no interesting results for fish)
   - 2011-2013 : R. philippinarum duplicate
   - 2017-2024 : C. gigas
 ```{r}
-data_metaux |> 
+data_metals |> 
   distinct(ESTUARY, espece)
 
-data_metaux |> 
+data_metals |> 
   filter(ESTUARY == "Loire") |> 
   count(YEAR, espece)
 ```
 
-For several metals oyster and mussels bioaccumulation is very different
+For copper oyster and mussels bioaccumulation is very different
 ```{r}
-data_metaux |> 
+data_metals |> 
   filter(ESTUARY == "Loire") |>
   ggplot() +
   aes(x = YEAR, y = RESULTAT, colour = espece) +
@@ -63,7 +69,7 @@ data_metaux |>
 
 Estimate species conversion factor from data in the Loire estuary (2017-2024)
 ```{r}
-data_metaux <- data_metaux |> 
+data_metals <- data_metals |> 
   filter(espece != "Ruditapes philippinarum (palourde japonaise)") |>
   mutate(SPECIES = case_when(
     espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
@@ -71,10 +77,10 @@ data_metaux <- data_metaux |>
                   "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
   ))
 
-data_metaux_loire <- data_metaux |> 
+data_metals_loire <- data_metals |> 
   filter(ESTUARY == "Loire", YEAR >= 2017)
   
-factors_metals <- data_metaux_loire |> 
+factors_metals <- data_metals_loire |> 
   group_by(PARAMETRE_LIBELLE, SPECIES) |> 
   summarise(median_RESULTAT = median(RESULTAT, na.rm = TRUE), .groups = "drop")  |> 
   pivot_wider(names_from = SPECIES, values_from = median_RESULTAT)  |> 
@@ -83,13 +89,13 @@ factors_metals <- data_metaux_loire |>
     factor_mussel_to_oyster = oyster / mussel
   )
 
-## Save conversion factors
+# # Save conversion factors
 # writexl::write_xlsx(x = factors_metals, path = "../inst/results/data_contam/metals/conversion_factors_metal.xlsx")
 ```
 
 Compute results in "equivalent mussels"
 ```{r}
-data_metaux <- data_metaux |> 
+data_metals <- data_metals |> 
   left_join(factors_metals, by = "PARAMETRE_LIBELLE") |> 
   mutate(RESULTAT_raw = RESULTAT) |> 
   mutate(RESULTAT = case_when(
@@ -105,10 +111,10 @@ Conclusion : original unit in mg/kg dw (equivalent in µg/g)
 - 1979-2019 : "mg.kg-1"
 - 2020-2024 : "mg/(kg MS)" and "mg.kg-1" or only "mg/(kg MS)"
 ```{r}
-# data_metaux |>
+# data_metals |>
 #   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE, espece) |>  View()
 
-data_metaux |> 
+data_metals |> 
   filter(ESTUARY == "Gironde", PARAMETRE_LIBELLE == "Mercury") |> 
   ggplot() +
   aes(x = YEAR, y = RESULTAT, colour = UNITE) +
@@ -117,7 +123,7 @@ data_metaux |>
 ```
 
 ```{r}
-data_metaux <- data_metaux |> 
+data_metals <- data_metals |> 
   mutate(UNITE = "µg/g dw") |> 
   # Get only one value per year
   group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
@@ -129,7 +135,7 @@ data_metaux <- data_metaux |>
 
 Transform all results in µg/g ww (same as µg/kg):
 ```{r}
-data_metaux_ww <- data_metaux |>
+data_metals_ww <- data_metals |>
   left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY") |> 
   # transformation into ww concentrations
   mutate(RESULTAT = RESULTAT * (`Matière sèche_%` / 100)) |>  
@@ -148,13 +154,13 @@ data_metaux_ww <- data_metaux |>
 Identify the first and last 5 years of measurement
 ```{r}
 # Compute minimal and maximal year of measurement by metal and estuary
-min_max_year <- data_metaux_ww |> 
+min_max_year <- data_metals_ww |> 
   group_by(PARAMETRE_LIBELLE, ESTUARY) |> 
   summarise(min_year = min(YEAR),
             max_year = max(YEAR), .groups = "drop")
 
 # Identify the first and last 5 years of measurement + last 15 years
-data_metaux_ww <- data_metaux_ww |> 
+data_metals_ww <- data_metals_ww |> 
   left_join(min_max_year, by = c("PARAMETRE_LIBELLE", "ESTUARY"))  |> 
   mutate(periode = case_when(
     YEAR <= min_year + 5 ~ "First 5 years",
@@ -172,19 +178,19 @@ data_metaux_ww <- data_metaux_ww |>
 ## Last 15 years linear regression models
 
 ```{r}
-res_metaux_trends <- get_last_trend_info(data = data_metaux_ww, norm = metaux)
+res_metals_trends <- get_last_trend_info(data = data_metals_ww, norm = metals)
 
-writexl::write_xlsx(res_metaux_trends, "../inst/results/data_contam/metals/recent_trends_metals_µg_ww.xlsx")
+writexl::write_xlsx(res_metals_trends, "../inst/results/data_contam/metals/recent_trends_metals_µg_ww.xlsx")
 ```
 
 
 ## For metals with norm values
 ```{r}
-res_metaux_norm_trends <- res_metaux_trends |> 
-  filter(PARAMETRE_LIBELLE %in% c("Mercure", "Cadmium", "Plomb"))
+res_metals_norm_trends <- res_metals_trends |> 
+  filter(PARAMETRE_LIBELLE %in% c("Mercury", "Cadmium", "Lead"))
 
-ggplot_metaux_norm_ww <- data_metaux_ww |> 
-  filter(PARAMETRE_LIBELLE %in% c("Mercure", "Cadmium", "Plomb")) |> 
+ggplot_metals_norm_ww <- data_metals_ww |> 
+  filter(PARAMETRE_LIBELLE %in% c("Mercury", "Cadmium", "Lead")) |> 
   ggplot() +
   aes(x = YEAR,
       y = log(RESULTAT),
@@ -197,37 +203,37 @@ ggplot_metaux_norm_ww <- data_metaux_ww |>
   labs(colour = "Estuary", y = "Contamination level in log µg/g ww", x = NULL) +
 # Add arrows for significant last trends (15 years)
   geom_text(
-    data = res_metaux_norm_trends,
+    data = res_metals_norm_trends,
     aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
     family = "DejaVu Sans",   # specify the font that contains arrows
     show.legend = FALSE) +
 # Add environmental threshold when existing
   geom_text(
-    data = res_metaux_norm_trends,  
+    data = res_metals_norm_trends,  
     aes(x = max(last_year)+1, 
         y = log(EC_MPC_µg_gww) - 0.2, 
         label = sprintf("%.2f", log(EC_MPC_µg_gww))),
     color = "red", size = 2.5
   ) +
   geom_hline(
-    data = res_metaux_norm_trends,
+    data = res_metals_norm_trends,
     aes(yintercept = log(EC_MPC_µg_gww)),
     color = "red", linetype = "dashed"
   )
 
-ggplot_metaux_norm_ww
+ggplot_metals_norm_ww
 
-ggsave(plot = ggplot_metaux_norm_ww, "../inst/results/data_contam/metals/ggplot_metaux_norm_ww_time_series.jpg",
+ggsave(plot = ggplot_metals_norm_ww, "../inst/results/data_contam/metals/ggplot_metals_norm_ww_time_series.jpg",
        width = 10, height = 8, units = "cm")
 ```
 
 ## For the others
 ```{r}
-res_metaux_trends_2 <- res_metaux_trends |> 
-  filter(PARAMETRE_LIBELLE %in% c("Cuivre"))
+res_metals_trends_2 <- res_metals_trends |> 
+  filter(PARAMETRE_LIBELLE %in% c("Copper"))
 
-ggplot_metaux_ww <- data_metaux_ww |> 
-  filter(PARAMETRE_LIBELLE %in% c("Cuivre")) |> 
+ggplot_metals_ww <- data_metals_ww |> 
+  filter(PARAMETRE_LIBELLE %in% c("Copper")) |> 
   ggplot() +
   aes(x = YEAR,
       y = log(RESULTAT),
@@ -239,14 +245,14 @@ ggplot_metaux_ww <- data_metaux_ww |>
   labs(colour = "Estuary", y = "Concentration \n in log µg/g ww", x = NULL) +
 # Add arrows for significant last trends (15 years)
   geom_text(
-    data = res_metaux_trends_2,
+    data = res_metals_trends_2,
     aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
     family = "DejaVu Sans",   # specify the font that contains arrows
     show.legend = FALSE)
 
-ggplot_metaux_ww
+ggplot_metals_ww
 
-ggsave(plot = ggplot_metaux_ww, "../inst/results/data_contam/metals/ggplot_metaux_ww_time_series.jpg",
+ggsave(plot = ggplot_metals_ww, "../inst/results/data_contam/metals/ggplot_metals_ww_time_series.jpg",
        width = 10, height = 4.7, units = "cm")
 ```
 
@@ -255,19 +261,19 @@ ggsave(plot = ggplot_metaux_ww, "../inst/results/data_contam/metals/ggplot_metau
 ## For metals with norm values
 
 ```{r}
-data_metaux_norm_relative <- data_metaux_ww |> 
-  filter(PARAMETRE_LIBELLE %in% c("Mercure", "Cadmium", "Plomb")) |> 
-  left_join(metaux) |> 
+data_metals_norm_relative <- data_metals_ww |> 
+  filter(PARAMETRE_LIBELLE %in% c("Mercury", "Cadmium", "Lead")) |> 
+  left_join(metals) |> 
   mutate(RESULTAT = RESULTAT / EC_MPC_µg_gww * 100)
 
-res_kruskal_metaux_norm_relative <- get_kruskal_periods_results(
-  data_with_periode = data_metaux_norm_relative, 
-  chemicals = c("Mercure", "Cadmium", "Plomb"))
+res_kruskal_metals_norm_relative <- get_kruskal_periods_results(
+  data_with_periode = data_metals_norm_relative, 
+  chemicals = c("Mercury", "Cadmium", "Lead"))
 ```
 
 ```{r}
-plot_metaux_norm_periode <- data_metaux_norm_relative |> 
-  filter(PARAMETRE_LIBELLE %in% c("Mercure", "Cadmium", "Plomb")) |>
+plot_metals_norm_periode <- data_metals_norm_relative |> 
+  filter(PARAMETRE_LIBELLE %in% c("Mercury", "Cadmium", "Lead")) |>
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
@@ -278,28 +284,28 @@ plot_metaux_norm_periode <- data_metaux_norm_relative |>
   theme(legend.position = "none",      # no legend
         axis.text.x = element_blank()) + # no x labels
 # Add long term trends if significant
-  geom_text(data = res_kruskal_metaux_norm_relative, 
+  geom_text(data = res_kruskal_metals_norm_relative, 
             inherit.aes = FALSE, 
             aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
     family = "DejaVu Sans",   # specify the font that contains arrows
     show.legend = FALSE) 
 
-plot_metaux_norm_periode
+plot_metals_norm_periode
 
-ggsave(plot = plot_metaux_norm_periode, "../inst/results/data_contam/metals/ggplot_metaux_norm_periods.jpg", 
+ggsave(plot = plot_metals_norm_periode, "../inst/results/data_contam/metals/ggplot_metals_norm_periods.jpg", 
        width = 10, height = 8, units = "cm")
 ```
 
 ## For the others
 ```{r}
-res_kruskal_metaux <- get_kruskal_periods_results(
-  data_with_periode = data_metaux_ww |> filter(PARAMETRE_LIBELLE %in% c("Cuivre")), 
-  chemicals = c("Cuivre"))
+res_kruskal_metals <- get_kruskal_periods_results(
+  data_with_periode = data_metals_ww |> filter(PARAMETRE_LIBELLE %in% c("Copper")), 
+  chemicals = c("Copper"))
 ```
 
 ```{r}
-plot_metaux_periode <- data_metaux_ww |> 
-  filter(PARAMETRE_LIBELLE %in% c("Cuivre")) |>
+plot_metals_periode <- data_metals_ww |> 
+  filter(PARAMETRE_LIBELLE %in% c("Copper")) |>
   drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
@@ -309,28 +315,28 @@ plot_metaux_periode <- data_metaux_ww |>
   labs(x = NULL, y = "Concentration \n in µg/g ww", colour = "Period") +
   theme(legend.position = "bottom") +
 # Add long term trends if significant
-  geom_text(data = res_kruskal_metaux, 
+  geom_text(data = res_kruskal_metals, 
             inherit.aes = FALSE, 
             aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
     family = "DejaVu Sans",   # specify the font that contains arrows
     show.legend = FALSE)
 
-plot_metaux_periode
+plot_metals_periode
 
-ggsave(plot = plot_metaux_periode, "../inst/results/data_contam/metals/ggplot_metaux_periods.jpg", 
+ggsave(plot = plot_metals_periode, "../inst/results/data_contam/metals/ggplot_metals_periods.jpg", 
        width = 10, height = 4.7, units = "cm")
 ```
 
 # General levels of contamination
 ```{r}
-data_metaux_ww_general_levels_estuary <- data_metaux_ww |> 
+data_metals_ww_general_levels_estuary <- data_metals_ww |> 
   drop_na(periode) |> 
   group_by(ESTUARY, PARAMETRE_LIBELLE, periode) |> 
   summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
   arrange(PARAMETRE_LIBELLE) |> 
   pivot_wider(names_from = periode, values_from = median_ng_gww)
 
-data_metaux_ww_general_levels <- data_metaux_ww |> 
+data_metals_ww_general_levels <- data_metals_ww |> 
   drop_na(periode) |> 
   group_by(PARAMETRE_LIBELLE, periode) |> 
   summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
@@ -338,7 +344,7 @@ data_metaux_ww_general_levels <- data_metaux_ww |>
   pivot_wider(names_from = periode, values_from = median_ng_gww)
 
 
-writexl::write_xlsx(x = list(data_metaux_ww_general_levels, data_metaux_ww_general_levels_estuary), path = "../inst/results/data_contam/metals/summarised_levels_data_metaux_ww.xlsx")
+writexl::write_xlsx(x = list(data_metals_ww_general_levels, data_metals_ww_general_levels_estuary), path = "../inst/results/data_contam/metals/summarised_levels_data_metals_ww.xlsx")
 ```
 
 
@@ -347,6 +353,6 @@ writexl::write_xlsx(x = list(data_metaux_ww_general_levels, data_metaux_ww_gener
 get_general_evaluation(
   family = "metals",
   suffix = "_µg_ww",
-  res_family_trends = res_metaux_norm_trends,
-  res_kruskal = res_kruskal_metaux_norm_relative)
+  res_family_trends = res_metals_norm_trends,
+  res_kruskal = res_kruskal_metals_norm_relative)
 ```
