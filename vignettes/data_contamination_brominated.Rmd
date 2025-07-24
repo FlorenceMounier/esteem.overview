@@ -8,12 +8,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r setup, include=FALSE}
 library(esteem.overview)
-library(segmented)
 library(tidyverse)
 library(here)
 ```
@@ -142,51 +137,20 @@ brominated <- data.frame(PARAMETRE_LIBELLE = brominated_names,
                          EQS_EC_ng_gww = c(167, 167, 167, 0.0085))
 ```
 
-## Identify first and last periods
-
-Identify the first and last 2 years of measurement
-```{r}
-# Compute minimal and maximal year of measurement by compounds and estuary
-min_max_year <- data_brominated_ww |> 
-  group_by(PARAMETRE_LIBELLE, ESTUARY) |> 
-  summarise(min_year = min(YEAR),
-            max_year = max(YEAR), .groups = "drop")
-
-# Identify the first and last 2 years of measurement
-data_brominated_ww <- data_brominated_ww |> 
-  left_join(min_max_year, by = c("PARAMETRE_LIBELLE", "ESTUARY"))  |> 
-  mutate(periode = case_when(
-    YEAR <= min_year + 2 ~ "First 2 years",
-    YEAR >= max_year - 2 ~ "Last 2 years",
-    TRUE ~ NA
-  ))
-```
-
 # Time series graphs
+
+## Spearman's correlation coefficient + test
 ```{r}
-data_brominated_ww |>  
-ggplot() +
-  aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
-  geom_line() +
-  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(x = NULL)
-```
+# Compute for all time serie
+data_brominated_ww <- data_brominated_ww |> 
+  mutate(last_trend = "Last 15 years")
 
-```{r}
-fun_seg_model_brominated <- function(chemical, estuary, n_break){
-  fun_seg_model(data = data_brominated_ww,
-                folder = "brominated",
-                chemical = chemical, 
-                estuary = estuary, n_break = n_break)
-}
+res_brominated_ww_trends <- get_last_trend_info(
+  data = data_brominated_ww, 
+  norm = brominated
+  )
 
-estuary_names <- c("Gironde", "Loire", "Seine")
-params <- expand.grid(estuary_names, brominated_names)
-
-res_brominated_ww_trends <- pmap_dfr(params, ~ fun_seg_model_brominated(estuary = ..1, chemical = ..2))
-
-res_brominated_ww_trends <- res_brominated_ww_trends |> 
-  left_join(brominated, by = "PARAMETRE_LIBELLE")
+writexl::write_xlsx(res_brominated_ww_trends, "../inst/results/data_contam/brominated/recent_trends_brominated_ww.xlsx")
 ```
 
 ```{r}
@@ -196,11 +160,13 @@ ggplot_brominated_ww <- ggplot(data_brominated_ww) +
       colour = ESTUARY) +
   geom_line() +
   geom_smooth(se = FALSE) +
-  theme(legend.position = "bottom") +
+  theme(
+    legend.position = "bottom",
+    strip.text = element_text(size = 7) # facet title size
+    ) +
   facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
   labs(colour = "Estuary", y = "Contamination level in ng/g ww", x = NULL) +
-# Add last break dates of segmented models and arrows for significant last trends
-  geom_vline(data = res_brominated_ww_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
+# Add arrows for significant last trends
   geom_text(
     data = res_brominated_ww_trends,
     aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
@@ -231,28 +197,16 @@ data_brominated_ww_norm_relative <- data_brominated_ww |>
   left_join(brominated) |> 
   mutate(RESULTAT = RESULTAT / EQS_EC_ng_gww * 100) |> 
   drop_na(RESULTAT)
-
-res_kruskal_brominated <- get_kruskal_periods_results(
-  data_with_periode = data_brominated_ww_norm_relative, 
-  chemicals = brominated_names)
 ```
 
 ```{r}
 plot_brominated_periode <- data_brominated_ww_norm_relative |> 
-  drop_na(periode) |> # keep only data from first and last 5-years periods
   ggplot() +
   aes(x = ESTUARY, y = RESULTAT, colour = periode) +
-  geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
-  scale_color_manual(values = c("purple", "deeppink")) +
+  geom_boxplot(width = 0.6, colour = "deeppink") +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(x = NULL, y = "Concentration in ng/g ww", colour = "Period") +
-  theme(legend.position = "bottom") +
-# Add long term trends if significant
-  geom_text(data = res_kruskal_brominated, 
-            inherit.aes = FALSE, 
-            aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
-    family = "DejaVu Sans",   # specify the font that contains arrows
-    show.legend = FALSE)
+  labs(x = NULL, y = "Deviation from limit value (% ng/g ww)", colour = "Period") +
+  theme(legend.position = "bottom")
 
 plot_brominated_periode
 
@@ -263,13 +217,15 @@ ggsave(plot = plot_brominated_periode, "../inst/results/data_contam/brominated/g
 ## General levels of contamination
 ```{r}
 data_brominated_ww_levels <- data_brominated_ww |> 
-  filter(periode == "Last 2 years") |> 
   group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
   summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
   arrange(PARAMETRE_LIBELLE)
 
-data_brominated_ww_norm_relative <- res_kruskal_brominated |> 
-  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
+data_brominated_ww_norm_relative <- data_brominated_ww_norm_relative |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(median_percent = median(RESULTAT), .groups = "drop") |> 
+  arrange(PARAMETRE_LIBELLE) |>  
+  select(ESTUARY, PARAMETRE_LIBELLE, median_percent)
 
 data_brominated_general_levels <- full_join(data_brominated_ww_levels, data_brominated_ww_norm_relative)
 
@@ -279,8 +235,10 @@ writexl::write_xlsx(x = data_brominated_general_levels, path = "../inst/results/
 
 # General evaluation
 ```{r}
-get_general_evaluation(family = "brominated",
-                       suffix = "_ww",
-                       res_family_trends = res_brominated_ww_trends,
-                       res_kruskal = res_kruskal_brominated)
+# trends
+res_brominated_ww_trends
+
+# color dot from percentage
+# blue: [0-50%[, green: [50-100%[, yellow:[100-150%[, orange: [150-300%[, red: [300-500%[, black: > 500%
+data_brominated_ww_norm_relative
 ```
