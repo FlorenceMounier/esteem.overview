@@ -8,12 +8,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r setup, include=FALSE}
 library(esteem.overview)
-library(segmented)
 library(tidyverse)
 library(here)
 ```
@@ -110,31 +105,25 @@ data_PFOS_ww <- data_PFOS_ww |>
 ```
 
 # Time series graphs
+
+## Get the monitoring periods
 ```{r}
-data_PFOS_ww |>  
-ggplot() +
-  aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
-  geom_line() +
-  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(x = NULL)
-```
+data_PFOS_ww |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
+  summarise(min_year = min(YEAR),
+            max_year = max(YEAR))
+``` 
+
+## Spearman's correlation coefficient + test
 
 ```{r}
-fun_seg_model_PFOS <- function(chemical, estuary){
-  fun_seg_model(data = data_PFOS_ww,
-                folder = "PFOS",
-                chemical = chemical, 
-                estuary = estuary)
-}
-  
-PFOS_names <- PFOS$PARAMETRE_LIBELLE 
-estuary_names <- c("Gironde", "Loire", "Seine")
-params <- expand.grid(estuary_names, PFOS_names)
+# Compute for all time serie
+data_PFOS_ww <- data_PFOS_ww |> 
+  mutate(last_trend = "Last 15 years")
 
-res_PFOS_ww_trends <- pmap_dfr(params, ~ fun_seg_model_PFOS(estuary = ..1, chemical = ..2))
+res_PFOS_ww_trends <- get_last_trend_info(data = data_PFOS_ww, norm = PFOS)
 
-res_PFOS_ww_trends <- res_PFOS_ww_trends |> 
-  left_join(PFOS, by = "PARAMETRE_LIBELLE")
+writexl::write_xlsx(res_PFOS_ww_trends, "../inst/results/data_contam/PFOS/recent_trends_PFOS_ww.xlsx")
 ```
 
 ```{r}
@@ -146,10 +135,10 @@ ggplot_PFOS_ww <- ggplot(data_PFOS_ww) +
   geom_smooth(se = FALSE) +
   theme(legend.position = "bottom") +
   facet_grid(rows = vars(
-    fct_relevel(PARAMETRE_LIBELLE, PFOS_names)
+    fct_relevel(PARAMETRE_LIBELLE, PFOS$PARAMETRE_LIBELLE)
   ), scales = "free_y") +
-  labs(colour = "Estuary", y = "Contamination level in log ng/g ww", x = NULL) +
-# Add last break dates of segmented models and arrows for significant last trends
+  labs(colour = "Estuary", y = "Contamination level \n in log ng/g ww", x = NULL) +
+# Add arrows for significant last trends
   geom_text(
     data = res_PFOS_ww_trends,
     aes(x = max(last_year)+1, y = log(last_resultat), label = symbol), size = rel(6),
@@ -170,7 +159,7 @@ ggplot_PFOS_ww <- ggplot(data_PFOS_ww) +
 ggplot_PFOS_ww
 
 ggsave(plot = ggplot_PFOS_ww, "../inst/results/data_contam/PFOS/ggplot_PFOS_ww_time_series.jpg",
-       width = 10, height = 10, units = "cm")
+       width = 10, height = 7, units = "cm")
 ```
 
 # First vs last period graphs
@@ -186,13 +175,13 @@ plot_PFOS_ww_periode <- data_PFOS_ww_norm_relative |>
   aes(x = ESTUARY, y = RESULTAT) +
   geom_boxplot(width = 0.6, colour = "deeppink") +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(x = NULL, y = "Deviation from limit value (% ng/g ww)", colour = "Period") +
+  labs(x = NULL, y = "Deviation from limit value \n (% ng/g ww)", colour = "Period") +
   theme(legend.position = "bottom")
 
 plot_PFOS_ww_periode
 
 ggsave(plot = plot_PFOS_ww_periode, "../inst/results/data_contam/PFOS/ggplot_PFOS_ww_periods.jpg", 
-       width = 10, height = 10, units = "cm")
+       width = 10, height = 7, units = "cm")
 ```
 
 ## General levels of contamination
@@ -216,6 +205,11 @@ writexl::write_xlsx(x = data_PFOS_general_levels, path = "../inst/results/data_c
 
 # General evaluation
 ```{r}
+# trends
+res_PFOS_ww_trends
+
+# color dot from percentage
+# blue: [0-50%[, green: [50-100%[, yellow:[100-150%[, orange: [150-300%[, red: [300-500%[, black: > 500%
 data_PFOS_ww_norm_relative |> 
   group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
   summarise(median = median(RESULTAT))
