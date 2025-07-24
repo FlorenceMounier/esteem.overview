@@ -165,7 +165,7 @@ ggplot_brominated_ww <- ggplot(data_brominated_ww) +
     strip.text = element_text(size = 7) # facet title size
     ) +
   facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(colour = "Estuary", y = "Contamination level in ng/g ww", x = NULL) +
+  labs(colour = "Estuary", y = "Contamination level in log ng/g ww", x = NULL) +
 # Add arrows for significant last trends
   geom_text(
     data = res_brominated_ww_trends,
