@@ -8,12 +8,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r setup, include=FALSE}
 library(esteem.overview)
-library(segmented)
 library(tidyverse)
 library(here)
 ```
@@ -154,34 +149,21 @@ data_OC_pesticides_ww <- data_OC_pesticides_ww |>
     YEAR <= min_year + 5 ~ "First 5 years",
     YEAR >= max_year - 5 ~ "Last 5 years",
     TRUE ~ NA
+  ))  |> 
+  mutate(last_trend = case_when(
+    YEAR >= max_year - 15 ~ "Last 15 years",
+    TRUE ~ NA
   ))
 ```
 
 # Time series graphs
+
+## Last 15 years Spearman's correlation coefficient + test
 ```{r}
-data_OC_pesticides_ww |>  
-ggplot() +
-  aes(x = YEAR, y = RESULTAT, color = ESTUARY) +
-  geom_line() +
-  facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(x = NULL)
-```
+res_OC_pesticides_ww_trends <- get_last_trend_info(data = data_OC_pesticides_ww, 
+                                                   norm = OC_pesticides)
 
-```{r}
-fun_seg_model_OC_pesticides <- function(chemical, estuary, n_break){
-  fun_seg_model(data = data_OC_pesticides_ww,
-                folder = "OC_pesticides",
-                chemical = chemical, 
-                estuary = estuary, n_break = n_break)
-}
-
-estuary_names <- c("Gironde", "Loire", "Seine")
-params <- expand.grid(estuary_names, OC_pesticides_names)
-
-res_OC_pesticides_ww_trends <- pmap_dfr(params, ~ fun_seg_model_OC_pesticides(estuary = ..1, chemical = ..2))
-
-res_OC_pesticides_ww_trends <- res_OC_pesticides_ww_trends |> 
-  left_join(OC_pesticides, by = "PARAMETRE_LIBELLE")
+writexl::write_xlsx(res_OC_pesticides_ww_trends, "../inst/results/data_contam/OC_pesticides/recent_trends_OC_pesticides_ww.xlsx")
 ```
 
 ```{r}
@@ -194,8 +176,7 @@ ggplot_OC_pesticides_ww <- ggplot(data_OC_pesticides_ww) +
   theme(legend.position = "bottom") +
   facet_grid(vars(PARAMETRE_LIBELLE), scales = "free_y") +
   labs(colour = "Estuary", y = "Contamination level in ng/g ww", x = NULL) +
-# Add last break dates of segmented models and arrows for significant last trends
-  geom_vline(data = res_OC_pesticides_ww_trends, aes(xintercept = break_dates, colour = ESTUARY)) +
+# Add arrows for significant last trends
   geom_text(
     data = res_OC_pesticides_ww_trends,
     aes(x = last_year+1, y = log(last_resultat), label = symbol), size = rel(6),
@@ -217,7 +198,7 @@ ggplot_OC_pesticides_ww <- ggplot(data_OC_pesticides_ww) +
 ggplot_OC_pesticides_ww
 
 ggsave(plot = ggplot_OC_pesticides_ww, "../inst/results/data_contam/OC_pesticides/ggplot_OC_pesticides_ww_time_series.jpg",
-       width = 10, height = 10, units = "cm")
+       width = 10, height = 8, units = "cm")
 ```
 
 # First vs last period graphs
@@ -240,7 +221,7 @@ plot_OC_pesticides_periode <- data_OC_pesticides_ww_norm_relative |>
   geom_boxplot(width = 0.6, position = position_dodge(width = 0.9)) +
   scale_color_manual(values = c("purple", "deeppink")) +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  labs(x = NULL, y = "Deviation from limit value (% ng/g ww)", colour = "Period") +
+  labs(x = NULL, y = "Deviation from limit value \n (% ng/g ww)", colour = "Period") +
   theme(legend.position = "bottom") +
 # Add long term trends if significant
   geom_text(data = res_kruskal_OC_pesticides, 
@@ -252,28 +233,16 @@ plot_OC_pesticides_periode <- data_OC_pesticides_ww_norm_relative |>
 plot_OC_pesticides_periode
 
 ggsave(plot = plot_OC_pesticides_periode, "../inst/results/data_contam/OC_pesticides/ggplot_OC_pesticides_ww_periods.jpg", 
-       width = 10, height = 10, units = "cm")
+       width = 10, height = 8, units = "cm")
 ```
 
 ## General levels of contamination
 ```{r}
-data_OC_pesticides_ww_levels <- data_OC_pesticides_ww |> 
-  filter(periode == "Last 5 years") |> 
-  group_by(ESTUARY, PARAMETRE_LIBELLE) |> 
-  summarise(median_ng_gww = median(RESULTAT), .groups = "drop") |> 
-  arrange(PARAMETRE_LIBELLE)
-
-data_OC_pesticides_ww_norm_relative <- res_kruskal_OC_pesticides |> 
-  select(ESTUARY, PARAMETRE_LIBELLE, median_1, median_2)
-
-data_OC_pesticides_general_levels <- full_join(data_OC_pesticides_ww_levels, data_OC_pesticides_ww_norm_relative)
-
-writexl::write_xlsx(x = data_OC_pesticides_general_levels, path = "../inst/results/data_contam/OC_pesticides/summarised_levels_data_OC_pesticides_ww.xlsx")
+get_general_levels(data = data_OC_pesticides_ww, family = "OC_pesticides", suffix = "_ww")
 ```
 
 
 # General evaluation
-
 ```{r}
 get_general_evaluation(family = "OC_pesticides",
                        suffix = "_ww",
