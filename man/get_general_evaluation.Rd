@@ -7,9 +7,9 @@
 get_general_evaluation(family, suffix = "", res_family_trends, res_kruskal)
 }
 \arguments{
-\item{family}{character Family foler name}
+\item{family}{character Family folder name}
 
-\item{suffix}{character If necessary, a suffix for the outpute .xlsx file name}
+\item{suffix}{character If necessary, a suffix for the output .xlsx file name}
 
 \item{res_family_trends}{tibble}
 

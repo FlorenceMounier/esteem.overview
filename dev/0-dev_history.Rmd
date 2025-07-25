@@ -97,14 +97,12 @@ devtools::check()
 checkhelper::print_globals()
 
 ## Add internal datasets ----
-usethis::use_data_raw("spatialisation")
+usethis::use_data_raw()
 usethis::use_data()
 checkhelper::use_data_doc()
 
 ## Vignette ----
-usethis::use_vignette("data_benthos")
-usethis::use_vignette("data_sediment")
-usethis::use_vignette("data_contamination")
+usethis::use_vignette()
 devtools::build_vignettes()
 
 # Add a new flat template
