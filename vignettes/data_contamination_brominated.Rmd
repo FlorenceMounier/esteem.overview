@@ -78,6 +78,20 @@ data_brominated_ww <- data_brominated |>
 # data_brominated_ww |> filter(YEAR %in% c(2015, 2017,2019, 2021), ESTUARY == "Gironde", PARAMETRE_LIBELLE == "sum_DDT")
 ```
 
+```{r}
+data_brominated_dw <- data_brominated_ww |>
+  # transformation into dw concentrations
+  mutate(RESULTAT = RESULTAT / (`Matière sèche_%` / 100) ) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g dw")
+
+data_brominated_lw <- data_brominated_dw |>
+  # transformation into lw concentrations
+  mutate(RESULTAT = RESULTAT / (`Lipides totaux_%` / 100)) |>  
+  # Change to unified unit
+  mutate(UNITE = "ng/g lw")
+```
+
 ## Importance of the species matrix
 
 - Gironde : only C. gigas
@@ -135,6 +149,32 @@ data_brominated_ww <- full_join(data_PBDE_ww, data_HBCDD_ww) |>
 brominated_names <- c(HBCDD_names, "sum_PBDE")
 brominated <- data.frame(PARAMETRE_LIBELLE = brominated_names,
                          EQS_EC_ng_gww = c(167, 167, 167, 0.0085))
+```
+
+
+## Compare with BAC OSPAR norm in ng/glw
+
+```{r}
+data_PBDE_lw <- data_brominated_lw |> 
+  filter(PARAMETRE_LIBELLE %in% PBDE_names) |>
+  group_by(ESTUARY, YEAR, espece, UNITE) |>
+  summarise(
+    RESULTAT = sum(RESULTAT),
+    .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "sum_PBDE")
+```
+
+```{r}
+data_PBDE_lw |> 
+  group_by(ESTUARY) |> 
+  summarise(median = median(RESULTAT))
+```
+
+```{r}
+data_brominated_ww |> 
+  filter(PARAMETRE_LIBELLE == "sum_PBDE") |> 
+  group_by(ESTUARY) |> 
+  summarise(median = median(RESULTAT))
 ```
 
 # Time series graphs
