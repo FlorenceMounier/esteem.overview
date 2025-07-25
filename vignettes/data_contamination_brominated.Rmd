@@ -50,9 +50,9 @@ Different units:
 data_brominated |> 
   distinct(UNITE)
 
-data_brominated |> 
-  mutate(YEAR = as.factor(YEAR)) |> 
-  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "Brominated units")
+# data_brominated |> 
+#   mutate(YEAR = as.factor(YEAR)) |> 
+#   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "Brominated units")
 ```
 
 Transform all results in ng/g ww (same as µg/kg):

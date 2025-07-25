@@ -20,5 +20,5 @@ ggplot
 Description
 }
 \examples{
-gg_map_data_contamination_rocchmv()
+# gg_map_data_contamination_rocchmv()
 }

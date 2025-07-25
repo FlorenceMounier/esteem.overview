@@ -44,9 +44,9 @@ Different units:
 data_OC_pesticides |> 
   distinct(UNITE)
 
-data_OC_pesticides |> 
-  mutate(YEAR = as.factor(YEAR)) |> 
-  distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "OC_pesticides units")
+# data_OC_pesticides |> 
+#   mutate(YEAR = as.factor(YEAR)) |> 
+#   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "OC_pesticides units")
 ```
 
 Transform all results in ng/g ww (same as µg/kg):
