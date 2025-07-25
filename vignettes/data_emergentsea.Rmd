@@ -1,0 +1,49 @@
+---
+title: "data_emergentsea"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(esteem.overview)
+library(tidyverse)
+library(writexl)
+```
+
+# Get raw data
+```{r}
+data_emergentsea <- esteem.overview::data_emergentsea
+```
+```{r}
+data_emergentsea_y <- data_emergentsea |> 
+  group_by(PARAMETRE_LIBELLE, ESTUARY, family, matrix, YEAR) |> 
+  summarise(RESULTAT = mean(RESULTAT))
+
+mean_france <- data_emergentsea_y |> 
+  group_by(PARAMETRE_LIBELLE, family, matrix) |> 
+  summarise(mean_france = mean(RESULTAT, na.rm = TRUE))
+
+mean_estuaries <- data_emergentsea_y |> 
+  drop_na(ESTUARY) |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE, family, matrix) |> 
+  summarise(mean_estuary = mean(RESULTAT))
+
+means <- left_join(mean_estuaries, mean_france)
+
+percent_france <- means |> 
+  mutate(percent_france = mean_estuary/mean_france * 100) |> 
+  arrange(PARAMETRE_LIBELLE)
+
+write_xlsx(percent_france, "percent_france.xlsx")
+
+ggplot_percent_france <- ggplot(percent_france) +
+  aes(x = fct_reorder(PARAMETRE_LIBELLE, family),
+      y = percent_france, 
+      fill = ESTUARY) +
+  geom_col(position = "dodge") +
+  geom_hline(yintercept = 100) +
+  labs(x = NULL, y = "% of French mean value") +
+  coord_flip()
+ggplot_percent_france
+ggsave(plot = ggplot_percent_france, filename = "../inst/results/data_contam/emergentsea.jpg")
+```
+
