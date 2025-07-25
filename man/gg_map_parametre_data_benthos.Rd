@@ -2,22 +2,22 @@
 % Please edit documentation in R/gg_map_parametre_data_benthos.R
 \name{gg_map_parametre_data_benthos}
 \alias{gg_map_parametre_data_benthos}
-\title{Title}
+\title{Get map of REBENT sampling points for each year of monitoring.}
 \usage{
 gg_map_parametre_data_benthos(data, estuaire, color)
 }
 \arguments{
-\item{data}{}
+\item{data}{tibble data benthos with ESTUARY, YEAR, LIEU_MNEMONIQUE, latitude, longitude}
 
-\item{estuaire}{}
+\item{color}{character color}
 
-\item{color}{}
+\item{estuary}{character "Gironde", "Loire", or "Seine"}
 }
 \value{
-ggplot
+ggplot 1 map per year
 }
 \description{
-Description
+Get map of REBENT sampling points for each year of monitoring.
 }
 \examples{
 # gg_map_parametre_data_benthos()

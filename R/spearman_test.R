@@ -6,6 +6,9 @@
 #' 
 #' @param x first variable
 #' @param y second variable
+#' 
+#' @importFrom stats cor.test
+#' @importFrom dplyr tibble
 #'
 #' @return tibble rho and p.value from Spearman's test
 #' 

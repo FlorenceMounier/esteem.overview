@@ -9,6 +9,9 @@
 #'
 #' @return tibble ESTUARY, PARAMETRE_LIBELLE, rho, p.value, symbol, last_year, last_resultat, norm
 #' 
+#' @import dplyr
+#' @import tidyr
+#' 
 #' @export
 #' @examples
 #' # get_last_trend_info()

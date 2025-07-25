@@ -15,27 +15,27 @@ pkgload::load_all(export_all = FALSE)
 ```
 
 # gg_map_parametre_data_benthos
-    
-```{r development-gg_map_parametre_data_benthos}
-# You can prepare the code of the gg_map_parametre_data_benthos() function here
-```
   
 ```{r function-gg_map_parametre_data_benthos}
-#' Title
+#' Get map of REBENT sampling points for each year of monitoring.
 #' 
-#' Description
-#' 
-#' @param data 
-#' @param estuaire 
-#' @param color 
+#' @param data tibble data benthos with ESTUARY, YEAR, LIEU_MNEMONIQUE, latitude, longitude
+#' @param estuary character "Gironde", "Loire", or "Seine"
+#' @param color character color
 #'
-#' @return ggplot
+#' @return ggplot 1 map per year
+#' 
+#' @import dplyr
+#' @import ggplot2
+#' @importFrom sf st_as_sf
+#' @importFrom sf st_bbox
+#' @importFrom sf st_drop_geometry
 #' 
 #' @export
 gg_map_parametre_data_benthos <- function(data, estuaire, color) {
   
   # Convert to spatial object
-  points_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326) |>
+  points_sf <- sf::st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326) |>
     filter(ESTUARY == estuaire)
   
   # Define spatial window around points

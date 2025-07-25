@@ -18,15 +18,20 @@ pkgload::load_all(export_all = FALSE)
 # gg_map_data_contamination_rocchmv
 
 ```{r function-gg_map_data_contamination_rocchmv}
-#' Title
+#' Get map of ROCCHMV sampling points with number of years of monitoring.
 #' 
-#' Description
+#' @param data tibble with ESTUARY, YEAR, LIEU_MNEMONIQUE, latitude, longitude
+#' @param estuary character "Gironde", "Loire", or "Seine"
+#' @param color character color
 #' 
-#' @param data 
-#' @param estuary 
-#' @param color 
+#' @return ggplot map
 #'
 #' @return ggplot
+#' @import dplyr
+#' @import ggplot2
+#' @importFrom sf st_as_sf
+#' @importFrom sf st_bbox
+#' @importFrom sf st_drop_geometry
 #' 
 #' @export
 gg_map_data_contamination_rocchmv <- function(data, estuary, color) {
@@ -86,6 +91,9 @@ test_that("gg_map_data_contamination_rocchmv works", {
 #' 
 #' @param x first variable
 #' @param y second variable
+#' 
+#' @importFrom stats cor.test
+#' @importFrom dplyr tibble
 #'
 #' @return tibble rho and p.value from Spearman's test
 #' 
@@ -117,6 +125,9 @@ test_that("spearman_test works", {
 #' @param norm tibble PARAMETRE_LIBELLE, NORM
 #'
 #' @return tibble ESTUARY, PARAMETRE_LIBELLE, rho, p.value, symbol, last_year, last_resultat, norm
+#' 
+#' @import dplyr
+#' @import tidyr
 #' 
 #' @export
 get_last_trend_info <- function(data, norm){
@@ -179,6 +190,9 @@ test_that("get_last_trend_info works", {
 #' @param estuaries vector of existing values in ESTUARY
 #'
 #' @return tibble containing, ESTUARY, PARAMETRE_LIBELLE, pvalue, median_1 (first period), median_2 (last period), max_value, trend (symbol to be plotted), y_pos (y position to be plotted)
+#' 
+#' @import dplyr
+#' @import tidyr
 #' 
 #' @export
 get_kruskal_periods_results <- function(data_with_periode, chemicals, 
@@ -268,6 +282,9 @@ test_that("get_kruskal_periods_results works", {
 #'
 #' @return save a .xlsx in the folder "../inst/results/data_contam/"
 #' 
+#' @import dplyr
+#' @import tidyr
+#' 
 #' @export
 get_general_levels <- function(data, family, suffix){
   
@@ -308,9 +325,7 @@ test_that("get_general_levels works", {
 ```
   
 ```{r function-get_general_evaluation}
-#' Title
-#' 
-#' Description
+#' Get arrows (trends) and colors (deviation from the threshold).
 #' 
 #' @param family character Family folder name
 #' @param suffix character If necessary, a suffix for the output .xlsx file name
@@ -318,6 +333,9 @@ test_that("get_general_levels works", {
 #' @param res_kruskal tibble
 #'
 #' @return save a .xlsx in the folder "../inst/results/data_contam/"
+#' 
+#' @import dplyr
+#' @import tidyr
 #' 
 #' @export
 get_general_evaluation <- function(family, 

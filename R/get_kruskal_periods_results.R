@@ -10,6 +10,9 @@
 #'
 #' @return tibble containing, ESTUARY, PARAMETRE_LIBELLE, pvalue, median_1 (first period), median_2 (last period), max_value, trend (symbol to be plotted), y_pos (y position to be plotted)
 #' 
+#' @import dplyr
+#' @import tidyr
+#' 
 #' @export
 #' @examples
 #' # get_kruskal_periods_results()

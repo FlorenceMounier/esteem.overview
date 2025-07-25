@@ -8,6 +8,9 @@
 #'
 #' @return save a .xlsx in the folder "../inst/results/data_contam/"
 #' 
+#' @import dplyr
+#' @import tidyr
+#' 
 #' @export
 #' @examples
 #' # get_general_levels()
