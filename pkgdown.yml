@@ -1,5 +1,17 @@
 pandoc: 3.1.11
 pkgdown: 2.1.3
 pkgdown_sha: ~
-articles: {}
-last_built: 2025-07-04T12:23Z
+articles:
+  data_benthos: data_benthos.html
+  data_contamination_biometrics: data_contamination_biometrics.html
+  data_contamination_brominated: data_contamination_brominated.html
+  data_contamination_dioxine_like: data_contamination_dioxine_like.html
+  data_contamination_metals: data_contamination_metals.html
+  data_contamination_OC_pesticides: data_contamination_OC_pesticides.html
+  data_contamination_PAH: data_contamination_PAH.html
+  data_contamination_PCBi: data_contamination_PCBi.html
+  data_contamination_PFOS: data_contamination_PFOS.html
+  data_contamination_tributyltin: data_contamination_tributyltin.html
+  data_physico_chimie: data_physico_chimie.html
+  data_sediment: data_sediment.html
+last_built: 2025-07-25T08:40Z
