@@ -53,6 +53,10 @@ data_emergentsea <- data_emergentsea |>
       TRUE ~ PARAMETRE_LIBELLE
     )
   ) |>
+  dplyr::mutate(matrix = case_when(
+    str_detect(PROGRAMME, "EMERGENTSEA_POCIS") ~ "POCIS",
+    str_detect(PROGRAMME, "EMERGENTSEA_BIOTE") ~ "BIOTE"
+  )) |>
   # Delete unused variables
   dplyr::select(-c(THEME, ZONE_MARINE_QUADRIGE, SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE,
                    PROGRAMME, CAMPAGNE, GROUPE_TAXON_LIBELLE, TAXON_LIBELLE,
@@ -105,8 +109,7 @@ POCIS_compound_table <- tibble(
     POCIS_insecticides,
     POCIS_herbicides,
     POCIS_antifouling
-  ),
-  matrix = "POCIS"
+  )
 )
 
 
@@ -138,8 +141,7 @@ bivalve_compound_table <- tibble(
     bivalve_insecticides,
     bivalve_herbicides,
     bivalve_antifouling
-  ),
-  matrix = "bivalve"
+  )
 )
 
 compound_table <- full_join(POCIS_compound_table, bivalve_compound_table)

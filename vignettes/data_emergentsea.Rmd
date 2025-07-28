@@ -13,37 +13,203 @@ library(writexl)
 ```{r}
 data_emergentsea <- esteem.overview::data_emergentsea
 ```
+
+# Summarise results by year
 ```{r}
 data_emergentsea_y <- data_emergentsea |> 
-  group_by(PARAMETRE_LIBELLE, ESTUARY, family, matrix, YEAR) |> 
-  summarise(RESULTAT = mean(RESULTAT))
+  group_by(PARAMETRE_LIBELLE, ESTUARY, family, matrix, UNITE) |> 
+  summarise(RESULTAT = mean(RESULTAT), .groups = "drop") 
+```
 
-mean_france <- data_emergentsea_y |> 
-  group_by(PARAMETRE_LIBELLE, family, matrix) |> 
-  summarise(mean_france = mean(RESULTAT, na.rm = TRUE))
+# Get unit
 
-mean_estuaries <- data_emergentsea_y |> 
+Same values for bivalve and POCIS in µg.kg-1, p.h. => delete POCIS rows
+POCIS in ng.g-1 => delete POCIS rows
+bivalve in ng.l-1 => delete bivalve rows
+```{r}
+data_emergentsea_y |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, matrix, UNITE, RESULTAT)
+```
+
+```{r}
+data_emergentsea_y <- data_emergentsea_y |> 
+  filter(!(matrix == "POCIS" & UNITE == "µg.kg-1, p.h.")) |> 
+  filter(!(matrix == "POCIS" & UNITE == "ng.g-1")) |> 
+  filter(!(matrix == "BIOTE" & UNITE == "ng.l-1")) 
+```
+
+# Get matrix
+```{r}
+data_emergentsea_POCIS <- data_emergentsea_y |> 
+  filter(matrix == "POCIS")
+
+data_emergentsea_BIOTE <- data_emergentsea_y |> 
+  filter(matrix == "BIOTE")
+```
+
+# Comparison with French mean values
+
+# Computes means for each estuaries and French sites
+```{r}
+mean_france_POCIS <- data_emergentsea_POCIS |> 
+  group_by(PARAMETRE_LIBELLE, family, matrix, UNITE) |> 
+  summarise(mean_france = mean(RESULTAT, na.rm = TRUE), .groups = "drop")
+mean_france_BIOTE <- data_emergentsea_BIOTE |> 
+  group_by(PARAMETRE_LIBELLE, family, matrix, UNITE) |> 
+  summarise(mean_france = mean(RESULTAT, na.rm = TRUE), .groups = "drop")
+
+mean_estuaries_POCIS <- data_emergentsea_POCIS |> 
   drop_na(ESTUARY) |> 
-  group_by(ESTUARY, PARAMETRE_LIBELLE, family, matrix) |> 
-  summarise(mean_estuary = mean(RESULTAT))
+  group_by(ESTUARY, PARAMETRE_LIBELLE, family, matrix, UNITE) |> 
+  summarise(mean_estuary = mean(RESULTAT), .groups = "drop")
+mean_estuaries_BIOTE <- data_emergentsea_BIOTE |> 
+  drop_na(ESTUARY) |> 
+  group_by(ESTUARY, PARAMETRE_LIBELLE, family, matrix, UNITE) |> 
+  summarise(mean_estuary = mean(RESULTAT), .groups = "drop")
 
-means <- left_join(mean_estuaries, mean_france)
+means_POCIS <- left_join(mean_estuaries_POCIS, mean_france_POCIS)
+means_BIOTE <- left_join(mean_estuaries_BIOTE, mean_france_BIOTE)
 
-percent_france <- means |> 
+percent_france_POCIS <- means_POCIS |> 
   mutate(percent_france = mean_estuary/mean_france * 100) |> 
-  arrange(PARAMETRE_LIBELLE)
+  filter(!is.nan(percent_france)) |>
+  arrange(family, PARAMETRE_LIBELLE)
 
-write_xlsx(percent_france, "percent_france.xlsx")
+percent_france_BIOTE <- means_BIOTE |> 
+  mutate(percent_france = mean_estuary/mean_france * 100) |> 
+  filter(!is.nan(percent_france)) |>
+  arrange(family, PARAMETRE_LIBELLE)
+```
 
-ggplot_percent_france <- ggplot(percent_france) +
+## Graphs for POCIS
+
+
+```{r}
+# Names
+percent_france_POCIS |> 
+  distinct(family, PARAMETRE_LIBELLE) |> 
+  arrange(family, PARAMETRE_LIBELLE)
+
+# Counts by family
+percent_france_POCIS |> 
+  distinct(family, PARAMETRE_LIBELLE) |> 
+  count(family)
+
+# Colors
+percent_france_POCIS_colors <- percent_france_POCIS |> 
+  mutate(color = case_when(
+    percent_france < 50 ~ "blue",
+    percent_france < 100 ~ "green",
+    percent_france < 200 ~ "yellow",
+    percent_france < 300 ~ "orange",
+    percent_france < 400 ~ "red",
+    percent_france >= 400 ~ "black"
+  ))  |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, family, matrix, UNITE, color) |> 
+  pivot_wider(names_from = ESTUARY, values_from = color)
+
+writexl::write_xlsx(x = percent_france_POCIS_colors, path = "../inst/results/data_contam/emergentsea/percent_france_POCIS_colors.xlsx")
+```
+
+```{r}
+ggplot_percent_france_POCIS <- ggplot(percent_france_POCIS) +
   aes(x = fct_reorder(PARAMETRE_LIBELLE, family),
       y = percent_france, 
       fill = ESTUARY) +
-  geom_col(position = "dodge") +
-  geom_hline(yintercept = 100) +
-  labs(x = NULL, y = "% of French mean value") +
-  coord_flip()
-ggplot_percent_france
-ggsave(plot = ggplot_percent_france, filename = "../inst/results/data_contam/emergentsea.jpg")
+  geom_col(position = position_dodge2(padding = 0.2)) +
+  geom_text(x = 1.5, y = 250, label = "HERBICIDE", size = 5) +
+  labs(x = NULL, y = "% of French mean value in POCIS") +
+  facet_grid(vars(matrix)) +
+  coord_flip() +
+  theme_bw()
+ggplot_percent_france_POCIS
+ggsave(plot = ggplot_percent_france_POCIS, 
+       filename = "../inst/results/data_contam/emergentsea/ggplot_emergentsea_POCIS.jpg")
 ```
+
+## Graphs for BIOTE
+```{r}
+# Names
+percent_france_BIOTE |> 
+  distinct(family, PARAMETRE_LIBELLE) |> 
+  arrange(family, PARAMETRE_LIBELLE)
+
+# Counts by family
+percent_france_BIOTE |> 
+  distinct(family, PARAMETRE_LIBELLE) |> 
+  count(family)
+
+# Colors
+percent_france_BIOTE_colors <- percent_france_BIOTE |> 
+  mutate(color = case_when(
+    percent_france < 50 ~ "blue",
+    percent_france < 100 ~ "green",
+    percent_france < 200 ~ "yellow",
+    percent_france < 300 ~ "orange",
+    percent_france < 400 ~ "red",
+    percent_france >= 400 ~ "black"
+  )) |> 
+  select(ESTUARY, PARAMETRE_LIBELLE, family, matrix, UNITE, color) |> 
+  pivot_wider(names_from = ESTUARY, values_from = color)
+
+writexl::write_xlsx(x = percent_france_BIOTE_colors, path = "../inst/results/data_contam/emergentsea/percent_france_BIOTE_colors.xlsx")
+```
+
+```{r}
+ggplot_percent_france_BIOTE <- ggplot(percent_france_BIOTE) +
+  aes(x = fct_reorder(PARAMETRE_LIBELLE, family),
+      y = percent_france, 
+      fill = ESTUARY) +
+  geom_col(position = position_dodge2(padding = 0.2)) +
+  geom_text(x = 3.75, y = 380, label = "ANTIFOULING", size = 3) +
+  geom_vline(xintercept = 7.5) +
+  geom_text(x = 11, y = 380, label = "FUNGICIDE", size = 3) +
+  geom_vline(xintercept = 14.5) +
+  geom_text(x = 22.5, y = 380, label = "HERBICIDE", size = 3) +
+  geom_vline(xintercept = 30.5) +
+  geom_text(x = 31, y = 380, label = "INSECTICIDE", size = 3) +
+  geom_hline(yintercept = 100) +
+  labs(x = NULL, y = "% of French mean value in bivalves") +
+  facet_grid(vars(matrix)) +
+  coord_flip() +
+  theme_bw()
+ggplot_percent_france_BIOTE
+ggsave(plot = ggplot_percent_france_BIOTE, 
+       filename = "../inst/results/data_contam/emergentsea/ggplot_emergentsea_BIOTE.jpg")
+```
+
+# Comparison with the French median
+```{r}
+median_france <- data_emergentsea_y |> 
+  group_by(PARAMETRE_LIBELLE, family, matrix, UNITE) |> 
+  summarise(median_france = median(RESULTAT))
+
+median_france_POCIS <- median_france |> 
+  filter(matrix == "POCIS")
+median_france_BIOTE <- median_france |> 
+  filter(matrix == "BIOTE")
+```
+
+```{r}
+medians_POCIS <- left_join(mean_estuaries_POCIS, median_france_POCIS) |>  
+  arrange(family, PARAMETRE_LIBELLE) |> 
+  mutate(over_median = case_when(
+    mean_estuary > median_france ~ TRUE,
+    TRUE ~ FALSE
+  ))
+medians_POCIS |> 
+  filter(over_median == TRUE)
+```
+
+```{r}
+medians_BIOTE <- left_join(mean_estuaries_BIOTE, median_france_BIOTE) |>  
+  arrange(family, PARAMETRE_LIBELLE) |> 
+  mutate(over_median = case_when(
+    mean_estuary > median_france ~ TRUE,
+    TRUE ~ FALSE
+  ))
+medians_BIOTE|> 
+  filter(over_median == TRUE)
+```
+
 
