@@ -109,6 +109,20 @@ percent_france_POCIS_colors <- percent_france_POCIS |>
   pivot_wider(names_from = ESTUARY, values_from = color)
 
 writexl::write_xlsx(x = percent_france_POCIS_colors, path = "../inst/results/data_contam/emergentsea/percent_france_POCIS_colors.xlsx")
+
+
+# Levels
+PNEC <- tribble(
+  ~ "PARAMETRE_LIBELLE", ~ "PNEC",
+  "AMPA", 150,
+  "Glyphosate", 12)
+
+means_POCIS |> 
+  left_join(PNEC) |> 
+  select(-mean_france) |> 
+  mutate(mean_estuary = mean_estuary > PNEC) |> 
+  pivot_wider(names_from = ESTUARY, values_from = mean_estuary) |> 
+  arrange(family, PARAMETRE_LIBELLE)
 ```
 
 ```{r}
@@ -153,6 +167,46 @@ percent_france_BIOTE_colors <- percent_france_BIOTE |>
   pivot_wider(names_from = ESTUARY, values_from = color)
 
 writexl::write_xlsx(x = percent_france_BIOTE_colors, path = "../inst/results/data_contam/emergentsea/percent_france_BIOTE_colors.xlsx")
+
+# Levels
+PNEC <- tribble(
+  ~ "PARAMETRE_LIBELLE", ~ "PNEC",
+  "Cuivre pyrithione", NA,
+  "DCOIT", 0.07,
+  "Dichlofluanide", 0.03, 
+  "Irgarol",0.01,
+  "Médétomidine", 0.00, 
+  "Tralopyril", 0.68,
+  "Zinc pyrithione", NA,
+  "Azoxystrobine", 0.06,
+  "Boscalid", 232.95,
+  "Chlorothalonil", 0.06,
+  "Epoxiconazole", NA,
+  "Propiconazole", 1.60,
+  "Thirame", 0.04,
+  "Tébuconazole", 1.46,
+  "3,4-DCA", 0.06,
+  "Chlorprophame", 3.24,
+  "Chlortoluron", 0.54,
+  "DCPMU", 0.88,
+  "DCPU", 2.30,
+  "DEA", 0.07,
+  "Diflufenicanil", 0.01,
+  "Dimethenamide", 0.20,
+  "Diuron", 0.71,
+  "Linuron", 0.04,
+  "Metoxuron", 0.10,
+  "Métolachlore", 0.27,
+  "Propazine", 0.06,
+  "Terbuthylazine désethyl", 0.07,
+  "Fipronil", 0.00)
+
+means_BIOTE |> 
+  left_join(PNEC) |> 
+  select(-mean_france) |> 
+  mutate(mean_estuary = mean_estuary > PNEC) |> 
+  pivot_wider(names_from = ESTUARY, values_from = mean_estuary) |> 
+  arrange(family, PARAMETRE_LIBELLE)
 ```
 
 ```{r}
