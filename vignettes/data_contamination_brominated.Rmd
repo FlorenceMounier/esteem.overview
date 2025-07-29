@@ -272,6 +272,17 @@ data_brominated_general_levels <- full_join(data_brominated_ww_levels, data_brom
 writexl::write_xlsx(x = data_brominated_general_levels, path = "../inst/results/data_contam/brominated/summarised_levels_data_brominated_ww.xlsx")
 ```
 
+```{r}
+data_brominated_ww |> 
+  filter(PARAMETRE_LIBELLE == "sum_PBDE") |> 
+  group_by(ESTUARY) |> 
+  filter(YEAR == min(YEAR) | YEAR == max(YEAR) ) |> 
+  select(ESTUARY, YEAR, RESULTAT) |> 
+  pivot_wider(names_from = YEAR, values_from = RESULTAT) |> 
+  mutate(rate_per_year = (`2008` - `2024`) / (2024-2008)) |> 
+  mutate(year_until_EQS = (`2024`-0.0085)/rate_per_year)
+```
+
 
 # General evaluation
 ```{r}
