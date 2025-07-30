@@ -123,6 +123,14 @@ means_POCIS |>
   mutate(mean_estuary = mean_estuary > PNEC) |> 
   pivot_wider(names_from = ESTUARY, values_from = mean_estuary) |> 
   arrange(family, PARAMETRE_LIBELLE)
+
+means_POCIS |> 
+  left_join(PNEC) |> 
+  select(-mean_france) |> 
+  mutate(percent_PNEC = mean_estuary / PNEC * 100) |> 
+  select(-mean_estuary) |> 
+  pivot_wider(names_from = ESTUARY, values_from = percent_PNEC) |> 
+  arrange(family, PARAMETRE_LIBELLE)
 ```
 
 ```{r}
@@ -152,12 +160,13 @@ percent_france_BIOTE |>
 percent_france_BIOTE |> 
   distinct(family, PARAMETRE_LIBELLE) |> 
   count(family)
+```
 
-# Colors
+```{r}
+# Colors % France
 percent_france_BIOTE_colors <- percent_france_BIOTE |> 
   mutate(color = case_when(
-    percent_france < 50 ~ "blue",
-    percent_france < 100 ~ "green",
+    percent_france < 100 ~ "blue",
     percent_france < 200 ~ "yellow",
     percent_france < 300 ~ "orange",
     percent_france < 400 ~ "red",
@@ -167,8 +176,10 @@ percent_france_BIOTE_colors <- percent_france_BIOTE |>
   pivot_wider(names_from = ESTUARY, values_from = color)
 
 writexl::write_xlsx(x = percent_france_BIOTE_colors, path = "../inst/results/data_contam/emergentsea/percent_france_BIOTE_colors.xlsx")
+```
 
-# Levels
+```{r}
+# Colors % PNEC
 PNEC <- tribble(
   ~ "PARAMETRE_LIBELLE", ~ "PNEC",
   "Cuivre pyrithione", NA,
@@ -207,6 +218,29 @@ means_BIOTE |>
   mutate(mean_estuary = mean_estuary > PNEC) |> 
   pivot_wider(names_from = ESTUARY, values_from = mean_estuary) |> 
   arrange(family, PARAMETRE_LIBELLE)
+
+percent_PNEC_BIOTE_colors <- means_BIOTE |> 
+  left_join(PNEC) |> 
+  select(-mean_france) |> 
+  mutate(percent_PNEC = mean_estuary / PNEC * 100) |> 
+  mutate(color = case_when(
+    percent_PNEC < 100 ~ "blue",
+    percent_PNEC < 200 ~ "yellow",
+    percent_PNEC < 300 ~ "orange",
+    percent_PNEC < 400 ~ "red",
+    percent_PNEC >= 400 ~ "black"
+  )) |> 
+  select(-c(mean_estuary, matrix, UNITE, percent_PNEC)) |> 
+  pivot_wider(names_from = ESTUARY, values_from = color) |> 
+  filter(PARAMETRE_LIBELLE != "Hexazinone",
+         PARAMETRE_LIBELLE != "Métazachlore",
+         PARAMETRE_LIBELLE != "Amétryne",
+         PARAMETRE_LIBELLE != "Prométryne") |> 
+  arrange(family, PARAMETRE_LIBELLE)
+
+percent_PNEC_BIOTE_colors
+
+writexl::write_xlsx(x = percent_PNEC_BIOTE_colors, path = "../inst/results/data_contam/emergentsea/percent_PNEC_BIOTE_colors.xlsx")
 ```
 
 ```{r}
