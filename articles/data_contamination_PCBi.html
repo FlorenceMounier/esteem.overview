@@ -378,12 +378,47 @@ thresholds in ng/g lw<a class="anchor" aria-label="anchor" href="#get-raw-data-f
 </h3>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_general_levels.html">get_general_levels</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">data_PCBi_lw</span>, family <span class="op">=</span> <span class="st">"PCBi"</span>, suffix <span class="op">=</span> <span class="st">"_lw"</span><span class="op">)</span></span></code></pre></div>
+<p>Decreasing rate for CB118</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">data_PCBi_lw</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">PARAMETRE_LIBELLE</span> <span class="op">==</span> <span class="st">"CB 118"</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">ESTUARY</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">YEAR</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">YEAR</span><span class="op">)</span> <span class="op">|</span> <span class="va">YEAR</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">YEAR</span><span class="op">)</span> <span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>limits <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/case_when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
+<span>    <span class="va">YEAR</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">YEAR</span><span class="op">)</span> <span class="op">~</span> <span class="st">"start"</span>,</span>
+<span>    <span class="va">YEAR</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">YEAR</span><span class="op">)</span> <span class="op">~</span> <span class="st">"end"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  duration <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">YEAR</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">YEAR</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">ESTUARY</span>, <span class="va">limits</span>, <span class="va">RESULTAT</span>, <span class="va">duration</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html" class="external-link">distinct</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html" class="external-link">pivot_wider</a></span><span class="op">(</span>names_from <span class="op">=</span> <span class="va">limits</span>, values_from <span class="op">=</span> <span class="va">RESULTAT</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>rate_per_year <span class="op">=</span> <span class="op">(</span><span class="va">start</span> <span class="op">-</span> <span class="va">end</span><span class="op">)</span> <span class="op">/</span> <span class="va">duration</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>year_until_EQS <span class="op">=</span> <span class="op">(</span><span class="va">end</span> <span class="op">-</span> <span class="fl">25</span><span class="op">)</span><span class="op">/</span><span class="va">rate_per_year</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
+<span><span class="co">## <span style="color: #949494;"># Groups:   ESTUARY [3]</span></span></span>
+<span><span class="co">##   ESTUARY duration start   end rate_per_year year_until_EQS</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> Gironde       31  100.  23.8          2.47         -<span style="color: #BB0000;">0.475</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> Loire         32  261.  30.1          7.22          0.705</span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> Seine         32 <span style="text-decoration: underline;">1</span>629. 275.          42.3           5.90</span></span></code></pre>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">data_PCBi_lw_CB118_Seine</span> <span class="op">&lt;-</span> <span class="va">data_PCBi_lw</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">PARAMETRE_LIBELLE</span> <span class="op">==</span> <span class="st">"CB 118"</span>, <span class="va">ESTUARY</span> <span class="op">==</span> <span class="st">"Seine"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">data_PCBi_lw_CB118_Seine</span><span class="op">$</span><span class="va">RESULTAT</span> <span class="op">~</span> <span class="va">data_PCBi_lw_CB118_Seine</span><span class="op">$</span><span class="va">YEAR</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## </span></span>
+<span><span class="co">## Call:</span></span>
+<span><span class="co">## lm(formula = data_PCBi_lw_CB118_Seine$RESULTAT ~ data_PCBi_lw_CB118_Seine$YEAR)</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Coefficients:</span></span>
+<span><span class="co">##                   (Intercept)  data_PCBi_lw_CB118_Seine$YEAR  </span></span>
+<span><span class="co">##                      93452.55                         -46.06</span></span></code></pre>
 </div>
 </div>
 <div class="section level2">
 <h2 id="general-evaluation">General evaluation<a class="anchor" aria-label="anchor" href="#general-evaluation"></a>
 </h2>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/get_general_evaluation.html">get_general_evaluation</a></span><span class="op">(</span>family <span class="op">=</span> <span class="st">"PCBi"</span>,</span>
 <span>                       suffix <span class="op">=</span> <span class="st">"_lw"</span>,</span>
 <span>                       res_family_trends <span class="op">=</span> <span class="va">res_PCBi_lw_trends</span>,</span>
