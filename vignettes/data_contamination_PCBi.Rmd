@@ -223,6 +223,31 @@ ggsave(plot = plot_PCBi_lw_periode, "../inst/results/data_contam/PCBi/ggplot_PCB
 get_general_levels(data = data_PCBi_lw, family = "PCBi", suffix = "_lw")
 ```
 
+Decreasing rate for CB118
+```{r}
+data_PCBi_lw |> 
+  filter(PARAMETRE_LIBELLE == "CB 118") |> 
+  group_by(ESTUARY) |> 
+  filter(YEAR == min(YEAR) | YEAR == max(YEAR) ) |> 
+  mutate(limits = case_when(
+    YEAR == min(YEAR) ~ "start",
+    YEAR == max(YEAR) ~ "end"
+  ),
+  duration = max(YEAR) - min(YEAR)) |> 
+  select(ESTUARY, limits, RESULTAT, duration) |> 
+    distinct() |> 
+  pivot_wider(names_from = limits, values_from = RESULTAT) |> 
+  mutate(rate_per_year = (start - end) / duration) |> 
+  mutate(year_until_EQS = (end - 25)/rate_per_year)
+```
+
+
+```{r}
+data_PCBi_lw_CB118_Seine <- data_PCBi_lw |> 
+  filter(PARAMETRE_LIBELLE == "CB 118", ESTUARY == "Seine")
+
+lm(data_PCBi_lw_CB118_Seine$RESULTAT ~ data_PCBi_lw_CB118_Seine$YEAR)
+```
 
 # General evaluation
 ```{r}
