@@ -14,6 +14,20 @@ library(writexl)
 data_emergentsea <- esteem.overview::data_emergentsea
 ```
 
+# Check several campaigns or not
+```{r}
+data_emergentsea |> 
+  mutate(month = month(DATE)) |> 
+  mutate(campaign = case_when(
+    month %in% c(1,2,3,4) ~ "C1",
+    month %in% c(5,6,7) ~ "C2",
+    month %in% c(11, 12) ~ "C3"
+  )) |>
+  filter(!is.na(ESTUARY)) |> 
+  distinct(ESTUARY, PARAMETRE_LIBELLE, campaign)
+```
+
+
 # Summarise results by year
 ```{r}
 data_emergentsea_y <- data_emergentsea |> 
@@ -219,7 +233,22 @@ means_BIOTE |>
   pivot_wider(names_from = ESTUARY, values_from = mean_estuary) |> 
   arrange(family, PARAMETRE_LIBELLE)
 
-percent_PNEC_BIOTE_colors <- means_BIOTE |> 
+# Compute % PNEC
+percent_PNEC_BIOTE <- means_BIOTE |> 
+  left_join(PNEC) |> 
+  select(-mean_france) |> 
+  mutate(percent_PNEC = mean_estuary / PNEC * 100)
+```
+
+Percent PNEC in compounds with PNEC = 0.00
+```{r}
+percent_PNEC_BIOTE |> 
+  filter(PARAMETRE_LIBELLE %in% c("Médétomidine", "Fipronil"))
+```
+
+
+```{r}
+percent_PNEC_BIOTE_colors <- percent_PNEC_BIOTE |> 
   left_join(PNEC) |> 
   select(-mean_france) |> 
   mutate(percent_PNEC = mean_estuary / PNEC * 100) |> 
