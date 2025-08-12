@@ -4,8 +4,6 @@
 library(esteem.overview)
 library(tidyverse, quietly = TRUE)
 library(writexl)
-# Maps
-library(sf)
 # Get taxonomy api
 library(jsonlite) # install.packages("jsonlite", repos="http://cran.r-project.org")
 library(httr) # install.packages("httr")
@@ -33,14 +31,13 @@ data <- data_REBENT |> filter(PARAMETRE_GROUPE == "Biologie")
 # ---------------------------------------------------------------------------
 # Campaign period and frequencies ----
 
-# Campains are organized each 3 years, once in autumn, except for 2007: april in Seine only, april&may in Gironde as well as october the same year.
-
+# Campains are organized each 3 years, once in autumn, except for 2007:
+# april in Seine only, april&may in Gironde as well as october the same year.
 data |>
   distinct(ESTUARY, year_month) |>
   arrange(ESTUARY, year_month)
 
 # We keep only autumn:
-
 data <- data |>
   filter(year_month %!in% c("2007-4", "2007-5"))
 
@@ -57,49 +54,26 @@ data |>
 
 
 ## => Wrong coordinates for Gironde estuary: latitude = 42.26208 => 45.26208
-
 data <- data |>
   mutate(latitude = case_when(
     latitude == 42.26208 ~ 45.26208,
     TRUE ~ latitude
   ))
 
-### Gironde
-ggmap_REBENT_gironde <- gg_map_parametre_data_benthos(data = data,
-                                                      estuaire = "Gironde",
-                                                      color = ggplot2_colors(3)[3])
-ggmap_REBENT_gironde
-# ggsave(plot = ggmap_REBENT_gironde, filename = "inst/results/data_benthos/maps/ggmap_REBENT_gironde.jpg")
+# Haline zones
+data <- data |>
+  mutate(zone = case_when(
+    ESTUARY == "Gironde" & latitude <= 45.4 ~ "upstream",
+    ESTUARY == "Gironde" & latitude > 45.4 ~ "downstream",
+    ESTUARY == "Loire" & longitude > -2.1 ~ "upstream",
+    ESTUARY == "Loire" & longitude <= -2.1 ~ "downstream",
+    ESTUARY == "Seine" & longitude > 0.34 ~ "upstream",
+    ESTUARY == "Seine" & longitude <= 0.34 ~ "downstream",
+  ))
 
-### Loire
-ggmap_REBENT_loire <- gg_map_parametre_data_benthos(data = data,
-                                                    estuaire = "Loire",
-                                                    color = ggplot2_colors(3)[2])
-ggmap_REBENT_loire
-
-# ggsave(plot = ggmap_REBENT_loire, filename = "inst/results/data_benthos/maps/ggmap_REBENT_loire.jpg")
-
-### Seine
-ggmap_REBENT_seine <- gg_map_parametre_data_benthos(data = data,
-                                                    estuaire = "Seine",
-                                                    color = ggplot2_colors(3)[1])
-ggmap_REBENT_seine
-
-## Suppress most close to the Seine estuary's mouth
-
-# data |>
-#   filter(ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine") |>
-#   arrange(longitude) |>
-#   select(LIEU_MNEMONIQUE, longitude)
-
-data <- data |>  filter(LIEU_MNEMONIQUE %!in% c("011-P-049", "011-P-050"))
-
-ggmap_REBENT_seine <- gg_map_parametre_data_benthos(data = data,
-                                                    estuaire = "Seine",
-                                                    color = ggplot2_colors(3)[1])
-ggmap_REBENT_seine
-# ggsave(plot = ggmap_REBENT_seine, filename = "inst/results/data_benthos/maps/ggmap_REBENT_seine.jpg")
-
+# Delete offshore points in the Seine estuary
+data <- data |>
+  filter(LIEU_MNEMONIQUE %!in% c("011-P-049", "011-P-050"))
 # ---------------------------------------------------------------------------
 # Types of benthic sampler and their surface ----
 

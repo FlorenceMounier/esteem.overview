@@ -30,41 +30,76 @@ pkgload::load_all(export_all = FALSE)
 #' @importFrom sf st_as_sf
 #' @importFrom sf st_bbox
 #' @importFrom sf st_drop_geometry
+#' @importFrom sf st_transform
+#' @importFrom maptiles get_tiles
+#' @importFrom ggspatial layer_spatial
 #' 
 #' @export
-gg_map_parametre_data_benthos <- function(data, estuaire, color) {
+gg_map_parametre_data_benthos <- function(data, estuaire) {
   
   # Convert to spatial object
   points_sf <- sf::st_as_sf(data, coords = c("longitude", "latitude"), crs = 4326) |>
     filter(ESTUARY == estuaire)
   
   # Define spatial window around points
-  bbox <- st_bbox(points_sf)
+  # bbox <- sf::st_bbox(points_sf)
   marge <- 0.1
-  xlim <- c(bbox["xmin"] - marge, bbox["xmax"] + marge)
-  ylim <- c(bbox["ymin"] - marge, bbox["ymax"] + marge)
+  xlim_gironde <- c(xmin = -1.056 - marge, xmax = -0.7178002414 + marge)
+  ylim_gironde <- c(ymin = 45.26208 - marge, ymax = 45.59 + marge)
+  xlim_loire <- c(xmin = -2.18166667 - marge, xmax = -1.86466667 + marge)
+  ylim_loire <- c(ymin = 47.25321667 - marge, ymax = 47.30533333 + marge)
+  xlim_seine <- c(xmin = 0.06607 - marge, xmax = 0.42 + marge)
+  ylim_seine <- c(ymin = 49.40612 - marge, ymax = 49.45168 + marge)
+
+  if (estuaire == "Gironde") {
+    xlim <- xlim_gironde
+    ylim <- ylim_gironde
+  } else{
+    if (estuaire == "Loire") {
+      xlim <- xlim_loire
+      ylim <- ylim_loire
+    } else{
+      if (estuaire == "Seine") {
+        xlim <- xlim_seine
+        ylim <- ylim_seine
+      } else{
+        print("Unknown estuary")
+      }
+    }
+  }
   
+  
+  bbox_sf <- sf::st_as_sfc(st_bbox(
+    c(xmin = xlim[["xmin"]], ymin = ylim[["ymin"]], 
+      xmax = xlim[["xmax"]], ymax = ylim[["ymax"]]),
+    crs = 4326))
+    
+  # Load IGN map tiles
+  tiles <- maptiles::get_tiles(x = bbox_sf, provider = "Esri.WorldImagery", crop = TRUE, zoom = 13)
+
   # Create a table with annotations: number of points per year
   annot_df <- points_sf |>
-    st_drop_geometry() |>
+    sf::st_drop_geometry() |>
     group_by(YEAR) |>
     summarise(n = n()) |>
     mutate(
       label = paste("n =", n),
-      longitude = xlim[1] + 0.01,  # Fix position
-      latitude = ylim[2] - 0.01
+      longitude = xlim["xmin"] + 0.01,  # Fix position
+      latitude = ylim["ymax"] - 0.01
     )
   
   # Plot
   plot <- ggplot() +
-    geom_sf(data = esteem.overview::fr_map, fill = "grey95", color = "grey50") +
-    geom_sf(data = points_sf, size = 1, color = color) +
+    ggspatial::layer_spatial(tiles) +
+    geom_sf(data = sf::st_transform(points_sf, 3857), size = 1, 
+            aes(color = zone, shape = tidal)) +
     geom_text(data = annot_df, aes(x = longitude, y = latitude, label = label), 
-              inherit.aes = FALSE, hjust = 0, vjust = 1, size = 4, fontface = "bold") +
+              inherit.aes = FALSE, hjust = 0, vjust = 1, size = 4, fontface = "bold", color = "white") +
     coord_sf(xlim = xlim, ylim = ylim, expand = FALSE) +
     facet_wrap(vars(YEAR)) +
     labs(title = estuaire) +
-    theme_minimal()
+    theme_minimal() +
+    theme(legend.position = "none")  
   
   return(plot)
 }
@@ -79,8 +114,6 @@ test_that("gg_map_parametre_data_benthos works", {
   expect_true(inherits(gg_map_parametre_data_benthos, "function")) 
 })
 ```
-  
-
 
 ```{r development-inflate, eval=FALSE}
 # Run but keep eval=FALSE to avoid infinite loop

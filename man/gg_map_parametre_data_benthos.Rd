@@ -4,14 +4,14 @@
 \alias{gg_map_parametre_data_benthos}
 \title{Get map of REBENT sampling points for each year of monitoring.}
 \usage{
-gg_map_parametre_data_benthos(data, estuaire, color)
+gg_map_parametre_data_benthos(data, estuaire)
 }
 \arguments{
 \item{data}{tibble data benthos with ESTUARY, YEAR, LIEU_MNEMONIQUE, latitude, longitude}
 
-\item{color}{character color}
-
 \item{estuary}{character "Gironde", "Loire", or "Seine"}
+
+\item{color}{character color}
 }
 \value{
 ggplot 1 map per year

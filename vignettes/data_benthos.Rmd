@@ -19,8 +19,6 @@ knitr::opts_chunk$set(echo = FALSE)
 library(esteem.overview)
 library(tidyverse, quietly = TRUE)
 library(writexl)
-# Maps
-library(sf)
 # Get taxonomy api
 library(jsonlite) # install.packages("jsonlite", repos="http://cran.r-project.org")
 library(httr) # install.packages("httr")

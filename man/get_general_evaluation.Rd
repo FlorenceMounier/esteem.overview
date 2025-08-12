@@ -2,7 +2,7 @@
 % Please edit documentation in R/get_general_evaluation.R
 \name{get_general_evaluation}
 \alias{get_general_evaluation}
-\title{Title}
+\title{Get arrows (trends) and colors (deviation from the threshold).}
 \usage{
 get_general_evaluation(family, suffix = "", res_family_trends, res_kruskal)
 }
@@ -19,7 +19,7 @@ get_general_evaluation(family, suffix = "", res_family_trends, res_kruskal)
 save a .xlsx in the folder "../inst/results/data_contam/"
 }
 \description{
-Description
+Get arrows (trends) and colors (deviation from the threshold).
 }
 \examples{
 # get_general_evaluation()

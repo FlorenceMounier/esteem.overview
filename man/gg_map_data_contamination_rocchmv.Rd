@@ -2,22 +2,24 @@
 % Please edit documentation in R/gg_map_data_contamination_rocchmv.R
 \name{gg_map_data_contamination_rocchmv}
 \alias{gg_map_data_contamination_rocchmv}
-\title{Title}
+\title{Get map of ROCCHMV sampling points with number of years of monitoring.}
 \usage{
 gg_map_data_contamination_rocchmv(data, estuary, color)
 }
 \arguments{
-\item{data}{}
+\item{data}{tibble with ESTUARY, YEAR, LIEU_MNEMONIQUE, latitude, longitude}
 
-\item{estuary}{}
+\item{estuary}{character "Gironde", "Loire", or "Seine"}
 
-\item{color}{}
+\item{color}{character color}
 }
 \value{
+ggplot map
+
 ggplot
 }
 \description{
-Description
+Get map of ROCCHMV sampling points with number of years of monitoring.
 }
 \examples{
 # gg_map_data_contamination_rocchmv()

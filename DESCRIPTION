@@ -14,7 +14,11 @@ Depends:
 Imports: 
     dplyr,
     ggplot2,
+    ggspatial,
+    maptiles,
     sf,
+    stats,
+    tidyr,
     writexl
 Suggests: 
     benthos,
