@@ -1,0 +1,451 @@
+---
+title: "data_benthos_loire_2020_zones"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_benthos_loire_2020_zones}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup}
+knitr::opts_chunk$set(echo = FALSE)
+library(esteem.overview)
+library(tidyverse, quietly = TRUE)
+library(writexl)
+# Get taxonomy api
+library(jsonlite) # install.packages("jsonlite", repos="http://cran.r-project.org")
+library(httr) # install.packages("httr")
+# Get benthos indicator AMBI
+library(benthos)
+
+`%!in%` = Negate(`%in%`)
+```
+
+# REBENT Indicators
+
+```{r}
+data_REBENT <- esteem.overview::data_benthos_REBENT_cleaned |> 
+  filter(ESTUARY == "Loire", YEAR == 2020)
+```
+
+
+## Taxonomic composition
+
+### Phylum level
+
+ni = Number of individuals for each phylum per estuary, tidal zone and year
+```{r}
+nb_ind_sp <- data_REBENT |> 
+  group_by(zone, tidal, phylum) |> 
+  summarise(n_ind_sp = sum(RESULTAT), .groups = "drop")
+```
+N = Total number of individuals per estuary, tidal zone and year
+```{r}
+nb_ind_tot <- data_REBENT |> 
+  group_by(zone, tidal) |> 
+  summarise(n_ind_tot = sum(RESULTAT), .groups = "drop")
+```
+pi = Percentage abundance for each phylum per estuary, tidal zone and year
+```{r}
+abundance_prop <- nb_ind_sp |> 
+  left_join(nb_ind_tot, by = c("zone", "tidal")) |> 
+  group_by(zone, tidal) |> 
+  mutate(abundance_prop = n_ind_sp / n_ind_tot * 100) |> 
+  ungroup() |> 
+  drop_na()
+```
+
+```{r}
+ggplot_REBENT_abundance_taxonomy <- abundance_prop |> 
+  filter(phylum %in% c("Annelida", "Arthropoda", "Mollusca")) |> 
+ggplot() +
+  aes(x = zone, y = abundance_prop, color = phylum, fill = phylum) +
+  geom_col() +
+  facet_grid(rows = vars(tidal)) +
+  labs(title = "REBENT macrobenthic fauna: Taxonomic repartition Loire 2020", 
+       x = NULL, 
+       y = "Abundance (%)",
+       color = "Phylum", fill = "Phylum")
+
+ggplot_REBENT_abundance_taxonomy
+
+ggsave(plot = ggplot_REBENT_abundance_taxonomy,
+       "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_abundance_taxonomy_loire_2020_zones.jpg",
+       width = 15, height = 6, units = "cm")
+```
+
+### Species level
+```{r}
+nb_ind_tot <- data_REBENT |> 
+  group_by(zone, tidal) |> 
+  summarise(n_ind_tot = sum(RESULTAT), .groups = "drop")
+
+nb_ind_sp <- data_REBENT |> 
+  group_by(zone, tidal, phylum, class, order, species) |> 
+  summarise(n_ind_sp = sum(RESULTAT), .groups = "drop")
+
+abundance_prop <- nb_ind_sp |> 
+  left_join(nb_ind_tot, by = c("zone", "tidal")) |> 
+  group_by(zone, tidal, phylum, class, order) |> 
+  mutate(abundance_prop = n_ind_sp / n_ind_tot * 100) |> 
+  ungroup() |> 
+  drop_na()
+```
+
+
+```{r}
+abundance_prop_species <- abundance_prop |> 
+  filter(abundance_prop > 10) |> 
+  arrange(zone, tidal, phylum, class, order, desc(abundance_prop)) |> 
+  select(-c(n_ind_sp, n_ind_tot))
+abundance_prop_species
+
+write_xlsx(abundance_prop_species, "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/abundance_prop_species_loire_2020_zones.xlsx")
+```
+
+```{r}
+abundance_prop_species_5 <- abundance_prop |> 
+  filter(abundance_prop > 5) |> 
+  arrange(zone, tidal, phylum, class, order, desc(abundance_prop)) |> 
+  select(-c(n_ind_sp, n_ind_tot))
+abundance_prop_species_5
+
+ggplot_REBENT_abundance_species <- abundance_prop_species_5 |> 
+  filter(phylum %in% c("Annelida", "Arthropoda", "Mollusca")) |>
+  mutate(species_grouped = paste(phylum, species, sep=": ")) |> 
+  ggplot() +
+  aes(x = phylum, y = abundance_prop, fill = species_grouped) +
+  geom_col() +
+  facet_grid(rows = vars(zone), cols = vars(tidal)) +
+  theme(legend.position = "bottom") +
+  guides(fill = guide_legend(ncol = 2)) +
+  scale_fill_manual(values = c("pink", "forestgreen", "lightblue", "gold1", "red", "blue", "purple", "green", "orange", "yellow", "gold4", "blue4", "coral", "grey", "royalblue", "pink3","green2", "orange3", "black"),
+                    guide = guide_legend(title = "Species (by Phylum)")) +
+  labs(title = "REBENT macrobenthic fauna: Species composition Loire 2020", 
+       x = NULL, 
+       y = "Abundance (%)",
+       fill = "Species")
+
+ggplot_REBENT_abundance_species
+
+ggsave(plot = ggplot_REBENT_abundance_species, "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_abundance_species_loire_2020_zones.jpg",height = 10, width = 8)
+```
+
+
+## Species richness (S)
+
+```{r}
+species_richness <- data_REBENT |> 
+  group_by(zone, tidal, species) |> 
+  summarise(count = sum(RESULTAT)) |> 
+  summarise(sp_rich = species_richness(taxon = species, count = count), .groups = "drop")
+
+ggplot_REBENT_sp_richness <- ggplot(species_richness) +
+  aes(x = tidal, y = sp_rich, color = zone) +
+  geom_point(size = 3) +
+  labs(title = "REBENT macrobenthic fauna - Species richness Loire 2020", 
+       x = NULL, y = "Species richness",
+       color = "Estuary")
+ggplot_REBENT_sp_richness
+ggsave(plot = ggplot_REBENT_sp_richness, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_species_richness_loire_2020_zones.jpg",
+       width = 15, height = 6, units = "cm")
+```
+
+
+## Shannon index (H')
+
+ni = Number of individuals for each species per estuary, tidal zone and year
+```{r}
+nb_ind_sp <- data_REBENT |> 
+  group_by(zone, tidal, species) |> 
+  summarise(n_ind_sp = sum(RESULTAT), .groups = "drop")
+```
+
+N = Total number of individuals per estuary, tidal zone and year
+```{r}
+nb_ind_tot <- data_REBENT |> 
+  group_by(zone, tidal) |> 
+  summarise(n_ind_tot = sum(RESULTAT), .groups = "drop")
+```
+
+pi = Percentage abundance for each species per estuary, tidal zone and year
+```{r}
+abundance_prop <- nb_ind_sp |> 
+  left_join(nb_ind_tot, by = c("zone", "tidal")) |> 
+  group_by(zone, tidal) |> 
+  mutate(abundance_prop = n_ind_sp / n_ind_tot) |> 
+  ungroup()
+```
+
+H' = Shannon-index
+```{r}
+shannon_index <- abundance_prop |> 
+  group_by(zone, tidal) |> 
+  summarise(shannon = - sum(abundance_prop * log2(abundance_prop)), .groups = "drop")
+```
+
+```{r}
+ggplot_shannon_index <- ggplot(shannon_index) +
+  aes(x = tidal, y = shannon, color = zone) +
+  geom_point(size = 3) +
+  labs(title = "REBENT macrobenthic fauna - Shannon index Loire 2020", 
+       x = NULL, y = "Shannon index",
+       color = "Estuary")
+ggplot_shannon_index
+ggsave(plot = ggplot_shannon_index, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_shannon_index_loire_2020_zones.jpg",
+       width = 15, height = 6, units = "cm")
+```
+
+
+## Abundance/Density
+
+### Number of individual per m2 at a given LIEU_MNEMONIQUE & DATE
+
+One line per species: nb of individuals
+```{r}
+data_benthos_ind_species_m2 <- data_REBENT |> 
+  # nb of sub-sample per LIEU_MNEMONIQUE & DATE & sampler_type
+  group_by(zone, LIEU_MNEMONIQUE, DATE, sampler_type, tidal) |> 
+  mutate(nb_samples_lieu_mnemonique_date = unique(mnemonique) |>  length()) |> 
+  # summarise nb of ind per species at a given LIEU_MNEMONIQUE & DATE & sampler_type
+  group_by(zone, LIEU_MNEMONIQUE, DATE, sampler_type, sampler_surface,
+           tidal, nb_samples_lieu_mnemonique_date, species) |> 
+  summarise(nb_ind_species_lieu_mnemonique_date = sum(RESULTAT)) |> 
+  # compute nb of in per species for the total surface of LIEU_MNEMONIQUE 
+  mutate(nb_ind_species_per_m2 = nb_ind_species_lieu_mnemonique_date / (sampler_surface * nb_samples_lieu_mnemonique_date)) |> 
+  ungroup()
+
+data_benthos_ind_species_m2
+```
+
+Yearly mean of individuals per surface (only one year here)
+```{r}
+data_benthos_ind_m2 <- data_benthos_ind_species_m2 |> 
+  group_by(zone, DATE, LIEU_MNEMONIQUE, tidal) |> 
+  summarise(nb_ind_per_m2 = sum(nb_ind_species_per_m2)) |> 
+  group_by(zone, tidal) |> 
+  summarise(mean_abundance_m2 = mean(nb_ind_per_m2)) |> 
+  ungroup()
+```
+
+
+```{r}
+ggplot_REBENT_density <- ggplot(data_benthos_ind_m2) +
+  aes(x = tidal, y = mean_abundance_m2, color = zone) +
+  geom_line(position = "dodge") +
+  geom_point(size = 3) +
+  labs(title = "REBENT macrobenthic fauna: Density Loire 2020", 
+       x = NULL, 
+       y = "Density (mean nb ind/m²)",
+       color = "Estuary")
+
+ggsave(plot = ggplot_REBENT_density,
+       "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_density_loire_2020_zones.jpg",
+       width = 17, height = 10, units = "cm")
+
+ggplot_REBENT_density
+```
+
+### Species richness per square metre
+
+```{r}
+# Number of species per sample
+data_n_species_by_sample <- data_benthos_ind_species_m2 |> 
+  group_by(zone, LIEU_MNEMONIQUE, DATE, tidal) |> 
+  summarise(n_species = n(), .groups = "drop")
+
+# Sample surface
+data_sample_surface <- data_benthos_ind_species_m2 |> 
+  distinct(zone, LIEU_MNEMONIQUE, DATE, sampler_type, sampler_surface, tidal, nb_samples_lieu_mnemonique_date) |> 
+  mutate(surface_sample = sampler_surface * nb_samples_lieu_mnemonique_date)
+
+# Compute species richness by m²
+data_species_richness <- left_join(data_n_species_by_sample, data_sample_surface) |> 
+  mutate(n_species_per_m2 = n_species / surface_sample)
+
+# Summarise per estuary and year
+data_species_richness_year <- data_species_richness |> 
+  group_by(zone, tidal) |> 
+  summarise(mean_year_n_species_per_m2 = mean(n_species_per_m2), 
+            sum_sample_surface = sum(surface_sample), .groups = "drop")
+```
+
+Impact of total surface sampled variability on estimated species richness:
+```{r}
+## Total surface sampled variability
+  ggplot_surface_variability <- ggplot(data = data_species_richness_year) +
+    aes(x = tidal, y = sum_sample_surface, color = zone) +
+    geom_point() + geom_line() +
+    labs(x = NULL, y = "Total surface sampled (m²)", 
+         title = "Rebent macrobenthic fauna: Total surface sampled variability Loire 2020")
+  ggplot_surface_variability
+  ggsave(plot = ggplot_surface_variability, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_surface_variability_loire_2020_zones.jpg",
+         width = 15, height = 6, units = "cm")
+
+  # ## Correlation between species richness and total surface sampled
+  # model_lm <- lm(data = data_species_richness_year, 
+  #    formula = mean_year_n_species_per_m2 ~ sum_sample_surface)
+  # summary(model_lm) 
+  
+  ggplot_surface_richness_correlation <- ggplot(data = data_species_richness_year) +
+    aes(x = sum_sample_surface, y = mean_year_n_species_per_m2, 
+        color = zone, shape = tidal) +
+    geom_point(size = 3) +
+    labs(x = "Total surface sampled", y = "Species richness",
+         title = "Correlation between yearly total surface sampled and species richness Loire 2020")
+  ggplot_surface_richness_correlation
+  ggsave(plot = ggplot_surface_richness_correlation, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_surface_richness_correlation_loire_2020_zones.jpg",
+           width = 15, height = 6, units = "cm")
+```
+
+Plot of species richness per m² per estuary and year:
+```{r}
+ggplot_species_richness_year <- ggplot(data_species_richness_year) +
+  aes(x = tidal, y = mean_year_n_species_per_m2, color = zone) +
+  geom_point() +
+  labs(title = "REBENT macrobenthic fauna - Species richness per square metre Loire 2020", 
+       x = NULL, y = "Mean number of species per m²",
+       color = "Estuary")
+ggplot_species_richness_year
+ggsave(plot = ggplot_species_richness_year, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_species_richness_squarem_loire_2020_zones.jpg",
+       width = 15, height = 6, units = "cm")
+```
+
+## Reference values
+
+```{r}
+ref_values <- tribble(
+  ~ ESTUARY, ~ tidal, ~ EUNIS, ~ AMBI_ref, ~ H_ref, ~ S_ref,
+  "Loire", "intertidal", "A2.31", 2.5, 2.9, 14,
+  "Loire", "subtidal", "A5.25", 1.0, 3.8, 33,
+)
+```
+
+## AZTI Marine Biotic Index (AMBI)
+
+Ecological groups of sensitivity to anthropic disturbance
+```{r}
+# List of ESTEEM species
+list_species_REBENT <- data_REBENT |> 
+  distinct(AphiaID, phylum, class, order, species) |> 
+  mutate(species = case_when(
+    species == "Nemertes" ~ "Nemertea",
+    TRUE ~ species))
+
+#  for benthos ecological groups
+List_Group_Taxon_AMBI <- left_join(
+  data.frame(readRDS(system.file("extdata", "azti.rds", package = "benthos"))), # DB Azti
+  as.data.frame(get_ambi(which = "NL")))  # Dutch DB
+
+
+# Joining species and AMBI group
+grp_taxon_ambi <- list_species_REBENT |> left_join(List_Group_Taxon_AMBI, by = c("species" = "TAXON"))
+  
+
+# Get percentage of species with AMBI ecological group
+percent_without_ambi_grp_taxon <- grp_taxon_ambi |> 
+  summarise(nb_without_ambi = sum(is.na(GROUP)),
+            nb_tot = n()) |> 
+  mutate(percent_without_ambi_grp_taxon = nb_without_ambi / nb_tot * 100)
+
+# Get list of species with no AMBI ecological group
+grp_taxon_ambi |> 
+  filter(is.na(GROUP)) |> 
+  distinct(phylum, class, order, species) |> 
+  distinct(species) |> arrange(species)
+```
+
+```{r}
+ambi_index <- data_REBENT |> 
+  mutate(species = case_when(
+    species == "Nemertes" ~ "Nemertea",
+    TRUE ~ species)) |> 
+  group_by(zone, tidal, species) |> 
+  summarise(count = sum(RESULTAT)) |> 
+  summarise(ambi = ambi(taxon = species, count = count), .groups = "drop")
+```
+
+```{r}
+ggplot_ambi_index <- ggplot(ambi_index) +
+  aes(x = tidal, y = ambi, color = zone) +
+  geom_point() +
+  labs(title = "REBENT macrobenthic fauna - AMBI Loire 2020", 
+       x = NULL, y = "AZTI Marine Biotic Index")
+ggplot_ambi_index
+ggsave(plot = ggplot_ambi_index, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_AMBI_index_loire_2020_zones.jpg",
+       width = 15, height = 6, units = "cm")
+```
+
+EQR AMBI
+```{r}
+EQR_ambi <- ambi_index |> 
+left_join(ref_values, by = c("tidal")) |> 
+  mutate(EQR_ambi = (ambi - 7)/(AMBI_ref - 7)) |> 
+  mutate(EQR_ambi = case_when(
+    EQR_ambi >= 1 ~ 1,
+    TRUE ~ EQR_ambi
+  ))
+
+ggplot_EQR_ambi_index <- ggplot(EQR_ambi) +
+  aes(x = tidal, y = EQR_ambi, color = zone) +
+  geom_point() +
+  geom_hline(yintercept = 0.2) +
+  geom_hline(yintercept = 0.4) +
+  geom_hline(yintercept = 0.6) +
+  geom_hline(yintercept = 0.8) +
+  annotate("text", x = 1.5, y = 0.9, label = "High", size = 4, color = "black") +
+  annotate("text", x = 1.5, y = 0.7, label = "Good", size = 4, color = "black") +
+  annotate("text", x = 1.5, y = 0.5, label = "Moderate", size = 4, color = "black") +
+  annotate("text", x = 1.5, y = 0.3, label = "Poor", size = 4, color = "black") +
+  annotate("text", x = 1.5, y = 0.1, label = "Bad", size = 4, color = "black") +
+  labs(title = "REBENT macrobenthic fauna - EQR AMBI Loire 2020", 
+       x = NULL, y = "EQR AZTI Marine Biotic Index") + 
+  ylim(0, 1)
+ggplot_EQR_ambi_index
+ggsave(plot = ggplot_EQR_ambi_index, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_EQR_AMBI_index_loire_2020_zones.jpg",
+       width = 15, height = 6, units = "cm")
+```
+
+
+## BEQI-FR
+
+
+
+```{r}
+BEQI <- species_richness |> 
+  full_join(shannon_index) |> 
+  full_join(ambi_index) |> 
+  left_join(ref_values, by = c("tidal")) |> 
+  mutate(EQR_ambi = (ambi - 7)/(AMBI_ref - 7),
+         EQR_H = shannon / H_ref,
+         EQR_S = sp_rich / S_ref,
+         BEQIFR = (EQR_ambi + EQR_H + EQR_S)/3) |> 
+  mutate(BEQIFR = case_when(
+    BEQIFR >= 1 ~ 1,
+    TRUE ~ BEQIFR
+  ))
+# BEQI |> View()
+```
+
+```{r}
+ggplot_BEQI_index <- ggplot(BEQI) +
+  aes(x = tidal, y = BEQIFR, color = zone, shape = zone) +
+  geom_point(size = 3) +
+  geom_hline(yintercept = 0.86) +
+  geom_hline(yintercept = 0.67) +
+  geom_hline(yintercept = 0.4) +
+  geom_hline(yintercept = 0.2) +
+  labs(title = "REBENT macrobenthic fauna - BEQI-FR Loire 2020", 
+       x = NULL, y = "Benthic Ecosystem Quality Index (BEQI-FR)",
+       color = "Estuary") +
+  annotate("text", x = 1.5, y = 0.92, label = "High", size = 4, color = "black") +
+  annotate("text", x = 1.5, y = 0.76, label = "Good", size = 4, color = "black") +
+  annotate("text", x = 1.5, y = 0.53, label = "Moderate", size = 4, color = "black")  + 
+  annotate("text", x = 1.5, y = 0.3, label = "Poor", size = 4, color = "black")  + 
+  annotate("text", x = 1.5, y = 0.1, label = "Bad", size = 4, color = "black")  + 
+  ylim(0, 1)
+
+ggplot_BEQI_index
+ggsave(plot = ggplot_BEQI_index, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_loire_2020_zones/ggplot_REBENT_BEQIFR_index_loire_2020_zones.jpg",
+       width = 15, height = 10, units = "cm")
+```

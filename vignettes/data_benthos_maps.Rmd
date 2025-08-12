@@ -1,0 +1,62 @@
+---
+title: "data_benthos_maps"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_benthos_maps}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+# Maps
+library(sf)
+library(maptiles)
+library(ggspatial)
+
+`%!in%` = Negate(`%in%`)
+```
+
+
+```{r}
+data_REBENT <- esteem.overview::data_benthos_REBENT_cleaned
+```
+
+# Gironde
+```{r}
+data_REBENT_Gironde <- data_REBENT |> 
+  filter(ESTUARY == "Gironde")
+
+ggmap_REBENT_gironde <- gg_map_parametre_data_benthos(data = data_REBENT_Gironde,
+                                                      estuaire = "Gironde")
+ggmap_REBENT_gironde
+ggsave(plot = ggmap_REBENT_gironde,
+       filename = "../inst/results/data_benthos/maps/ggmap_REBENT_gironde.jpg",
+       width = 10, height = 18, units = "cm")
+```
+
+# Loire
+```{r}
+data_REBENT_Loire <- data_REBENT |> 
+  filter(ESTUARY == "Loire")
+
+ggmap_REBENT_loire <- gg_map_parametre_data_benthos(data = data_REBENT_Loire,
+                                                    estuaire = "Loire")
+ggmap_REBENT_loire
+
+ggsave(plot = ggmap_REBENT_loire, 
+       filename = "../inst/results/data_benthos/maps/ggmap_REBENT_loire.jpg",
+       width = 15, height = 10, units = "cm")
+```
+
+# Seine
+```{r}
+data_REBENT_Seine <- data_REBENT |> 
+  filter(ESTUARY == "Seine")
+
+ggmap_REBENT_seine <- gg_map_parametre_data_benthos(data = data_REBENT_Seine,
+                                                    estuaire = "Seine")
+ggmap_REBENT_seine
+ggsave(plot = ggmap_REBENT_seine, filename = "../inst/results/data_benthos/maps/ggmap_REBENT_seine.jpg")
+
+```
+
