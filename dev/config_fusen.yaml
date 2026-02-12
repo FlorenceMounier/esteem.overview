@@ -40,6 +40,21 @@ flat_data_contamination.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
+flat_fct_openstreet_base_map.Rmd:
+  path: dev/flat_fct_openstreet_base_map.Rmd
+  state: active
+  R: R/fct_openstreet_base_map.R
+  tests: tests/testthat/test-fct_openstreet_base_map.R
+  vignettes: []
+  inflate:
+    flat_file: dev/flat_fct_openstreet_base_map.Rmd
+    vignette_name: .na
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
 flat_utils.Rmd:
   path: dev/flat_utils.Rmd
   state: active
