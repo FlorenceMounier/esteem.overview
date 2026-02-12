@@ -83,7 +83,7 @@ fct_openstreet_base_map <- function(data){
     # Filtrer pour être sûr qu’elles sont dans notre bbox
   villes_points <- st_intersection(villes_points, st_as_sfc(st_bbox(points_sf)))
     # Requête pour les côtes (water = sea)
-  cote_osm <- opq(bbox = bbox_vector) %>%
+  cote_osm <- opq(bbox = bbox_vector, timeout = 300) %>%
     add_osm_feature(key = "natural", value = "coastline") %>%
     osmdata_sf()
     # Les côtes sont dans osm_lines
