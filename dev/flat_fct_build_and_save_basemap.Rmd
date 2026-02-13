@@ -300,10 +300,12 @@ basemap <- load_estuary_basemap(estuary_name = "Loire" )
 #' @importFrom ggspatial annotation_scale
 #' @importFrom ggspatial annotation_north_arrow
 #' @importFrom ggspatial north_arrow_orienteering
+#' @importFrom ggrepel geom_text_repel
 #' @importFrom tidyterra geom_spatraster_rgb
 #' @importFrom rlang ensym
 #' @importFrom rlang sym
 #' @importFrom sf st_as_sf
+#' @importFrom sf st_coordinates
 #' 
 #' @return ggplot object
 #' @export
@@ -360,13 +362,30 @@ if (length(mapping) > 0) {
   # 5. Ajouter villes si présentes
   # -------------------------
   if (!is.null(basemap$villes)) {
+    # Points des villes
     p <- p + ggplot2::geom_sf(
       data = basemap$villes,
       shape = 21,
-      fill = "white",
+      fill = "black",
       color = "black",
       size = 3
     )
+    
+     # Convertir coordonnées pour labels
+  villes_coords <- cbind(
+    basemap$villes,
+    sf::st_coordinates(basemap$villes)
+  )
+  
+    # Labels des villes
+  p <- p + ggrepel::geom_text_repel(
+    data = villes_coords,
+    aes(x = X, y = Y, label = name),
+    min.segment.length = 0,
+    nudge_y = 0.01,            # décale légèrement le texte
+    size = 3,
+    color = "black"
+  )
   }
 
   # -------------------------
@@ -374,39 +393,33 @@ if (length(mapping) > 0) {
   # -------------------------
 
 # Ligne horizontale
-if (!is.null(basemap$halin_limit_lat)) {
-  hline <- sf::st_as_sf(
-    data.frame(xmin = basemap$xlim[1],
-               xmax = basemap$xlim[2],
-               y = basemap$halin_limit_lat),
-    coords = c("xmin","y"), crs = 4326
-  )
-  p <- p + geom_segment(
+if (!is.null(basemap$halin_limit_lat) && !is.na(basemap$halin_limit_lat)) {
+  p <- p + ggplot2::geom_segment(
     data = data.frame(
       x = basemap$xlim[1],
       xend = basemap$xlim[2],
       y = basemap$halin_limit_lat,
       yend = basemap$halin_limit_lat
     ),
-    aes(x = x, xend = xend, y = y, yend = yend),
+    mapping = aes(x = x, xend = xend, y = y, yend = yend),
     linetype = "solid",
-    color = "black",
+    color = "red",
     linewidth = 1.2
   )
 }
 
 # Ligne verticale
-if (!is.null(basemap$halin_limit_lon)) {
-  p <- p + geom_segment(
+if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
+  p <- p + ggplot2::geom_segment(
     data = data.frame(
       x = basemap$halin_limit_lon,
       xend = basemap$halin_limit_lon,
       y = basemap$ylim[1],
       yend = basemap$ylim[2]
     ),
-    aes(x = x, xend = xend, y = y, yend = yend),
+    mapping = aes(x = x, xend = xend, y = y, yend = yend),
     linetype = "solid",
-    color = "black",
+    color = "blue",
     linewidth = 1.2
   )
 }
@@ -426,7 +439,7 @@ if (!is.null(basemap$halin_limit_lon)) {
     )
 
   # -------------------------
-  # 8. Echelle + flèche nord
+  # 8. Echelle + flèche nord + titre
   # -------------------------
   p <- p +
   annotation_scale(
@@ -441,7 +454,8 @@ if (!is.null(basemap$halin_limit_lon)) {
     style = north_arrow_orienteering(),
     height = unit(0.5, "cm"),   # hauteur totale de la flèche
     width  = unit(0.5, "cm")  # largeur
-  )
+  ) +
+  labs(title = paste0(estuary_name, " estuary"))
     
     
   return(p)

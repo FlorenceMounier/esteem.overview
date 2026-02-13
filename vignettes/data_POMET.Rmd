@@ -2,10 +2,11 @@
 title: "data_POMET"
 output: html_document
 date: "2026-02-12"
+fig.show='hold
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.show='hold')
 
 library(esteem.overview)
 library(tidyverse)
@@ -29,45 +30,79 @@ col_gradient <- brewer.pal(n = 8, name = "RdYlGn")
 
 # Salinity 
 
+## Gironde
 ```{r}
 plot_estuary_map(
   data = data_POMET |> filter(estuary == "Gironde"),
-  estuary_name = "Gironde", colour_var = salinite
+  estuary_name = "Gironde", colour_var = haline_zone
 )
-
-ggplot(data = data_POMET |> filter(estuary == "Gironde")) +
-  aes(x = salinite, fill = haline_zone) +
-  labs(title = "Gironde salinity distribution by zone") +
-  geom_boxplot() +
-  coord_flip()
 ```
 
 ```{r}
+ggplot(data = data_POMET |> filter(estuary == "Gironde")) +
+  aes(x = salinite, fill = haline_zone) +
+  geom_boxplot() +
+  geom_vline(xintercept = 18, linewidth = 2) +
+  theme(legend.position = "none") +
+  coord_flip()
+```
+
+## Loire
+```{r}
 plot_estuary_map(
   data = data_POMET |> filter(estuary == "Loire"),
-  estuary_name = "Loire", colour_var = salinite
+  estuary_name = "Loire", colour_var = haline_zone
 )
+```
 
+```{r}
 ggplot(data = data_POMET |> filter(estuary == "Loire")) +
   aes(x = salinite, fill = haline_zone) +
   labs(title = "Loire salinity distribution by zone") +
   geom_boxplot() +
+  geom_vline(xintercept = 18, linewidth = 2) +
   coord_flip()
 ```
 
-
+## Seine
 ```{r}
 plot_estuary_map(
   data = data_POMET |> filter(estuary == "Seine"),
-  estuary_name = "Seine", colour_var = salinite
+  estuary_name = "Seine", colour_var = haline_zone
 )
+```
 
+```{r}
 ggplot(data = data_POMET |> filter(estuary == "Seine")) +
   aes(x = salinite, fill = haline_zone) +
   labs(title = "Seine salinity distribution by zone") +
   geom_boxplot() +
+  geom_vline(xintercept = 18, linewidth = 2) +
   coord_flip()
 ```
+
+# Evolution temporelle en zone mesohaline
+
+```{r}
+data_mean_salinity <- data_POMET |>
+  filter(haline_zone == "mesohalin") |>
+  group_by(estuary, annee, saison) |>
+  summarise(mean_salinity = mean(salinite, na.rm = TRUE))
+ggplot(data = data_mean_salinity) +
+  aes(x = annee, y = mean_salinity) +
+  labs(title = "Salinity time evolution in mesohalin zone") +
+  geom_col(position = "dodge") +
+  facet_grid(rows = vars(saison), cols = vars(estuary))
+
+ggplot(data = data_POMET |>
+  filter(haline_zone == "mesohalin")) +
+  aes(x = annee, y = salinite) +
+  labs(title = "Salinity time evolution in mesohalin zone") +
+  geom_point() +
+  facet_grid(rows = vars(saison), cols = vars(estuary)) +
+  geom_smooth(method = "gam", formula = y ~ s(x, k = 5), se = TRUE)
+```
+
 
 # Fish size classes
 
@@ -344,20 +379,6 @@ mapview(data_POMET_density_seabass_seine,
         col = "white", col.regions = col_gradient,
         alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
         grid = FALSE)
-```
-
-
-
-```{r}
-data_mean_salinity <- data_POMET |>
-  filter(haline_zone == "mesohalin") |>
-  group_by(estuary, annee, saison) |>
-  summarise(mean_salinity = mean(salinite, na.rm = TRUE))
-ggplot(data = data_mean_salinity) +
-  aes(x = annee, y = mean_salinity) +
-  labs(title = "Salinity time evolution in mesohalin zone") +
-  geom_col(position = "dodge") +
-  facet_grid(rows = vars(saison), cols = vars(estuary))
 ```
 
 

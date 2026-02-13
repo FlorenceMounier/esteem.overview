@@ -23,11 +23,13 @@ fct_build_and_save_basemap(
 
 fct_build_and_save_basemap(
   data = data_POMET |> filter(estuary == "Loire"),
-  estuary_name = "Loire"
+  estuary_name = "Loire",
+  villes_selection = c("Saint-Nazaire", "Cordemais")
 )
 
 fct_build_and_save_basemap(
   data = data_POMET |> filter(estuary == "Seine"),
-  estuary_name = "Seine"
+  estuary_name = "Seine",
+  villes_selection = c("Le Havre", "Honfleur", "Tancarville")
 )
 
