@@ -294,6 +294,17 @@ basemap <- load_estuary_basemap(estuary_name = "Loire" )
 #' @param size_var Optional variable in `data` for point size
 #' @param package Package name where basemap is stored (default: "esteem.overview")
 #'
+#'
+#' @import dplyr
+#' @import ggplot2
+#' @importFrom ggspatial annotation_scale
+#' @importFrom ggspatial annotation_north_arrow
+#' @importFrom ggspatial north_arrow_orienteering
+#' @importFrom tidyterra geom_spatraster_rgb
+#' @importFrom rlang ensym
+#' @importFrom rlang sym
+#' @importFrom sf st_as_sf
+#' 
 #' @return ggplot object
 #' @export
 plot_estuary_map <- function(data,

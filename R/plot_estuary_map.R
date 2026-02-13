@@ -9,6 +9,17 @@
 #' @param size_var Optional variable in `data` for point size
 #' @param package Package name where basemap is stored (default: "esteem.overview")
 #'
+#'
+#' @import dplyr
+#' @import ggplot2
+#' @importFrom ggspatial annotation_scale
+#' @importFrom ggspatial annotation_north_arrow
+#' @importFrom ggspatial north_arrow_orienteering
+#' @importFrom tidyterra geom_spatraster_rgb
+#' @importFrom rlang ensym
+#' @importFrom rlang sym
+#' @importFrom sf st_as_sf
+#' 
 #' @return ggplot object
 #' @export
 #' @examples
@@ -99,8 +110,9 @@ if (!is.null(basemap$halin_limit_lat)) {
       yend = basemap$halin_limit_lat
     ),
     aes(x = x, xend = xend, y = y, yend = yend),
-    linetype = "dashed",
-    color = "red"
+    linetype = "solid",
+    color = "black",
+    linewidth = 1.2
   )
 }
 
@@ -114,8 +126,9 @@ if (!is.null(basemap$halin_limit_lon)) {
       yend = basemap$ylim[2]
     ),
     aes(x = x, xend = xend, y = y, yend = yend),
-    linetype = "dashed",
-    color = "blue"
+    linetype = "solid",
+    color = "black",
+    linewidth = 1.2
   )
 }
 
