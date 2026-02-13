@@ -1,5 +1,5 @@
 ---
-title: "flat_fct_build_and_save_basemap.Rmd empty"
+title: "flat_maps.Rmd"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -479,7 +479,7 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
 ```{r development-inflate, eval=FALSE}
 # Run but keep eval=FALSE to avoid infinite loop
 # Execute in the console directly
-fusen::inflate(flat_file = "dev/flat_fct_build_and_save_basemap.Rmd", 
+fusen::inflate(flat_file = "dev/flat_maps.Rmd", 
                vignette_name = NULL, check = FALSE)
 ```
 

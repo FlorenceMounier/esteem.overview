@@ -1,8 +1,6 @@
 ---
 title: "data_POMET"
 output: html_document
-date: "2026-02-12"
-fig.show='hold
 ---
 
 ```{r setup, include=FALSE}
@@ -28,60 +26,7 @@ library(RColorBrewer)
 col_gradient <- brewer.pal(n = 8, name = "RdYlGn")
 ```
 
-# Salinity 
-
-## Gironde
-```{r}
-plot_estuary_map(
-  data = data_POMET |> filter(estuary == "Gironde"),
-  estuary_name = "Gironde", colour_var = haline_zone
-)
-```
-
-```{r}
-ggplot(data = data_POMET |> filter(estuary == "Gironde")) +
-  aes(x = salinite, fill = haline_zone) +
-  geom_boxplot() +
-  geom_vline(xintercept = 18, linewidth = 2) +
-  theme(legend.position = "none") +
-  coord_flip()
-```
-
-## Loire
-```{r}
-plot_estuary_map(
-  data = data_POMET |> filter(estuary == "Loire"),
-  estuary_name = "Loire", colour_var = haline_zone
-)
-```
-
-```{r}
-ggplot(data = data_POMET |> filter(estuary == "Loire")) +
-  aes(x = salinite, fill = haline_zone) +
-  labs(title = "Loire salinity distribution by zone") +
-  geom_boxplot() +
-  geom_vline(xintercept = 18, linewidth = 2) +
-  coord_flip()
-```
-
-## Seine
-```{r}
-plot_estuary_map(
-  data = data_POMET |> filter(estuary == "Seine"),
-  estuary_name = "Seine", colour_var = haline_zone
-)
-```
-
-```{r}
-ggplot(data = data_POMET |> filter(estuary == "Seine")) +
-  aes(x = salinite, fill = haline_zone) +
-  labs(title = "Seine salinity distribution by zone") +
-  geom_boxplot() +
-  geom_vline(xintercept = 18, linewidth = 2) +
-  coord_flip()
-```
-
-# Evolution temporelle en zone mesohaline
+# Salinity - Evolution temporelle en zone mesohaline
 
 ```{r}
 data_mean_salinity <- data_POMET |>
@@ -360,25 +305,25 @@ data_POMET_density_seabass <- data_POMET_density |>
   filter(name == "Dicentrarchus labrax")
 
 data_POMET_density_seabass_gironde <- data_POMET_density_seabass |> filter(estuary == "Gironde")
-mapview(data_POMET_density_seabass_gironde,
-        xcol = "pos_long_dd", ycol = "pos_lat_dd", zcol = "log_density",
-        col = "white", col.regions = col_gradient,
-        alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
-        grid = FALSE)
+# mapview(data_POMET_density_seabass_gironde,
+#         xcol = "pos_long_dd", ycol = "pos_lat_dd", zcol = "log_density",
+#         col = "white", col.regions = col_gradient,
+#         alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
+#         grid = FALSE)
 
 data_POMET_density_seabass_loire <- data_POMET_density_seabass |> filter(estuary == "Loire")
-mapview(data_POMET_density_seabass_loire,
-        xcol = "pos_long_dd", ycol = "pos_lat_dd", zcol = "density",
-        col = "white", col.regions = col_gradient,
-        alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
-        grid = FALSE)
+# mapview(data_POMET_density_seabass_loire,
+#         xcol = "pos_long_dd", ycol = "pos_lat_dd", zcol = "density",
+#         col = "white", col.regions = col_gradient,
+#         alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
+#         grid = FALSE)
 
 data_POMET_density_seabass_seine <- data_POMET_density_seabass |> filter(estuary == "Seine")
-mapview(data_POMET_density_seabass_seine,
-        xcol = "pos_long_dd", ycol = "pos_lat_dd", zcol = "log_density",
-        col = "white", col.regions = col_gradient,
-        alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
-        grid = FALSE)
+# mapview(data_POMET_density_seabass_seine,
+#         xcol = "pos_long_dd", ycol = "pos_lat_dd", zcol = "log_density",
+#         col = "white", col.regions = col_gradient,
+#         alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
+#         grid = FALSE)
 ```
 
 

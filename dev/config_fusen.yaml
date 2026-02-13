@@ -40,8 +40,8 @@ flat_data_contamination.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
-flat_fct_build_and_save_basemap.Rmd:
-  path: dev/flat_fct_build_and_save_basemap.Rmd
+flat_maps.Rmd:
+  path: dev/flat_maps.Rmd
   state: active
   R:
   - R/fct_build_and_save_basemap.R
@@ -50,7 +50,7 @@ flat_fct_build_and_save_basemap.Rmd:
   tests: []
   vignettes: []
   inflate:
-    flat_file: dev/flat_fct_build_and_save_basemap.Rmd
+    flat_file: dev/flat_maps.Rmd
     vignette_name: ~
     open_vignette: true
     check: false
