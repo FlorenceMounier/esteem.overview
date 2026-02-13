@@ -44,7 +44,31 @@ test_that("ggplot2_colors works", {
 })
 ```
   
+# make_points_sf
 
+  
+```{r function-make_points_sf}
+#' Make points_sf from "pos_long_dd" & "pos_lat_dd" in a dataset
+#' 
+#' @noRd
+make_points_sf <- function(data) {
+  data |>
+    dplyr::filter(!is.na(pos_lat_dd) & !is.na(pos_long_dd)) |>
+    sf::st_as_sf(
+      coords = c("pos_long_dd", "pos_lat_dd"),
+      crs = 4326,
+      remove = FALSE
+    )
+}
+```
+  
+```{r example-make_points_sf}
+```
+  
+```{r tests-make_points_sf}
+```
+  
+  
 
 ```{r development-inflate, eval=FALSE}
 # Run but keep eval=FALSE to avoid infinite loop

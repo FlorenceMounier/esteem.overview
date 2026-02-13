@@ -1,22 +1,33 @@
+library(esteem.overview)
+
+# ---------------------------------------------------------------------------
+# Halin limits by estuary
+
+halin_table <- tibble::tibble(
+  estuary = c("Gironde", "Loire", "Seine"),
+  halin_limit_lat = c(45.4, NA, NA),
+  halin_limit_lon = c(NA, -2.0, 0.3)
+)
+
+usethis::use_data(halin_table)
+
+
 # ---------------------------------------------------------------------------
 # Base OpenStreetMaps by estuary
 
-library(esteem.overview)
-library(tidyverse)
-library(sf)
-library(osmdata)
-library(maptiles)
+fct_build_and_save_basemap(
+  data = data_POMET |> filter(estuary == "Gironde"),
+  estuary_name = "Gironde",
+  villes_selection = c("Royan", "Pauillac", "Saint-Estèphe", "Blaye", "Saint-Christoly-Médoc")
+)
 
-# Restart R before each code line to clean the cache and run the options function
-# options(osmdata.overpass_url = "https://overpass-api.de/api/interpreter")
+fct_build_and_save_basemap(
+  data = data_POMET |> filter(estuary == "Loire"),
+  estuary_name = "Loire"
+)
 
-openstreet_base_map_gironde <- fct_openstreet_base_map(data = data_POMET |> filter(estuary == "Gironde"))
-openstreet_base_map_loire <- fct_openstreet_base_map(data = data_POMET |> filter(estuary == "Loire"))
-openstreet_base_map_seine <- fct_openstreet_base_map(data = data_POMET |> filter(estuary == "Seine"))
+fct_build_and_save_basemap(
+  data = data_POMET |> filter(estuary == "Seine"),
+  estuary_name = "Seine"
+)
 
-#------------------------------------------------------------------------------
-# Save data.rda
-
-usethis::use_data(openstreet_base_map_gironde, overwrite = TRUE)
-usethis::use_data(openstreet_base_map_loire, overwrite = TRUE)
-usethis::use_data(openstreet_base_map_seine, overwrite = TRUE)

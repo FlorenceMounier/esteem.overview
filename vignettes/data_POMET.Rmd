@@ -27,6 +27,48 @@ library(RColorBrewer)
 col_gradient <- brewer.pal(n = 8, name = "RdYlGn")
 ```
 
+# Salinity 
+
+```{r}
+plot_estuary_map(
+  data = data_POMET |> filter(estuary == "Gironde"),
+  estuary_name = "Gironde", colour_var = salinite
+)
+
+ggplot(data = data_POMET |> filter(estuary == "Gironde")) +
+  aes(x = salinite, fill = haline_zone) +
+  labs(title = "Gironde salinity distribution by zone") +
+  geom_boxplot() +
+  coord_flip()
+```
+
+```{r}
+plot_estuary_map(
+  data = data_POMET |> filter(estuary == "Loire"),
+  estuary_name = "Loire", colour_var = salinite
+)
+
+ggplot(data = data_POMET |> filter(estuary == "Loire")) +
+  aes(x = salinite, fill = haline_zone) +
+  labs(title = "Loire salinity distribution by zone") +
+  geom_boxplot() +
+  coord_flip()
+```
+
+
+```{r}
+plot_estuary_map(
+  data = data_POMET |> filter(estuary == "Seine"),
+  estuary_name = "Seine", colour_var = salinite
+)
+
+ggplot(data = data_POMET |> filter(estuary == "Seine")) +
+  aes(x = salinite, fill = haline_zone) +
+  labs(title = "Seine salinity distribution by zone") +
+  geom_boxplot() +
+  coord_flip()
+```
+
 # Fish size classes
 
 ## Subdataset of marine indicators in autumn
@@ -306,29 +348,6 @@ mapview(data_POMET_density_seabass_seine,
 
 
 
-# Salinity
-
-```{r}
-ggplot(data = data_POMET |> filter(estuary == "Gironde")) +
-  aes(x = salinite, fill = haline_zone) +
-  labs(title = "Gironde salinity distribution by zone") +
-  geom_boxplot() +
-  coord_flip()
-
-ggplot(data = data_POMET |> filter(estuary == "Loire")) +
-  aes(x = salinite, fill = haline_zone) +
-  labs(title = "Loire salinity distribution by zone") +
-  geom_boxplot() +
-  coord_flip()
-
-ggplot(data = data_POMET |> filter(estuary == "Seine")) +
-  aes(x = salinite, fill = haline_zone) +
-  labs(title = "Seine salinity distribution by zone") +
-  geom_boxplot() +
-  coord_flip()
-```
-
-
 ```{r}
 data_mean_salinity <- data_POMET |>
   filter(haline_zone == "mesohalin") |>
@@ -342,90 +361,7 @@ ggplot(data = data_mean_salinity) +
 ```
 
 
-# Salinity Maps
 
-```{r}
-fct_openstreet_map_salinity <- function(data,
-                                        openstreet_map,
-                                        halin_limit_lat = NULL,
-                                        halin_limit_lon = NULL,
-                                        title = NULL) {
-
-  carte <- ggplot() +
-    # fond OSM
-    tidyterra::geom_spatraster_rgb(data = openstreet_map$osm_raster) +
-    # points
-    geom_sf(data = openstreet_map$points_sf, aes(color = haline_zone),
-            size = 2, alpha = 0.8) +
-    # cities
-    geom_sf(data = openstreet_map$villes_cotiere, color = "black", size = 2) +
-    geom_text_repel(data = openstreet_map$villes_cotiere,
-                    aes(x = st_coordinates(geometry)[,1],
-                        y = st_coordinates(geometry)[,2],
-                        label = name),
-                    size = 3) +
-    scale_fill_identity() +                       # pour raster OSM
-    coord_sf(xlim = openstreet_map$xlim,
-             ylim = openstreet_map$ylim, expand = FALSE) +
-    annotation_scale(
-      location = "bl",        # "bl" = bas gauche, "br" = bas droite, etc.
-      width_hint = 0.3,       # fraction de la largeur de la carte
-      line_col = "black",
-      text_col = "black",
-      height = unit(0.3, "cm")
-    ) +
-    annotation_north_arrow(
-      location = "bl",          # bas gauche
-      which_north = "true",     # nord vrai
-      pad_x = unit(0.5, "cm"),
-      pad_y = unit(0.5, "cm"),
-      style = north_arrow_minimal()
-    ) +
-    theme_minimal() +
-    labs(title = title,
-         x = NULL, y = NULL,
-         caption = "© OpenStreetMap contributors")
-
-  # conditional salinity limit
-  # Ligne horizontale si halin_limit_lat défini
-  if (!is.null(halin_limit_lat)) {
-    carte <- carte + geom_hline(yintercept = halin_limit_lat,
-                        color = "black", linewidth = 1.5)
-  }
-
-  # Ligne verticale si halin_limit_lon défini
-  if (!is.null(halin_limit_lon)) {
-    carte <- carte + geom_vline(xintercept = halin_limit_lon,
-                        color = "black", linewidth = 1.5)
-  }
-
-  print(carte)
-}
-```
-
-
-```{r}
-fct_openstreet_map_salinity(
-  data = data_POMET |> filter(estuary == "Gironde"),
-  openstreet_map = openstreet_base_map_gironde,
-  title = "Gironde estuary",
-  halin_limit_lat = 45.4
-)
-
-fct_openstreet_map_salinity(
-  data = data_POMET |> filter(estuary == "Loire"),
-  openstreet_map = openstreet_base_map_loire,
-  title = "Loire estuary",
-  halin_limit_lon = -2.0
-)
-
-fct_openstreet_map_salinity(
-  data = data_POMET |> filter(estuary == "Seine"),
-  openstreet_map = openstreet_base_map_seine,
-  title = "Seine estuary",
-  halin_limit_lon = 0.3
-)
-```
 
 
 

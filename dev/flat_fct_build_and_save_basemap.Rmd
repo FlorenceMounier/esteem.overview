@@ -1,0 +1,460 @@
+---
+title: "flat_fct_build_and_save_basemap.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+
+# fct_build_and_save_basemap
+
+```{r development-fct_build_and_save_basemap}
+# Prepare the code of your function here
+```
+
+```{r function-fct_build_and_save_basemap}
+#' Create and save OpenStreetMap base map for an estuary
+#'
+#' @param data Data frame containing pos_lat_dd and pos_long_dd
+#' @param estuary_name Character name of estuary (used for folder name)
+#' @param villes_selection Character vector of city names to keep (optional)
+#' @param path Base path for saving (default: inst/extdata)
+#'
+#' @return A list with map components (also saved on disk)
+#'
+#' @import dplyr
+#' @importFrom sf st_as_sf st_bbox st_polygon st_sf st_sfc
+#' @importFrom sf st_intersection st_distance st_write
+#' @importFrom osmdata opq add_osm_feature osmdata_sf
+#' @importFrom maptiles get_tiles
+#' @importFrom terra writeRaster
+#' @export
+fct_build_and_save_basemap <- function(data,
+                                       estuary_name,
+                                       villes_selection = NULL,
+                                       path = "inst/extdata") {
+
+  # -------------------------
+  # 0. Charger halin_table du package
+  # -------------------------
+  if (!exists("halin_table")) {
+    stop("halin_table not found in the package")
+  }
+
+  halin_values <- halin_table[halin_table$estuary == estuary_name, ]
+  halin_limit_lat <- halin_values$halin_limit_lat
+  halin_limit_lon <- halin_values$halin_limit_lon
+  
+  # -------------------------
+  # 1. Convert to sf
+  # -------------------------
+  points_sf <- data |>
+    dplyr::filter(!is.na(pos_lat_dd) & !is.na(pos_long_dd)) |>
+    sf::st_as_sf(
+      coords = c("pos_long_dd", "pos_lat_dd"),
+      crs = 4326,
+      remove = FALSE
+    )
+
+  # -------------------------
+  # 2. Bounding box + buffer
+  # -------------------------
+  bbox <- sf::st_bbox(points_sf)
+  buffer_deg <- 0.02
+
+  xlim <- c(bbox["xmin"] - buffer_deg,
+            bbox["xmax"] + buffer_deg)
+
+  ylim <- c(bbox["ymin"] - buffer_deg,
+            bbox["ymax"] + buffer_deg)
+
+  coords <- matrix(
+    c(
+      xlim[1], ylim[1],
+      xlim[1], ylim[2],
+      xlim[2], ylim[2],
+      xlim[2], ylim[1],
+      xlim[1], ylim[1]
+    ),
+    ncol = 2,
+    byrow = TRUE
+  )
+
+  poly <- sf::st_polygon(list(coords))
+  bbox_sf <- sf::st_sf(
+    geometry = sf::st_sfc(poly, crs = 4326)
+  )
+
+  bbox_vector <- c(
+    xmin = xlim[1],
+    ymin = ylim[1],
+    xmax = xlim[2],
+    ymax = ylim[2]
+  )
+
+  # -------------------------
+  # 3. OSM cities
+  # -------------------------
+  villes_osm <- osmdata::opq(bbox = bbox_vector) |>
+    osmdata::add_osm_feature(
+      key = "place",
+      value = c("city", "town", "village")
+    ) |>
+    osmdata::osmdata_sf()
+
+  villes_points <- villes_osm$osm_points
+
+  if (!is.null(villes_points) && nrow(villes_points) > 0) {
+
+    villes_points <- sf::st_intersection(
+      villes_points,
+      sf::st_as_sfc(sf::st_bbox(points_sf))
+    )
+
+    # -------------------------
+    #  Filtrage par noms fournis
+    # -------------------------
+    if (!is.null(villes_selection)) {
+
+      villes_points <- villes_points |>
+        dplyr::filter(name %in% villes_selection)
+
+      # message si certaines villes absentes
+      villes_manquantes <- setdiff(villes_selection,
+                                   unique(villes_points$name))
+
+      if (length(villes_manquantes) > 0) {
+        warning("These cities were not found in OSM data: ",
+                paste(villes_manquantes, collapse = ", "))
+      }
+    }
+
+    villes_finales <- villes_points
+
+  } else {
+    villes_finales <- NULL
+  }
+
+  # -------------------------
+  # 4. Download OSM raster
+  # -------------------------
+  osm_raster <- maptiles::get_tiles(
+    bbox_sf,
+    provider = "OpenStreetMap",
+    crop = TRUE
+  )
+
+  # matérialisation pour éviter external pointer
+  osm_raster <- terra::writeRaster(
+    osm_raster,
+    filename = tempfile(fileext = ".tif"),
+    overwrite = TRUE
+  )
+
+  # -------------------------
+  # 5. Save to package
+  # -------------------------
+  dir_estuary <- file.path(path, estuary_name)
+  dir.create(dir_estuary,
+             recursive = TRUE,
+             showWarnings = FALSE)
+
+  terra::writeRaster(
+    osm_raster,
+    filename = file.path(dir_estuary, "osm.tif"),
+    overwrite = TRUE
+  )
+
+  if (!is.null(villes_finales)) {
+    sf::st_write(
+      villes_finales,
+      file.path(dir_estuary, "villes.gpkg"),
+      delete_dsn = TRUE,
+      quiet = TRUE
+    )
+  }
+
+  saveRDS(
+    list(xlim = xlim, ylim = ylim,
+         halin_limit_lat = halin_limit_lat,
+         halin_limit_lon = halin_limit_lon),
+    file.path(dir_estuary, "bbox.rds")
+  )
+
+  # -------------------------
+  # 6. Return object
+  # -------------------------
+  return(list(
+    points_sf = points_sf,
+    osm_raster = osm_raster,
+    villes = villes_finales,
+    xlim = xlim,
+    ylim = ylim,
+    halin_limit_lat = halin_limit_lat,
+    halin_limit_lon = halin_limit_lon
+  ))
+}
+```
+
+  
+```{r example-fct_build_and_save_basemap}
+# fct_build_and_save_basemap(
+#   data = data_loire,
+#   estuary_name = "loire",
+#   villes_selection = c("Saint-Nazaire",
+#                        "Pornic",
+#                        "Le Croisic")
+# )
+```
+    
+# load_estuary_basemap
+
+```{r function-load_estuary_basemap}
+#' Load estuary basemap (OpenStreetMap)
+#' 
+#' @param estuary_name Character name of estuary
+#' @param package Name of package (default = "esteem.overview")
+#'
+#' @return List containing osm_raster, villes, xlim, ylim
+#' 
+#' @export
+load_estuary_basemap <- function(estuary_name,
+                                 package = "esteem.overview") {
+
+  base_path <- system.file("extdata",
+                           estuary_name,
+                           package = package)
+
+  if (base_path == "") {
+    stop("Estuary not found in package extdata/")
+  }
+
+  # Raster
+  osm_raster_path <- file.path(base_path, "osm.tif")
+
+  if (!file.exists(osm_raster_path)) {
+    stop("osm.tif not found for this estuary.")
+  }
+
+  osm_raster <- terra::rast(osm_raster_path)
+
+  # Cities
+  villes_path <- file.path(base_path, "villes.gpkg")
+
+  if (file.exists(villes_path)) {
+    villes <- sf::st_read(villes_path, quiet = TRUE)
+  } else {
+    villes <- NULL
+  }
+
+  # Bbox
+  bbox_path <- file.path(base_path, "bbox.rds")
+
+  if (!file.exists(bbox_path)) {
+    stop("bbox.rds not found for this estuary.")
+  }
+
+  bbox <- readRDS(bbox_path)
+
+  return(list(
+    osm_raster = osm_raster,
+    villes = villes,
+    xlim = bbox$xlim,
+    ylim = bbox$ylim,
+    halin_limit_lat = bbox$halin_limit_lat,
+    halin_limit_lon = bbox$halin_limit_lon
+  ))
+}
+```
+  
+```{r example-load_estuary_basemap}
+basemap <- load_estuary_basemap(estuary_name = "Loire" )
+# 
+# ggplot() +
+#   tidyterra::geom_spatraster_rgb(data = basemap$osm_raster) +
+#   geom_sf(data = basemap$villes) +
+#   coord_sf(xlim = basemap$xlim,
+#            ylim = basemap$ylim,
+#            expand = FALSE)
+```
+
+# plot_estuary_map
+
+```{r function-plot_estuary_map}
+#' Plot estuary map with points, optional variable mapping and optional horizontal/vertical lines
+#'
+#' @param data Data frame containing pos_lat_dd and pos_long_dd
+#' @param estuary_name Character name of the estuary
+#' @param colour_var Optional variable in `data` for point colour
+#' @param fill_var Optional variable in `data` for point fill (shape 21)
+#' @param size_var Optional variable in `data` for point size
+#' @param package Package name where basemap is stored (default: "esteem.overview")
+#'
+#' @return ggplot object
+#' @export
+plot_estuary_map <- function(data,
+                             estuary_name,
+                             colour_var = NULL,
+                             fill_var = NULL,
+                             size_var = NULL,
+                             package = "esteem.overview") {
+
+  # -------------------------
+  # 1. Charger fond de carte
+  # -------------------------
+  basemap <- load_estuary_basemap(estuary_name,
+                                  package = package)
+
+  # -------------------------
+  # 2. Convertir data en sf
+  # -------------------------
+  points_sf <- make_points_sf(data)
+
+  # -------------------------
+  # 3. Construction de la carte
+  # -------------------------
+  p <- ggplot2::ggplot() +
+    tidyterra::geom_spatraster_rgb(data = basemap$osm_raster)
+
+  # -------------------------
+  # 4. Ajouter points avec mapping dynamique
+  # -------------------------
+
+mapping <- list()
+
+if (!missing(colour_var)) mapping$colour <- rlang::ensym(colour_var)
+if (!missing(fill_var))   mapping$fill   <- rlang::ensym(fill_var)
+if (!missing(size_var))   mapping$size   <- rlang::ensym(size_var)
+
+if (length(mapping) > 0) {
+  p <- p + geom_sf(
+    data = points_sf,
+    mapping = do.call(aes, lapply(mapping, rlang::sym)),
+    shape = if (!missing(fill_var)) 21 else 19,
+    alpha = 0.8
+  )
+} else {
+  p <- p + geom_sf(
+    data = points_sf,
+    size = 2,
+    alpha = 0.8
+  )
+}
+
+  # -------------------------
+  # 5. Ajouter villes si présentes
+  # -------------------------
+  if (!is.null(basemap$villes)) {
+    p <- p + ggplot2::geom_sf(
+      data = basemap$villes,
+      shape = 21,
+      fill = "white",
+      color = "black",
+      size = 3
+    )
+  }
+
+  # -------------------------
+  # 6. Ajouter lignes horizontales/verticales si définies
+  # -------------------------
+
+# Ligne horizontale
+if (!is.null(basemap$halin_limit_lat)) {
+  hline <- sf::st_as_sf(
+    data.frame(xmin = basemap$xlim[1],
+               xmax = basemap$xlim[2],
+               y = basemap$halin_limit_lat),
+    coords = c("xmin","y"), crs = 4326
+  )
+  p <- p + geom_segment(
+    data = data.frame(
+      x = basemap$xlim[1],
+      xend = basemap$xlim[2],
+      y = basemap$halin_limit_lat,
+      yend = basemap$halin_limit_lat
+    ),
+    aes(x = x, xend = xend, y = y, yend = yend),
+    linetype = "solid",
+    color = "black",
+    linewidth = 1.2
+  )
+}
+
+# Ligne verticale
+if (!is.null(basemap$halin_limit_lon)) {
+  p <- p + geom_segment(
+    data = data.frame(
+      x = basemap$halin_limit_lon,
+      xend = basemap$halin_limit_lon,
+      y = basemap$ylim[1],
+      yend = basemap$ylim[2]
+    ),
+    aes(x = x, xend = xend, y = y, yend = yend),
+    linetype = "solid",
+    color = "black",
+    linewidth = 1.2
+  )
+}
+
+  # -------------------------
+  # 7. Coordonnées + thème
+  # -------------------------
+  p <- p +
+    ggplot2::coord_sf(
+      xlim = basemap$xlim,
+      ylim = basemap$ylim,
+      expand = FALSE
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(
+      axis.title = ggplot2::element_blank()
+    )
+
+  # -------------------------
+  # 8. Echelle + flèche nord
+  # -------------------------
+  p <- p +
+  annotation_scale(
+    location = "bl",      # bas gauche
+    width_hint = 0.2,     # proportion de la carte
+    text_cex = 1          # taille du texte
+  ) +
+  annotation_north_arrow(
+      pad_x = unit(0.5, "cm"), # décale horizontalement
+    pad_y = unit(0.7, "cm"), # décale verticalement
+    which_north = "true",
+    style = north_arrow_orienteering(),
+    height = unit(0.5, "cm"),   # hauteur totale de la flèche
+    width  = unit(0.5, "cm")  # largeur
+  )
+    
+    
+  return(p)
+}
+```
+  
+```{r example-plot_estuary_map}
+# plot_estuary_map(
+#   data = data_POMET |> filter(estuary == "Gironde"),
+#   estuary_name = "Gironde",
+#   colour_var = salinite,
+# )
+```
+  
+```{r tests-plot_estuary_map}
+```
+  
+
+# Inflate
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_fct_build_and_save_basemap.Rmd", 
+               vignette_name = NULL, check = FALSE)
+```
+
