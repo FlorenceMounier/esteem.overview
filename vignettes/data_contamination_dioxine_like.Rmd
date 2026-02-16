@@ -157,7 +157,8 @@ data_sum_dioxine_like_TEQ |>
   ggplot() +
   aes(x = YEAR, y = RESULTAT, colour = espece) +
   geom_line() +
-  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  theme_esteem()
 ```
 
 Simplify with two species groups
@@ -210,7 +211,8 @@ ggplot_dioxine_like_TEQ <- ggplot(data_sum_dioxine_like_TEQ) +
     data = res_sum_dioxine_like_lw_trends,
     aes(yintercept = 0.0065),
     color = "red", linetype = "dashed"
-  )
+  ) +
+  theme_esteem()
 
 ggplot_dioxine_like_TEQ
 
@@ -232,7 +234,8 @@ plot_dioxine_like_periode <- data_sum_dioxine_like_TEQ_norm_relative |>
   geom_boxplot(width = 0.6, colour = "deeppink") +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
   labs(x = NULL, y = "Deviation from limit value \n (% ng/g TEQ)", colour = "Period") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  theme_esteem()
 
 plot_dioxine_like_periode
 

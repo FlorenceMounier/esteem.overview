@@ -12,7 +12,7 @@ fct_build_and_save_basemap(
 )
 }
 \arguments{
-\item{data}{Data frame containing pos_lat_dd and pos_long_dd}
+\item{data}{Data frame containing latitude and longitude}
 
 \item{estuary_name}{Character name of estuary (used for folder name)}
 

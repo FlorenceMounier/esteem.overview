@@ -1,10 +1,23 @@
 ---
 title: "data_maps"
-output: html_document
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_maps}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = FALSE, 
+  message = FALSE,
+  comment = FALSE,
+  warning = FALSE,
+  fig.show='hold',
+  fig.align="center",
+  dev.args = list(family = "Arial")
+  )
+
 library(esteem.overview)
 library(tidyverse)
 ```

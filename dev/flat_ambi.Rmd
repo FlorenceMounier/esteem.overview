@@ -1,0 +1,64 @@
+---
+title: "flat_ambi.Rmd empty"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+# ambi
+
+```{r function-ambi}
+#' Compute AMBI index for a dataset
+#'
+#' @param data Data frame with taxon, count, and optionally group
+#' @param taxon Column name for taxa
+#' @param count Column name for abundance
+#' @param group Column name for ecological group (EG I–V)
+#'
+#' @return AMBI index (numeric)
+#' @export
+#' @import dplyr
+#' @importFrom rlang ensym
+#' 
+compute_ambi <- function(data, taxon, count, group) {
+  
+  taxon <- rlang::ensym(taxon)
+  count <- rlang::ensym(count)
+  group <- rlang::ensym(group)
+  
+  # Poids AMBI
+  data |>
+    dplyr::mutate(
+      weight = dplyr::case_when(
+        !!group == "I"   ~ 0,
+        !!group == "II"  ~ 1.5,
+        !!group == "III" ~ 3,
+        !!group == "IV"  ~ 4.5,
+        !!group == "V"   ~ 6,
+        TRUE ~ NA_real_
+      )
+    ) |>
+    dplyr::summarise(
+      ambi = sum(!!count * weight, na.rm = TRUE) / sum(!!count, na.rm = TRUE)
+    ) |>
+    dplyr::pull(ambi)
+}
+```
+
+```{r examples-ambi}
+```
+
+```{r tests-ambi}
+```
+
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_ambi.Rmd", vignette_name = NULL, check = FALSE)
+```
+

@@ -2,7 +2,7 @@
 
 #' Create and save OpenStreetMap base map for an estuary
 #'
-#' @param data Data frame containing pos_lat_dd and pos_long_dd
+#' @param data Data frame containing latitude and longitude
 #' @param estuary_name Character name of estuary (used for folder name)
 #' @param villes_selection Character vector of city names to keep (optional)
 #' @param path Base path for saving (default: inst/extdata)
@@ -44,9 +44,9 @@ fct_build_and_save_basemap <- function(data,
   # 1. Convert to sf
   # -------------------------
   points_sf <- data |>
-    dplyr::filter(!is.na(pos_lat_dd) & !is.na(pos_long_dd)) |>
+    dplyr::filter(!is.na(latitude) & !is.na(longitude)) |>
     sf::st_as_sf(
-      coords = c("pos_long_dd", "pos_lat_dd"),
+      coords = c("longitude", "latitude"),
       crs = 4326,
       remove = FALSE
     )

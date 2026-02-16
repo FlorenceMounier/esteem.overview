@@ -1,4 +1,4 @@
-# ---------------------------------------------------------------------------
+---------------------------------------------------------------------------
 # Libraries ----
 
 library(esteem.overview)
@@ -28,8 +28,8 @@ data_POMET <- left_join(data_POMET_biota, data_POMET_traits,
 # Create center position of traits
 
 data_POMET <- data_POMET |>
-  mutate(pos_lat_dd = (pos_deb_lat_dd + pos_fin_lat_dd) / 2) |>
-  mutate(pos_long_dd = (pos_deb_long_dd + pos_fin_long_dd) / 2)
+  mutate(latitude = (pos_deb_lat_dd + pos_fin_lat_dd) / 2) |>
+  mutate(longitude = (pos_deb_long_dd + pos_fin_long_dd) / 2)
 
 # ---------------------------------------------------------------------------
 # Estuary GPS delimitations and halin zones + cleaning
@@ -43,20 +43,20 @@ data_POMET <- data_POMET |>
   )) |>
   mutate(
     estuary = case_when(
-      estuary == "Gironde" & pos_lat_dd > 45.0 & pos_lat_dd < 45.7 & pos_long_dd < -0.6 & pos_long_dd > -1.1 ~ "Gironde",
-      estuary == "Loire" & pos_lat_dd > 47.22 & pos_lat_dd < 47.34 & pos_long_dd < -1.8 & pos_long_dd > -2.3 ~ "Loire",
+      estuary == "Gironde" & latitude > 45.0 & latitude < 45.7 & longitude < -0.6 & longitude > -1.1 ~ "Gironde",
+      estuary == "Loire" & latitude > 47.22 & latitude < 47.34 & longitude < -1.8 & longitude > -2.3 ~ "Loire",
       estuary == "Seine" &
-        pos_lat_dd > 49.4 & pos_long_dd < 0.5 ~ "Seine",
+        latitude > 49.4 & longitude < 0.5 ~ "Seine",
       TRUE ~ NA
     )
   )  |>
   mutate(haline_zone = case_when(
-    estuary == "Gironde" & pos_lat_dd >= 45.4 ~ "polyhalin",
-    estuary == "Gironde" & pos_lat_dd >= 45.0 ~ "mesohalin",
-    estuary == "Loire" & pos_long_dd <= -2.0 ~ "polyhalin",
-    estuary == "Loire" & pos_long_dd <= -1.8 ~ "mesohalin",
-    estuary == "Seine" & pos_long_dd <= 0.3 ~ "polyhalin",
-    estuary == "Seine" & pos_long_dd <= 0.5 ~ "mesohalin",
+    estuary == "Gironde" & latitude >= 45.4 ~ "polyhalin",
+    estuary == "Gironde" & latitude >= 45.0 ~ "mesohalin",
+    estuary == "Loire" & longitude <= -2.0 ~ "polyhalin",
+    estuary == "Loire" & longitude <= -1.8 ~ "mesohalin",
+    estuary == "Seine" & longitude <= 0.3 ~ "polyhalin",
+    estuary == "Seine" & longitude <= 0.5 ~ "mesohalin",
     TRUE ~ NA
   )) |>
   filter(trait_id != 82) |> # fleuve Gironde
@@ -67,3 +67,109 @@ data_POMET <- data_POMET |>
 # Save data data_POMET.rda
 
 usethis::use_data(data_POMET, overwrite = TRUE)
+
+
+# ---------------------------------------------------------------------------
+# Estuaries maps - Haline zones from POMET ----
+
+# ---------------------------------------------------------------------------
+# Gironde ----
+
+# map with haline zones
+plot_POMET_map_gironde <- plot_estuary_map(
+  data = data_POMET |> filter(estuary == "Gironde"),
+  estuary_name = "Gironde", colour_var = haline_zone
+)
+
+# save the image
+ggsave(filename = "inst/results/data_maps/POMET/plot_POMET_map_gironde.jpg",
+       plot = plot_map_gironde)
+
+# crop the image
+img_gironde <- image_read("inst/results/data_maps/POMET/plot_POMET_map_gironde.jpg")
+img_trim_gironde <- image_trim(img_gironde)
+image_write(img_trim_gironde, "inst/results/data_maps/POMET/plot_POMET_map_gironde.jpg")
+
+# salinity distribution in haline zones
+plot_POMET_salinity_zones_gironde <- ggplot(data = data_POMET |> filter(estuary == "Gironde")) +
+  aes(x = salinite, fill = haline_zone) +
+  geom_boxplot() +
+  geom_vline(xintercept = 18, linewidth = 2) +
+  theme(legend.position = "none") +
+  coord_flip() +
+  theme(
+    axis.text.x = element_blank(),   # supprime les labels
+    axis.ticks.x = element_blank()   # supprime les ticks
+  )
+
+# save the image
+ggsave(filename = "inst/results/data_maps/POMET/plot_POMET_salinity_zones_gironde.jpg",
+       plot = plot_POMET_salinity_zones_gironde,
+       width = 7, height = 7, units = "cm")
+
+# ---------------------------------------------------------------------------
+# Loire ----
+
+plot_POMET_map_loire <- plot_estuary_map(
+  data = data_POMET |> filter(estuary == "Loire"),
+  estuary_name = "Loire", colour_var = haline_zone
+)
+
+ggsave(filename = "inst/results/data_maps/POMET/plot_POMET_map_loire.jpg",
+       plot = plot_POMET_map_loire)
+
+# crop the image
+img_loire <- image_read("inst/results/data_maps/POMET/plot_POMET_map_loire.jpg")
+img_trim_loire <- image_trim(img_loire)
+image_write(img_trim_loire, "inst/results/data_maps/POMET/plot_POMET_map_loire.jpg")
+
+# salinity distribution in haline zones
+plot_POMET_salinity_zones_loire <- ggplot(data = data_POMET |> filter(estuary == "Loire")) +
+  aes(x = salinite, fill = haline_zone) +
+  geom_boxplot() +
+  geom_vline(xintercept = 18, linewidth = 2) +
+  theme(legend.position = "none") +
+  coord_flip() +
+  theme(
+    axis.text.x = element_blank(),   # supprime les labels
+    axis.ticks.x = element_blank()   # supprime les ticks
+  )
+
+# save the image
+ggsave(filename = "inst/results/data_maps/POMET/plot_POMET_salinity_zones_loire.jpg",
+       plot = plot_POMET_salinity_zones_loire,
+       width = 7, height = 7, units = "cm")
+
+# ---------------------------------------------------------------------------
+# Seine ----
+
+plot_POMET_map_seine <- plot_estuary_map(
+  data = data_POMET |> filter(estuary == "Seine"),
+  estuary_name = "Seine", colour_var = haline_zone
+)
+
+ggsave(filename = "inst/results/data_maps/POMET/plot_POMET_map_seine.jpg",
+       plot = plot_POMET_map_seine)
+
+# crop the image
+img_seine <- image_read("inst/results/data_maps/POMET/plot_POMET_map_seine.jpg")
+img_trim_seine <- image_trim(img_seine)
+image_write(img_trim_seine, "inst/results/data_maps/POMET/plot_POMET_map_seine.jpg")
+
+# salinity distribution in haline zones
+plot_POMET_salinity_zones_seine <- ggplot(data = data_POMET |> filter(estuary == "Seine")) +
+  aes(x = salinite, fill = haline_zone) +
+  geom_boxplot() +
+  geom_vline(xintercept = 18, linewidth = 2) +
+  theme(legend.position = "none") +
+  coord_flip() +
+  theme(
+    axis.text.x = element_blank(),   # supprime les labels
+    axis.ticks.x = element_blank()   # supprime les ticks
+  )
+
+# save the image
+ggsave(filename = "inst/results/data_maps/POMET/plot_POMET_salinity_zones_seine.jpg",
+       plot = plot_POMET_salinity_zones_seine,
+       width = 7, height = 7, units = "cm")
+

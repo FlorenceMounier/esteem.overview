@@ -9,8 +9,13 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+  echo = FALSE, 
+  message = FALSE,
+  comment = FALSE,
+  warning = FALSE,
+  fig.show='hold',
+  fig.align="center",
+  dev.args = list(family = "Arial")
 )
 ```
 
@@ -32,17 +37,18 @@ data_MO <- data |>
 
 ```{r}
 data_MO_summarised <- data_MO |> 
-  group_by(ESTUARY, YEAR, tidal) |> 
+  group_by(estuary, YEAR, tidal) |> 
   summarise(median_MO = median(RESULTAT))
 ```
 
 
 ```{r}
 ggplot_MO <- ggplot(data_MO_summarised) +
-  aes(x = YEAR, y = median_MO, colour = ESTUARY, shape = tidal, linetype = tidal) +
+  aes(x = YEAR, y = median_MO, colour = estuary, shape = tidal, linetype = tidal) +
   geom_point() +
   geom_line() +
-  labs(y = "Organic matter (%)", x = NULL)
+  labs(y = "Organic matter (%)", x = NULL) +
+  theme_esteem()
 
 ggplot_MO
 
@@ -51,7 +57,7 @@ ggsave(plot = ggplot_MO, "../inst/results/data_benthos/sediment/organic_matter_y
 
 ```{r}
 data_MO_general <- data_MO |> 
-  group_by(ESTUARY, tidal) |> 
+  group_by(estuary, tidal) |> 
   summarise(median_MO = median(RESULTAT),
             Q1 = quantile(RESULTAT, probs = 0.25),
             Q3 = quantile(RESULTAT, probs = 0.75))
@@ -68,12 +74,12 @@ data_MO_general
 ```{r}
 data_summarised <- data |> 
   filter(PARAMETRE_LIBELLE != "Matière organique") |> 
-  group_by(ESTUARY, tidal, YEAR, PARAMETRE_LIBELLE) |> 
+  group_by(estuary, tidal, YEAR, PARAMETRE_LIBELLE) |> 
   summarise(median_res = median(RESULTAT), .groups = "drop") |> 
   filter(median_res >= 2)
 
 data_size_resume <- data_summarised |> 
-  arrange(ESTUARY, tidal, YEAR, desc(median_res)) |> 
+  arrange(estuary, tidal, YEAR, desc(median_res)) |> 
   mutate(mid_class = case_when(
     PARAMETRE_LIBELLE == "Fraction < 63 µm" ~ 63,
     PARAMETRE_LIBELLE == "Fraction de 63 à 80 µm" ~ 71,
@@ -101,30 +107,36 @@ data_size_resume <- data_summarised |>
 data_size_resume
 
 ggplot_grain_size_gironde <- data_size_resume |> 
-   filter(ESTUARY == "Gironde") |> 
+   filter(estuary == "Gironde") |> 
   ggplot() + 
   aes(x = mid_class, y = median_res) +
   geom_col(position = "dodge") +
   facet_grid(rows = vars(YEAR), cols = vars(tidal), scales = "free_x") + 
-  labs(title = "Gironde estuary", x = "Grain size (µm)", y = "Proportion in the sediment (%)")
+  labs(title = "Gironde estuary", x = "Grain size (µm)", y = "Proportion in the sediment (%)") +
+  theme_esteem()
+
 ggsave(plot = ggplot_grain_size_gironde, "../inst/results/data_benthos/sediment/ggplot_grain_size_gironde.jpg")
 
 ggplot_grain_size_loire <- data_size_resume |> 
-   filter(ESTUARY == "Loire") |> 
+   filter(estuary == "Loire") |> 
   ggplot() + 
   aes(x = mid_class, y = median_res) +
   geom_col(position = "dodge") +
   facet_grid(rows = vars(YEAR), cols = vars(tidal), scales = "free_x") + 
-  labs(title = "Loire estuary", x = "Grain size (µm)", y = "Proportion in the sediment (%)")
+  labs(title = "Loire estuary", x = "Grain size (µm)", y = "Proportion in the sediment (%)") +
+  theme_esteem()
+
 ggsave(plot = ggplot_grain_size_loire, "../inst/results/data_benthos/sediment/ggplot_grain_size_loire.jpg")
 
 ggplot_grain_size_seine <- data_size_resume |> 
-   filter(ESTUARY == "Seine") |> 
+   filter(estuary == "Seine") |> 
   ggplot() + 
   aes(x = mid_class, y = median_res) +
   geom_col(position = "dodge") +
   facet_grid(rows = vars(YEAR), cols = vars(tidal), scales = "free_x") + 
-  labs(title = "Seine estuary", x = "Grain size (µm)", y = "Proportion in the sediment (%)")
+  labs(title = "Seine estuary", x = "Grain size (µm)", y = "Proportion in the sediment (%)") +
+  theme_esteem()
+
 ggsave(plot = ggplot_grain_size_seine, "../inst/results/data_benthos/sediment/ggplot_grain_size_seine.jpg")
 ```
 
@@ -132,7 +144,7 @@ ggsave(plot = ggplot_grain_size_seine, "../inst/results/data_benthos/sediment/gg
 ```{r}
 data_summarised <- data |> 
   filter(PARAMETRE_LIBELLE != "Matière organique") |> 
-  group_by(ESTUARY, tidal, PARAMETRE_LIBELLE) |> 
+  group_by(estuary, tidal, PARAMETRE_LIBELLE) |> 
   summarise(median_res = median(RESULTAT), .groups = "drop") |> 
   filter(median_res >= 2)
 ```
@@ -142,7 +154,7 @@ data_summarised <- data |>
 #   distinct(PARAMETRE_LIBELLE)
 
 data_size_resume <- data_summarised |> 
-  arrange(ESTUARY, tidal, desc(median_res)) |> 
+  arrange(estuary, tidal, desc(median_res)) |> 
   mutate(mid_class = case_when(
     PARAMETRE_LIBELLE == "Fraction < 63 µm" ~ 63,
     PARAMETRE_LIBELLE == "Fraction de 63 à 125 µm" ~ 94,
@@ -171,8 +183,9 @@ ggplot_grain_size <- data_size_resume |>
   ggplot() + 
   aes(x = mid_class, y = median_res) +
   geom_col() +
-  facet_grid(rows = vars(ESTUARY), cols = vars(tidal), scales = "free_x") + 
-  labs(x = "Grain size (µm)", y = "Proportion in the sediment (%)")
+  facet_grid(rows = vars(estuary), cols = vars(tidal), scales = "free_x") + 
+  labs(x = "Grain size (µm)", y = "Proportion in the sediment (%)") +
+  theme_esteem()
 
 ggplot_grain_size
 

@@ -2,11 +2,12 @@
 
 #' Plot estuary map with points, optional variable mapping and optional horizontal/vertical lines
 #'
-#' @param data Data frame containing pos_lat_dd and pos_long_dd
+#' @param data Data frame containing latitude and longitude
 #' @param estuary_name Character name of the estuary
 #' @param colour_var Optional variable in `data` for point colour
 #' @param fill_var Optional variable in `data` for point fill (shape 21)
 #' @param size_var Optional variable in `data` for point size
+#' @param shape_var Optional variable in `data` for point shape
 #' @param package Package name where basemap is stored (default: "esteem.overview")
 #'
 #'
@@ -21,6 +22,7 @@
 #' @importFrom rlang sym
 #' @importFrom sf st_as_sf
 #' @importFrom sf st_coordinates
+#' @importFrom rlang enquo quo_is_null
 #' 
 #' @return ggplot object
 #' @export
@@ -32,57 +34,106 @@
 #' # )
 plot_estuary_map <- function(data,
                              estuary_name,
-                             colour_var = NULL,
-                             fill_var = NULL,
-                             size_var = NULL,
+                             colour_var,
+                             fill_var,
+                             size_var,
+                             shape_var,
                              package = "esteem.overview") {
 
   # -------------------------
-  # 1. Charger fond de carte
+  # 1. Load basemap
   # -------------------------
   basemap <- load_estuary_basemap(estuary_name,
                                   package = package)
 
   # -------------------------
-  # 2. Convertir data en sf
+  # 2. Convert data to sf
   # -------------------------
   points_sf <- make_points_sf(data)
 
   # -------------------------
-  # 3. Construction de la carte
+  # 3. Base plot
   # -------------------------
   p <- ggplot2::ggplot() +
     tidyterra::geom_spatraster_rgb(data = basemap$osm_raster)
 
   # -------------------------
-  # 4. Ajouter points avec mapping dynamique
+  # 4. Dynamic aesthetic mapping
   # -------------------------
-
+  
+  # Capture arguments
+  colour_var <- rlang::enquo(colour_var)
+  fill_var   <- rlang::enquo(fill_var)
+  size_var   <- rlang::enquo(size_var)
+  shape_var  <- rlang::enquo(shape_var)
+  
 mapping <- list()
 
-if (!missing(colour_var)) mapping$colour <- rlang::ensym(colour_var)
-if (!missing(fill_var))   mapping$fill   <- rlang::ensym(fill_var)
-if (!missing(size_var))   mapping$size   <- rlang::ensym(size_var)
+if (!missing(colour_var)) {
+  colour_var <- rlang::enquo(colour_var)
+  mapping$colour <- colour_var
+}
 
+if (!missing(fill_var)) {
+  fill_var <- rlang::enquo(fill_var)
+  mapping$fill <- fill_var
+}
+
+if (!missing(size_var)) {
+  size_var <- rlang::enquo(size_var)
+  mapping$size <- size_var
+}
+
+if (!missing(shape_var)) {
+  shape_var <- rlang::enquo(shape_var)
+  mapping$shape <- shape_var
+}
+  
 if (length(mapping) > 0) {
-  p <- p + geom_sf(
-    data = points_sf,
-    mapping = do.call(aes, lapply(mapping, rlang::sym)),
-    shape = if (!missing(fill_var)) 21 else 19,
-    alpha = 0.8
-  )
+
+  # Shape automatique si pas fourni
+  geom_shape <- NULL
+  if (!"shape" %in% names(mapping)) {
+    if ("fill" %in% names(mapping)) {
+      geom_shape <- 21
+    } else {
+      geom_shape <- 19
+    }
+  }
+
+  if (is.null(geom_shape)) {
+
+    # PAS de shape dans geom_sf
+    p <- p + ggplot2::geom_sf(
+      data = points_sf,
+      mapping = do.call(ggplot2::aes, mapping),
+      alpha = 0.8
+    )
+
+  } else {
+
+    # shape explicite
+    p <- p + ggplot2::geom_sf(
+      data = points_sf,
+      mapping = do.call(ggplot2::aes, mapping),
+      shape = geom_shape,
+      alpha = 0.8
+    )
+  }
+
 } else {
-  p <- p + geom_sf(
+
+  p <- p + ggplot2::geom_sf(
     data = points_sf,
     size = 2,
     alpha = 0.8
   )
 }
-
+  
   # -------------------------
-  # 5. Ajouter villes si présentes
+  # 5. Cities + labels
   # -------------------------
-  if (!is.null(basemap$villes)) {
+  if (!is.null(basemap$villes) && nrow(basemap$villes) > 0) {
     # Points des villes
     p <- p + ggplot2::geom_sf(
       data = basemap$villes,
@@ -105,7 +156,8 @@ if (length(mapping) > 0) {
     min.segment.length = 0,
     nudge_y = 0.01,            # décale légèrement le texte
     size = 3,
-    color = "black"
+    color = "black",
+    text_family = "Arial"
   )
   }
 
@@ -122,9 +174,8 @@ if (!is.null(basemap$halin_limit_lat) && !is.na(basemap$halin_limit_lat)) {
       y = basemap$halin_limit_lat,
       yend = basemap$halin_limit_lat
     ),
-    mapping = aes(x = x, xend = xend, y = y, yend = yend),
-    linetype = "solid",
-    color = "red",
+    ggplot2::aes(x = x, xend = xend, y = y, yend = yend),
+    color = "black",
     linewidth = 1.2
   )
 }
@@ -138,15 +189,14 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
       y = basemap$ylim[1],
       yend = basemap$ylim[2]
     ),
-    mapping = aes(x = x, xend = xend, y = y, yend = yend),
-    linetype = "solid",
-    color = "blue",
+    ggplot2::aes(x = x, xend = xend, y = y, yend = yend),
+    color = "black",
     linewidth = 1.2
   )
 }
 
   # -------------------------
-  # 7. Coordonnées + thème
+  # 7. Coordinates + theme
   # -------------------------
   p <- p +
     ggplot2::coord_sf(
@@ -154,29 +204,31 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
       ylim = basemap$ylim,
       expand = FALSE
     ) +
-    ggplot2::theme_minimal() +
+    ggplot2::theme_esteem() +
     ggplot2::theme(
       axis.title = ggplot2::element_blank()
     )
 
   # -------------------------
-  # 8. Echelle + flèche nord + titre
+  # 8. Scale bar + north arrow + title
   # -------------------------
   p <- p +
-  annotation_scale(
+  ggspatial::annotation_scale(
     location = "bl",      # bas gauche
     width_hint = 0.2,     # proportion de la carte
-    text_cex = 1          # taille du texte
+    text_cex = 1,         # taille du texte
+    text_family = "Arial"
   ) +
-  annotation_north_arrow(
-      pad_x = unit(0.5, "cm"), # décale horizontalement
+  ggspatial::annotation_north_arrow(
+    pad_x = unit(0.5, "cm"), # décale horizontalement
     pad_y = unit(0.7, "cm"), # décale verticalement
     which_north = "true",
-    style = north_arrow_orienteering(),
-    height = unit(0.5, "cm"),   # hauteur totale de la flèche
-    width  = unit(0.5, "cm")  # largeur
+    style = ggspatial::north_arrow_orienteering(),
+    height = grid::unit(0.5, "cm"),   # hauteur totale de la flèche
+    width  = grid::unit(0.5, "cm"),  # largeur
+    text_family = "Arial"
   ) +
-  labs(title = paste0(estuary_name, " estuary"))
+  ggplot2::labs(title = paste0(estuary_name, " estuary"))
     
     
   return(p)

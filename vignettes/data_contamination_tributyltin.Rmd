@@ -106,7 +106,8 @@ ggplot_tributyltin_dw <- ggplot(data_tributyltin_dw) +
     data = res_tributyltin_dw_trends,
     aes(yintercept = EAC_ng_gdw),
     color = "red", linetype = "dashed"
-  )
+  ) +
+  theme_esteem()
 
 ggplot_tributyltin_dw
 
@@ -128,7 +129,8 @@ plot_tributyltin_dw_periode <- data_tributyltin_dw_norm_relative |>
   geom_boxplot(width = 0.6, colour = "deeppink") +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
   labs(x = NULL, y = "Deviation from limit value \n (% ng/g dw)", colour = "Period") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  theme_esteem()
 
 plot_tributyltin_dw_periode
 

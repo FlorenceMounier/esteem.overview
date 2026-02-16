@@ -9,9 +9,14 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
+  echo = FALSE, 
+  message = FALSE,
+  comment = FALSE,
+  warning = FALSE,
+  fig.show='hold',
+  fig.align="center",
+  dev.args = list(family = "Arial")
+  )
 ```
 
 ```{r setup}
@@ -34,6 +39,34 @@ library(benthos)
 data_REBENT <- esteem.overview::data_benthos_REBENT_cleaned
 ```
 
+## Maps
+
+```{r}
+knitr::include_graphics(
+  system.file(
+    "results/data_maps/REBENT/plot_REBENT_map_gironde.jpg",
+    package = "esteem.overview"
+  )
+)
+```
+
+```{r}
+knitr::include_graphics(
+  system.file(
+    "results/data_maps/REBENT/plot_REBENT_map_loire.jpg",
+    package = "esteem.overview"
+  )
+)
+```
+
+```{r}
+knitr::include_graphics(
+  system.file(
+    "results/data_maps/REBENT/plot_REBENT_map_seine.jpg",
+    package = "esteem.overview"
+  )
+)
+```
 
 ## Taxonomic composition
 
@@ -42,20 +75,20 @@ data_REBENT <- esteem.overview::data_benthos_REBENT_cleaned
 ni = Number of individuals for each phylum per estuary, tidal zone and year
 ```{r}
 nb_ind_sp <- data_REBENT |> 
-  group_by(ESTUARY, tidal, YEAR, phylum) |> 
+  group_by(estuary, tidal, YEAR, phylum) |> 
   summarise(n_ind_sp = sum(RESULTAT), .groups = "drop")
 ```
 N = Total number of individuals per estuary, tidal zone and year
 ```{r}
 nb_ind_tot <- data_REBENT |> 
-  group_by(ESTUARY, tidal, YEAR) |> 
+  group_by(estuary, tidal, YEAR) |> 
   summarise(n_ind_tot = sum(RESULTAT), .groups = "drop")
 ```
 pi = Percentage abundance for each phylum per estuary, tidal zone and year
 ```{r}
 abundance_prop <- nb_ind_sp |> 
-  left_join(nb_ind_tot, by = c("ESTUARY", "tidal", "YEAR")) |> 
-  group_by(ESTUARY, tidal, YEAR) |> 
+  left_join(nb_ind_tot, by = c("estuary", "tidal", "YEAR")) |> 
+  group_by(estuary, tidal, YEAR) |> 
   mutate(abundance_prop = n_ind_sp / n_ind_tot * 100) |> 
   ungroup() |> 
   drop_na()
@@ -67,11 +100,12 @@ ggplot_REBENT_abundance_taxonomy <- abundance_prop |>
 ggplot() +
   aes(x = YEAR, y = abundance_prop, color = phylum, fill = phylum) +
   geom_col() +
-  facet_grid(rows = vars(ESTUARY), cols = vars(tidal)) +
+  facet_grid(rows = vars(estuary), cols = vars(tidal)) +
   labs(title = "REBENT macrobenthic fauna: Taxonomic repartition", 
        x = NULL, 
        y = "Abundance (%)",
-       color = "Phylum", fill = "Phylum")
+       color = "Phylum", fill = "Phylum") +
+  theme_esteem()
 
 ggplot_REBENT_abundance_taxonomy
 
@@ -83,16 +117,16 @@ ggsave(plot = ggplot_REBENT_abundance_taxonomy,
 ### Species level
 ```{r}
 nb_ind_tot <- data_REBENT |> 
-  group_by(ESTUARY, tidal) |> 
+  group_by(estuary, tidal) |> 
   summarise(n_ind_tot = sum(RESULTAT), .groups = "drop")
 
 nb_ind_sp <- data_REBENT |> 
-  group_by(ESTUARY, tidal, phylum, class, order, species) |> 
+  group_by(estuary, tidal, phylum, class, order, species) |> 
   summarise(n_ind_sp = sum(RESULTAT), .groups = "drop")
 
 abundance_prop <- nb_ind_sp |> 
-  left_join(nb_ind_tot, by = c("ESTUARY", "tidal")) |> 
-  group_by(ESTUARY, tidal, phylum, class, order) |> 
+  left_join(nb_ind_tot, by = c("estuary", "tidal")) |> 
+  group_by(estuary, tidal, phylum, class, order) |> 
   mutate(abundance_prop = n_ind_sp / n_ind_tot * 100) |> 
   ungroup() |> 
   drop_na()
@@ -102,7 +136,7 @@ abundance_prop <- nb_ind_sp |>
 ```{r}
 abundance_prop_species <- abundance_prop |> 
   filter(abundance_prop > 10) |> 
-  arrange(ESTUARY, tidal, phylum, class, order, desc(abundance_prop)) |> 
+  arrange(estuary, tidal, phylum, class, order, desc(abundance_prop)) |> 
   select(-c(n_ind_sp, n_ind_tot))
 abundance_prop_species
 
@@ -112,7 +146,7 @@ write_xlsx(abundance_prop_species, "../inst/results/data_benthos/abundance_prop_
 ```{r}
 abundance_prop_species_5 <- abundance_prop |> 
   filter(abundance_prop > 5) |> 
-  arrange(ESTUARY, tidal, phylum, class, order, desc(abundance_prop)) |> 
+  arrange(estuary, tidal, phylum, class, order, desc(abundance_prop)) |> 
   select(-c(n_ind_sp, n_ind_tot))
 abundance_prop_species_5
 
@@ -122,7 +156,7 @@ ggplot_REBENT_abundance_species <- abundance_prop_species_5 |>
   ggplot() +
   aes(x = phylum, y = abundance_prop, fill = species_grouped) +
   geom_col() +
-  facet_grid(rows = vars(ESTUARY), cols = vars(tidal)) +
+  facet_grid(rows = vars(estuary), cols = vars(tidal)) +
   theme(legend.position = "bottom") +
   guides(fill = guide_legend(ncol = 2)) +
   scale_fill_manual(values = c("pink", "forestgreen", "lightblue", "gold1", "red", "blue", "purple", "green", "orange", "yellow", "gold4", "blue4", "coral", "grey", "royalblue", "pink3","green2", "orange3", "black"),
@@ -130,7 +164,8 @@ ggplot_REBENT_abundance_species <- abundance_prop_species_5 |>
   labs(title = "REBENT macrobenthic fauna: Species composition", 
        x = NULL, 
        y = "Abundance (%)",
-       fill = "Species")
+       fill = "Species") +
+  theme_esteem()
 
 ggplot_REBENT_abundance_species
 
@@ -142,18 +177,20 @@ ggsave(plot = ggplot_REBENT_abundance_species, "../inst/results/data_benthos/ind
 
 ```{r}
 species_richness <- data_REBENT |> 
-  group_by(ESTUARY, YEAR, tidal, species) |> 
+  group_by(estuary, YEAR, tidal, species) |> 
   summarise(count = sum(RESULTAT)) |> 
   summarise(sp_rich = species_richness(taxon = species, count = count), .groups = "drop")
 
 ggplot_REBENT_sp_richness <- ggplot(species_richness) +
-  aes(x = YEAR, y = sp_rich, color = ESTUARY,
+  aes(x = YEAR, y = sp_rich, color = estuary,
       linetype = tidal, shape = tidal) +
   geom_point() +
   geom_line() +
   labs(title = "REBENT macrobenthic fauna - Species richness", 
        x = NULL, y = "Species richness",
-       color = "Estuary")
+       color = "Estuary") +
+  theme_esteem()
+
 ggplot_REBENT_sp_richness
 ggsave(plot = ggplot_REBENT_sp_richness, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_species_richness.jpg",
        width = 15, height = 6, units = "cm")
@@ -165,22 +202,22 @@ ggsave(plot = ggplot_REBENT_sp_richness, filename = "../inst/results/data_bentho
 ni = Number of individuals for each species per estuary, tidal zone and year
 ```{r}
 nb_ind_sp <- data_REBENT |> 
-  group_by(ESTUARY, tidal, YEAR, species) |> 
+  group_by(estuary, tidal, YEAR, species) |> 
   summarise(n_ind_sp = sum(RESULTAT), .groups = "drop")
 ```
 
 N = Total number of individuals per estuary, tidal zone and year
 ```{r}
 nb_ind_tot <- data_REBENT |> 
-  group_by(ESTUARY, tidal, YEAR) |> 
+  group_by(estuary, tidal, YEAR) |> 
   summarise(n_ind_tot = sum(RESULTAT), .groups = "drop")
 ```
 
 pi = Percentage abundance for each species per estuary, tidal zone and year
 ```{r}
 abundance_prop <- nb_ind_sp |> 
-  left_join(nb_ind_tot, by = c("ESTUARY", "tidal", "YEAR")) |> 
-  group_by(ESTUARY, tidal, YEAR) |> 
+  left_join(nb_ind_tot, by = c("estuary", "tidal", "YEAR")) |> 
+  group_by(estuary, tidal, YEAR) |> 
   mutate(abundance_prop = n_ind_sp / n_ind_tot) |> 
   ungroup()
 ```
@@ -188,19 +225,21 @@ abundance_prop <- nb_ind_sp |>
 H' = Shannon-index
 ```{r}
 shannon_index <- abundance_prop |> 
-  group_by(ESTUARY, tidal, YEAR) |> 
+  group_by(estuary, tidal, YEAR) |> 
   summarise(shannon = - sum(abundance_prop * log2(abundance_prop)), .groups = "drop")
 ```
 
 ```{r}
 ggplot_shannon_index <- ggplot(shannon_index) +
-  aes(x = YEAR, y = shannon, color = ESTUARY,
+  aes(x = YEAR, y = shannon, color = estuary,
       linetype = tidal, shape = tidal) +
   geom_point() +
   geom_line() +
   labs(title = "REBENT macrobenthic fauna - Shannon index", 
        x = NULL, y = "Shannon index",
-       color = "Estuary")
+       color = "Estuary") +
+  theme_esteem()
+
 ggplot_shannon_index
 ggsave(plot = ggplot_shannon_index, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_shannon_index.jpg",
        width = 15, height = 6, units = "cm")
@@ -215,10 +254,10 @@ One line per species: nb of individuals
 ```{r}
 data_benthos_ind_species_m2 <- data_REBENT |> 
   # nb of sub-sample per LIEU_MNEMONIQUE & DATE & sampler_type
-  group_by(ESTUARY, LIEU_MNEMONIQUE, DATE, sampler_type, tidal) |> 
+  group_by(estuary, LIEU_MNEMONIQUE, DATE, sampler_type, tidal) |> 
   mutate(nb_samples_lieu_mnemonique_date = unique(mnemonique) |>  length()) |> 
   # summarise nb of ind per species at a given LIEU_MNEMONIQUE & DATE & sampler_type
-  group_by(ESTUARY, LIEU_MNEMONIQUE, DATE, sampler_type, sampler_surface,
+  group_by(estuary, LIEU_MNEMONIQUE, DATE, sampler_type, sampler_surface,
            tidal, nb_samples_lieu_mnemonique_date, species) |> 
   summarise(nb_ind_species_lieu_mnemonique_date = sum(RESULTAT)) |> 
   # compute nb of in per species for the total surface of LIEU_MNEMONIQUE 
@@ -232,9 +271,9 @@ Yearly mean of individuals per surface
 ```{r}
 data_benthos_ind_m2 <- data_benthos_ind_species_m2 |> 
   mutate(YEAR = year(DATE)) |> 
-  group_by(ESTUARY, YEAR, DATE, LIEU_MNEMONIQUE, tidal) |> 
+  group_by(estuary, YEAR, DATE, LIEU_MNEMONIQUE, tidal) |> 
   summarise(nb_ind_per_m2 = sum(nb_ind_species_per_m2)) |> 
-  group_by(ESTUARY, YEAR, tidal) |> 
+  group_by(estuary, YEAR, tidal) |> 
   summarise(mean_abundance_m2 = mean(nb_ind_per_m2)) |> 
   ungroup()
 ```
@@ -242,14 +281,15 @@ data_benthos_ind_m2 <- data_benthos_ind_species_m2 |>
 
 ```{r}
 ggplot_REBENT_density <- ggplot(data_benthos_ind_m2) +
-  aes(x = YEAR, y = mean_abundance_m2, color = ESTUARY,
+  aes(x = YEAR, y = mean_abundance_m2, color = estuary,
       linetype = tidal, shape = tidal) +
   geom_line(position = "dodge") +
   geom_point() +
   labs(title = "REBENT macrobenthic fauna: Density", 
        x = NULL, 
        y = "Density (mean nb ind/m²)",
-       color = "Estuary")
+       color = "Estuary") +
+  theme_esteem()
 
 ggsave(plot = ggplot_REBENT_density,
        "../inst/results/data_benthos/indicators/ggplot_REBENT_density.jpg",
@@ -258,40 +298,42 @@ ggsave(plot = ggplot_REBENT_density,
 ggplot_REBENT_density
 ```
 
-### Species richness per square metre
+### Species richness per log square metre
 
 ```{r}
 # Number of species per sample
 data_n_species_by_sample <- data_benthos_ind_species_m2 |> 
-  group_by(ESTUARY, LIEU_MNEMONIQUE, DATE, tidal) |> 
+  group_by(estuary, LIEU_MNEMONIQUE, DATE, tidal) |> 
   summarise(n_species = n(), .groups = "drop")
 
-# Sample surface
-data_sample_surface <- data_benthos_ind_species_m2 |> 
-  distinct(ESTUARY, LIEU_MNEMONIQUE, DATE, sampler_type, sampler_surface, tidal, nb_samples_lieu_mnemonique_date) |> 
-  mutate(surface_sample = sampler_surface * nb_samples_lieu_mnemonique_date)
+# Sample surface (log m²)
+data_log_sample_surface <- data_benthos_ind_species_m2 |> 
+  distinct(estuary, LIEU_MNEMONIQUE, DATE, sampler_type, sampler_surface, tidal, nb_samples_lieu_mnemonique_date) |> 
+  mutate(log_surface_sample = log(sampler_surface * nb_samples_lieu_mnemonique_date))
 
-# Compute species richness by m²
-data_species_richness <- left_join(data_n_species_by_sample, data_sample_surface) |> 
-  mutate(n_species_per_m2 = n_species / surface_sample)
+# Compute species richness per log m²
+data_species_richness <- left_join(data_n_species_by_sample, data_log_sample_surface) |> 
+  mutate(n_species_per_log_m2 = n_species / log_surface_sample)
 
 # Summarise per estuary and year
 data_species_richness_year <- data_species_richness |> 
   mutate(YEAR = year(DATE)) |> 
-  group_by(ESTUARY, YEAR, tidal) |> 
-  summarise(mean_year_n_species_per_m2 = mean(n_species_per_m2), 
-            sum_sample_surface = sum(surface_sample), .groups = "drop")
+  group_by(estuary, YEAR, tidal) |> 
+  summarise(mean_year_n_species_per_log_m2 = mean(n_species_per_log_m2), 
+            sum_log_sample_surface = sum(log_surface_sample), .groups = "drop")
 ```
 
 Impact of total surface sampled variability on estimated species richness:
 ```{r}
 ## Total surface sampled variability
   ggplot_surface_variability <- ggplot(data = data_species_richness_year) +
-    aes(x = YEAR, y = sum_sample_surface, color = ESTUARY,
+    aes(x = YEAR, y = sum_log_sample_surface, color = estuary,
         linetype = tidal, shape = tidal) +
     geom_point() + geom_line() +
-    labs(x = NULL, y = "Total surface sampled (m²)", 
-         title = "Rebent macrobenthic fauna: Total surface sampled variability")
+    labs(x = NULL, y = "Total surface sampled (log m²)", 
+         title = "Rebent macrobenthic fauna: Total surface sampled variability") +
+  theme_esteem()
+
   ggplot_surface_variability
   ggsave(plot = ggplot_surface_variability, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_surface_variability.jpg",
          width = 15, height = 6, units = "cm")
@@ -302,28 +344,32 @@ Impact of total surface sampled variability on estimated species richness:
   # summary(model_lm) 
   
   ggplot_surface_richness_correlation <- ggplot(data = data_species_richness_year) +
-    aes(x = sum_sample_surface, y = mean_year_n_species_per_m2, 
-        color = ESTUARY, linetype = tidal, shape = tidal) +
+    aes(x = sum_log_sample_surface, y = mean_year_n_species_per_log_m2, 
+        color = estuary, linetype = tidal, shape = tidal) +
     geom_point() +
     labs(x = "Total surface sampled", y = "Species richness",
-         title = "Correlation between yearly total surface sampled and species richness")
+         title = "Correlation between yearly total surface sampled and species richness") +
+  theme_esteem()
+  
   ggplot_surface_richness_correlation
   ggsave(plot = ggplot_surface_richness_correlation, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_surface_richness_correlation.jpg",
            width = 15, height = 6, units = "cm")
 ```
 
-Plot of species richness per m² per estuary and year:
+Plot of species richness per log m² per estuary and year:
 ```{r}
 ggplot_species_richness_year <- ggplot(data_species_richness_year) +
-  aes(x = YEAR, y = mean_year_n_species_per_m2, color = ESTUARY,
+  aes(x = YEAR, y = mean_year_n_species_per_log_m2, color = estuary,
       linetype = tidal, shape = tidal) +
   geom_point() +
   geom_line() +
-  labs(title = "REBENT macrobenthic fauna - Species richness per square metre", 
-       x = NULL, y = "Mean number of species per m²",
-       color = "Estuary")
+  labs(title = "REBENT macrobenthic fauna - Species richness per log square metre", 
+       x = NULL, y = "Mean number of species per log m²",
+       color = "Estuary") +
+  theme_esteem()
+
 ggplot_species_richness_year
-ggsave(plot = ggplot_species_richness_year, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_species_richness_squarem.jpg",
+ggsave(plot = ggplot_species_richness_year, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_species_richness_log_squarem.jpg",
        width = 15, height = 6, units = "cm")
 ```
 
@@ -333,7 +379,7 @@ Ecological groups of sensitivity to anthropic disturbance
 ```{r}
 # List of ESTEEM species
 list_species_REBENT <- data_REBENT |> 
-  distinct(ESTUARY, YEAR, AphiaID, phylum, class, order, species) |> 
+  distinct(estuary, YEAR, AphiaID, phylum, class, order, species) |> 
   mutate(species = case_when(
     species == "Nemertes" ~ "Nemertea",
     TRUE ~ species))
@@ -350,7 +396,7 @@ grp_taxon_ambi <- list_species_REBENT |> left_join(List_Group_Taxon_AMBI, by = c
 
 # Get percentage of species with AMBI ecological group
 percent_without_ambi_grp_taxon <- grp_taxon_ambi |> 
-  group_by(ESTUARY, YEAR) |> 
+  group_by(estuary, YEAR) |> 
   summarise(nb_without_ambi = sum(is.na(GROUP)),
             nb_tot = n()) |> 
   mutate(percent_without_ambi_grp_taxon = nb_without_ambi / nb_tot * 100)
@@ -367,20 +413,29 @@ ambi_index <- data_REBENT |>
   mutate(species = case_when(
     species == "Nemertes" ~ "Nemertea",
     TRUE ~ species)) |> 
-  group_by(ESTUARY, YEAR, tidal, species) |> 
-  summarise(count = sum(RESULTAT)) |> 
-  summarise(ambi = ambi(taxon = species, count = count), .groups = "drop")
+  group_by(estuary, YEAR, tidal, species) |> 
+  summarise(count = sum(RESULTAT), .groups = "drop") |> 
+  left_join(grp_taxon_ambi, by = c("species", "YEAR", "estuary")) |> 
+  group_by(estuary, YEAR, tidal) |> 
+  summarise(ambi = esteem.overview::compute_ambi(
+    data = cur_data(), 
+    taxon = species, 
+    count = count, 
+    group = GROUP), 
+    .groups = "drop")
 ```
 
 ```{r}
 ggplot_ambi_index <- ggplot(ambi_index) +
-  aes(x = YEAR, y = ambi, color = ESTUARY,
+  aes(x = YEAR, y = ambi, color = estuary,
       linetype = tidal, shape = tidal) +
   geom_point() +
   geom_line() +
   labs(title = "REBENT macrobenthic fauna - AMBI", 
        x = NULL, y = "AZTI Marine Biotic Index",
-       color = "Estuary")
+       color = "Estuary") +
+  theme_esteem()
+
 ggplot_ambi_index
 ggsave(plot = ggplot_ambi_index, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_AMBI_index.jpg",
        width = 15, height = 6, units = "cm")
@@ -391,7 +446,7 @@ ggsave(plot = ggplot_ambi_index, filename = "../inst/results/data_benthos/indica
 
 ```{r}
 ref_values <- tribble(
-  ~ ESTUARY, ~ tidal, ~ EUNIS, ~ AMBI_ref, ~ H_ref, ~ S_ref,
+  ~ estuary, ~ tidal, ~ EUNIS, ~ AMBI_ref, ~ H_ref, ~ S_ref,
   "Gironde", "intertidal", "A2.31", 2.5, 2.9, 14,
   "Gironde", "subtidal", "A5.32", 1.9, 2.5, 10,
   "Loire", "intertidal", "A2.31", 2.5, 2.9, 14,
@@ -405,7 +460,7 @@ ref_values <- tribble(
 BEQI <- species_richness |> 
   full_join(shannon_index) |> 
   full_join(ambi_index) |> 
-  left_join(ref_values, by = c("ESTUARY", "tidal")) |> 
+  left_join(ref_values, by = c("estuary", "tidal")) |> 
   mutate(EQR_ambi = (ambi - 7)/(AMBI_ref - 7),
          EQR_H = shannon / H_ref,
          EQR_S = sp_rich / S_ref,
@@ -419,7 +474,7 @@ BEQI <- species_richness |>
 
 ```{r}
 ggplot_BEQI_index <- ggplot(BEQI) +
-  aes(x = YEAR, y = BEQIFR, color = ESTUARY,
+  aes(x = YEAR, y = BEQIFR, color = estuary,
       linetype = tidal, shape = tidal) +
   geom_point() +
   geom_line() +
@@ -431,7 +486,8 @@ ggplot_BEQI_index <- ggplot(BEQI) +
        color = "Estuary") +
   annotate("text", x = 2015, y = 0.92, label = "High", size = 4, color = "black") +
   annotate("text", x = 2015, y = 0.76, label = "Good", size = 4, color = "black") +
-  annotate("text", x = 2015, y = 0.53, label = "Moderate", size = 4, color = "black")
+  annotate("text", x = 2015, y = 0.53, label = "Moderate", size = 4, color = "black") +
+  theme_esteem()
 
 ggplot_BEQI_index
 ggsave(plot = ggplot_BEQI_index, filename = "../inst/results/data_benthos/indicators/ggplot_REBENT_BEQIFR_index.jpg",

@@ -116,7 +116,8 @@ data_brominated_ww |>
   ggplot() +
   aes(x = YEAR, y = RESULTAT, colour = espece) +
   geom_line() +
-  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  theme_esteem()
 ```
 
 Simplify with two species groups
@@ -223,7 +224,8 @@ ggplot_brominated_ww <- ggplot(data_brominated_ww) +
     data = res_brominated_ww_trends,
     aes(yintercept = log(EQS_EC_ng_gww)),
     color = "red", linetype = "dashed"
-  )
+  ) +
+  theme_esteem()
 
 ggplot_brominated_ww
 
@@ -246,7 +248,8 @@ plot_brominated_periode <- data_brominated_ww_norm_relative |>
   geom_boxplot(width = 0.6, colour = "deeppink") +
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y") +
   labs(x = NULL, y = "Deviation from limit value (% ng/g ww)", colour = "Period") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  theme_esteem()
 
 plot_brominated_periode
 

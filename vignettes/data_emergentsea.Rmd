@@ -1,9 +1,23 @@
 ---
 title: "data_emergentsea"
-output: html_document
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_emergentsea}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE, 
+  message = FALSE,
+  comment = FALSE,
+  warning = FALSE,
+  fig.show='hold',
+  fig.align="center",
+  dev.args = list(family = "Arial")
+  )
+
 library(esteem.overview)
 library(tidyverse)
 library(writexl)
@@ -289,7 +303,8 @@ ggplot_percent_france_BIOTE <- ggplot(percent_france_BIOTE) +
   labs(x = NULL, y = "% of French mean value in bivalves") +
   facet_grid(vars(matrix)) +
   coord_flip() +
-  theme_bw()
+  theme_esteem()
+
 ggplot_percent_france_BIOTE
 ggsave(plot = ggplot_percent_france_BIOTE, 
        filename = "../inst/results/data_contam/emergentsea/ggplot_emergentsea_BIOTE.jpg")

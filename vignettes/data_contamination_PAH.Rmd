@@ -98,7 +98,8 @@ data_PAH_dw |>
   ggplot() +
   aes(x = YEAR, y = RESULTAT, colour = espece) +
   geom_line() +
-  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  theme_esteem()
 ```
 
 Simplify with two species groups
@@ -175,7 +176,8 @@ ggplot_PAH_dw <- ggplot(data_PAH_dw) +
     data = res_PAH_dw_trends,
     aes(yintercept = log(EAC_OSPAR_ng_gdw)),
     color = "red", linetype = "dashed"
-  )
+  ) +
+  theme_esteem()
 
 ggplot_PAH_dw
 
@@ -214,7 +216,8 @@ plot_PAH_dw_periode <- data_PAH_dw_norm_relative |>
             inherit.aes = FALSE, 
             aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
     family = "DejaVu Sans",   # specify the font that contains arrows
-    show.legend = FALSE)
+    show.legend = FALSE) +
+  theme_esteem()
 
 plot_PAH_dw_periode
 

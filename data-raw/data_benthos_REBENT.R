@@ -16,7 +16,7 @@ library(httr) # install.packages("httr")
 data_REBENT <- esteem.overview::data_benthos |>
   mutate(YEAR = year(DATE)) |>
   mutate(year_month = paste0(year(DATE), "-", month(DATE))) |>
-  mutate(ESTUARY = case_when(
+  mutate(estuary = case_when(
     ZONE_MARINE_QUADRIGE == "085 - Estuaire de la Gironde" ~ "Gironde",
     ZONE_MARINE_QUADRIGE == "070 - Estuaire de la Loire" ~ "Loire",
     ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine" ~ "Seine"
@@ -34,8 +34,8 @@ data <- data_REBENT |> filter(PARAMETRE_GROUPE == "Biologie")
 # Campains are organized each 3 years, once in autumn, except for 2007:
 # april in Seine only, april&may in Gironde as well as october the same year.
 data |>
-  distinct(ESTUARY, year_month) |>
-  arrange(ESTUARY, year_month)
+  distinct(estuary, year_month) |>
+  arrange(estuary, year_month)
 
 # We keep only autumn:
 data <- data |>
@@ -46,9 +46,9 @@ data <- data |>
 # Campaign spatio-temporal measurments ----
 
 data |>
-  select(ESTUARY, LIEU_MNEMONIQUE, latitude, longitude) |>
+  select(estuary, LIEU_MNEMONIQUE, latitude, longitude) |>
   distinct() |>
-  group_by(ESTUARY) |>
+  group_by(estuary) |>
   summarise(lat_stat = paste0(min(latitude), " - ", max(latitude)),
             lon_stat = paste0(min(longitude), " - ", max(longitude)))
 
@@ -60,20 +60,20 @@ data <- data |>
     TRUE ~ latitude
   ))
 
-# Haline zones
+## Haline zones
 data <- data |>
-  mutate(zone = case_when(
-    ESTUARY == "Gironde" & latitude <= 45.4 ~ "upstream",
-    ESTUARY == "Gironde" & latitude > 45.4 ~ "downstream",
-    ESTUARY == "Loire" & longitude > -2.1 ~ "upstream",
-    ESTUARY == "Loire" & longitude <= -2.1 ~ "downstream",
-    ESTUARY == "Seine" & longitude > 0.34 ~ "upstream",
-    ESTUARY == "Seine" & longitude <= 0.34 ~ "downstream",
-  ))
+  mutate(
+    haline_zone = case_when(
+      estuary == "Gironde" & latitude >= 45.4 ~ "polyhalin",
+      estuary == "Gironde" & latitude >= 45.0 ~ "mesohalin",
+      estuary == "Loire" & longitude <= -2.0 ~ "polyhalin",
+      estuary == "Loire" & longitude <= -1.8 ~ "mesohalin",
+      estuary == "Seine" & longitude <= 0.3 ~ "polyhalin",
+      estuary == "Seine" & longitude <= 0.5 ~ "mesohalin",
+      TRUE ~ NA
+    )
+  )
 
-# Delete offshore points in the Seine estuary
-data <- data |>
-  filter(LIEU_MNEMONIQUE %!in% c("011-P-049", "011-P-050"))
 # ---------------------------------------------------------------------------
 # Types of benthic sampler and their surface ----
 
@@ -224,3 +224,68 @@ data_sediment <- data_REBENT |>
   left_join(map_tidal)
 
 usethis::use_data(data_sediment, overwrite = TRUE)
+
+
+# ---------------------------------------------------------------------------
+# Estuaries maps - Haline zones from REBENT ----
+
+
+# ---------------------------------------------------------------------------
+# Gironde ----
+
+plot_REBENT_map_gironde <- plot_estuary_map(
+  data = data_REBENT |> dplyr::filter(estuary == "Gironde"),
+  estuary_name = "Gironde",
+  colour_var = haline_zone,
+  shape_var = tidal
+)
+
+# save the image
+ggsave(filename = "inst/results/data_maps/REBENT/plot_REBENT_map_gironde.jpg",
+       plot = plot_REBENT_map_gironde)
+
+# crop the image
+img_gironde <- image_read("inst/results/data_maps/REBENT/plot_REBENT_map_gironde.jpg")
+img_trim_gironde <- image_trim(img_gironde)
+image_write(img_trim_gironde, "inst/results/data_maps/REBENT/plot_REBENT_map_gironde.jpg")
+
+
+# ---------------------------------------------------------------------------
+# Loire ----
+
+plot_REBENT_map_loire <- plot_estuary_map(
+  data = data_REBENT |> dplyr::filter(estuary == "Loire"),
+  estuary_name = "Loire",
+  colour_var = haline_zone,
+  shape_var = tidal
+)
+
+# save the image
+ggsave(filename = "inst/results/data_maps/REBENT/plot_REBENT_map_loire.jpg",
+       plot = plot_REBENT_map_loire)
+
+# crop the image
+img_loire <- image_read("inst/results/data_maps/REBENT/plot_REBENT_map_loire.jpg")
+img_trim_loire <- image_trim(img_loire)
+image_write(img_trim_loire, "inst/results/data_maps/REBENT/plot_REBENT_map_loire.jpg")
+
+
+# ---------------------------------------------------------------------------
+# Seine ----
+
+plot_REBENT_map_seine <- plot_estuary_map(
+  data = data_REBENT |> dplyr::filter(estuary == "Seine"),
+  estuary_name = "Seine",
+  colour_var = haline_zone,
+  shape_var = tidal
+)
+
+# save the image
+ggsave(filename = "inst/results/data_maps/REBENT/plot_REBENT_map_seine.jpg",
+       plot = plot_REBENT_map_seine)
+
+# crop the image
+img_seine <- image_read("inst/results/data_maps/REBENT/plot_REBENT_map_seine.jpg")
+img_trim_seine <- image_trim(img_seine)
+image_write(img_trim_seine, "inst/results/data_maps/REBENT/plot_REBENT_map_seine.jpg")
+

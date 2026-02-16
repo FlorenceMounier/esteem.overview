@@ -1,29 +1,68 @@
 ---
 title: "data_POMET"
-output: html_document
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_POMET}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.show='hold')
+knitr::opts_chunk$set(
+  echo = FALSE, 
+  message = FALSE,
+  comment = FALSE,
+  warning = FALSE,
+  fig.show='hold',
+  fig.align="center",
+  dev.args = list(family = "Arial")
+  )
 
 library(esteem.overview)
 library(tidyverse)
-
+library(DT)
 
 
 library(mixtools)
-# remotes::install_github("r-spatial/mapview")
-library(mapview)
-library(sf)
-library(maptiles)
-library(tidyterra)
-library(terra)
-library(osmdata)
-library(ggspatial)
-library(ggrepel)  # pour éviter chevauchement labels
+# library(sf)
+# library(maptiles)
+# library(tidyterra)
+# library(terra)
+# library(osmdata)
+# library(ggspatial)
+# library(ggrepel)  # pour éviter chevauchement labels
 library(RColorBrewer)
 
 col_gradient <- brewer.pal(n = 8, name = "RdYlGn")
+```
+
+## Maps
+
+```{r}
+knitr::include_graphics(
+  system.file(
+    "results/data_maps/POMET/plot_POMET_map_gironde.jpg",
+    package = "esteem.overview"
+  )
+)
+```
+
+```{r}
+knitr::include_graphics(
+  system.file(
+    "results/data_maps/POMET/plot_POMET_map_loire.jpg",
+    package = "esteem.overview"
+  )
+)
+```
+
+```{r}
+knitr::include_graphics(
+  system.file(
+    "results/data_maps/POMET/plot_POMET_map_seine.jpg",
+    package = "esteem.overview"
+  )
+)
 ```
 
 # Salinity - Evolution temporelle en zone mesohaline
@@ -51,25 +90,26 @@ ggplot(data = data_POMET |>
 
 # Fish size classes
 
-## Subdataset of marine indicators in autumn
+Juvenile marine fish indicators :
 
+- Common sole (*Solea solea*)
+- European seabass (*Dicentrarchus labrax*)
+
+Observation period: autumn
 ```{r}
-data(data_POMET)
+## Subdataset of marine indicators in autumn
 data_POMET_MJ_indicator <- data_POMET |>
   filter(name %in% c("Solea solea", "Dicentrarchus labrax"),
          saison == "automne")
 ```
 
-## Biological size class - Sole
-
 ```{r}
+## Biological size class - Sole
 longueurs_sole <- data_POMET_MJ_indicator |>
   filter(name == "Solea solea") |>
   drop_na(longueur) |>
   pull(longueur)
-```
 
-```{r}
 # Ajustement du mélange
 mix <- normalmixEM(longueurs_sole, k = 2)
 summary(mix)
@@ -251,9 +291,10 @@ ggsave(filename = "../inst/results/data_POMET/fish_size_class/gg_seabass_size_cl
        plot = gg_seabass_size_class, width = 15, height = 10, units = "cm")
 ```
 
-## Biological size class repartition of individuals
 
 ```{r}
+## Biological size class repartition of individuals
+
 data_POMET_MJ_indicator <- data_POMET_MJ_indicator |>
   mutate(size_class = case_when(
     name == "Dicentrarchus labrax" & longueur <= seuil_bar ~ "G0",
@@ -305,33 +346,12 @@ data_POMET_density_seabass <- data_POMET_density |>
   filter(name == "Dicentrarchus labrax")
 
 data_POMET_density_seabass_gironde <- data_POMET_density_seabass |> filter(estuary == "Gironde")
-# mapview(data_POMET_density_seabass_gironde,
-#         xcol = "pos_long_dd", ycol = "pos_lat_dd", zcol = "log_density",
-#         col = "white", col.regions = col_gradient,
-#         alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
-#         grid = FALSE)
 
 data_POMET_density_seabass_loire <- data_POMET_density_seabass |> filter(estuary == "Loire")
-# mapview(data_POMET_density_seabass_loire,
-#         xcol = "pos_long_dd", ycol = "pos_lat_dd", zcol = "density",
-#         col = "white", col.regions = col_gradient,
-#         alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
-#         grid = FALSE)
+
 
 data_POMET_density_seabass_seine <- data_POMET_density_seabass |> filter(estuary == "Seine")
-# mapview(data_POMET_density_seabass_seine,
-#         xcol = "pos_long_dd", ycol = "pos_lat_dd", zcol = "log_density",
-#         col = "white", col.regions = col_gradient,
-#         alpha.regions = 1, cex = 5, lwd = 0.5, crs = "+proj=longlat +datum=WGS84",
-#         grid = FALSE)
 ```
-
-
-
-
-
-
-# ---------------------------------------------------------------------------
 
 
 # Prey species
@@ -348,13 +368,12 @@ data_POMET |>
 ```
 
 
+## Calcul de l'Abondance poissons (= Nb d'indiv / surface ech. (long trait * long chalut) )
 
+ - Petit chalut a perche (=CHAP3) * 1.5
+ - Grand chalut a perche (CHAP3 DCE) * 3
 
-# ---------------------------------------------------------------------------
-# ## Calcul de l'Abondance poissons (= Nb d'indiv / surface ech. (long trait * long chalut) )
-#### Petit chalut a perche (=CHAP3) * 1.5 ; Grand chalut a perche (CHAP3 DCE) * 3
-
-
+```{r}
 data_POMET_density <- data_POMET_MJ_indicator |>
   group_by(materiel_code, estuary, annee, trait_id, long_trait, name, size_class) |>
   # tot nb of individuals
@@ -381,11 +400,14 @@ ggplot(data_POMET_density) +
   ) +
   facet_grid(rows = vars(name), cols = vars(estuary), scales = "free_y")
 
+```
 
-# ---------------------------------------------------------------------------
-# ## Calcul de la biomasse crevettes /unité surf (= Biomasse / surface ech. (long trait * long chalut) )
-#### Petit chalut a perche
+## Calcul de la biomasse crevettes /unité surf (= Biomasse / surface ech. (long trait * long chalut) )
 
+
+Petit chalut a perche
+
+```{r}
 data_POMET_shrimps <- data_POMET |>
   filter(name %in% c("Crangon crangon", "Palaemon longirostris"),
          saison == "automne")
@@ -412,3 +434,5 @@ ggplot(data_POMET_shrimps_biomass) +
     linewidth = 1
   ) +
   facet_grid(rows = vars(name), cols = vars(estuary), scales = "free_y")
+
+```

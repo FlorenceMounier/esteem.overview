@@ -7,14 +7,15 @@
 plot_estuary_map(
   data,
   estuary_name,
-  colour_var = NULL,
-  fill_var = NULL,
-  size_var = NULL,
+  colour_var,
+  fill_var,
+  size_var,
+  shape_var,
   package = "esteem.overview"
 )
 }
 \arguments{
-\item{data}{Data frame containing pos_lat_dd and pos_long_dd}
+\item{data}{Data frame containing latitude and longitude}
 
 \item{estuary_name}{Character name of the estuary}
 
@@ -23,6 +24,8 @@ plot_estuary_map(
 \item{fill_var}{Optional variable in \code{data} for point fill (shape 21)}
 
 \item{size_var}{Optional variable in \code{data} for point size}
+
+\item{shape_var}{Optional variable in \code{data} for point shape}
 
 \item{package}{Package name where basemap is stored (default: "esteem.overview")}
 }

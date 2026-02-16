@@ -48,14 +48,14 @@ test_that("ggplot2_colors works", {
 
   
 ```{r function-make_points_sf}
-#' Make points_sf from "pos_long_dd" & "pos_lat_dd" in a dataset
+#' Make points_sf from "longitude" & "latitude" in a dataset
 #' 
 #' @noRd
 make_points_sf <- function(data) {
   data |>
-    dplyr::filter(!is.na(pos_lat_dd) & !is.na(pos_long_dd)) |>
+    dplyr::filter(!is.na(latitude) & !is.na(longitude)) |>
     sf::st_as_sf(
-      coords = c("pos_long_dd", "pos_lat_dd"),
+      coords = c("longitude", "latitude"),
       crs = 4326,
       remove = FALSE
     )
@@ -68,6 +68,21 @@ make_points_sf <- function(data) {
 ```{r tests-make_points_sf}
 ```
   
+# theme_esteem
+
+```{r function-theme_esteem}
+#' Theme global pour le package avec police Windows sûre
+#' @export
+theme_esteem <- function(base_size = 11, base_family = "Arial") {
+  ggplot2::theme_minimal(base_size = base_size, base_family = base_family)
+}
+```
+  
+```{r example-theme_esteem}
+```
+  
+```{r tests-theme_esteem}
+```
   
 
 ```{r development-inflate, eval=FALSE}

@@ -16,6 +16,7 @@ Imports:
     ggplot2,
     ggrepel,
     ggspatial,
+    grid,
     maptiles,
     osmdata,
     rlang,
@@ -27,13 +28,13 @@ Imports:
     writexl
 Suggests: 
     benthos,
+    DT,
     factoextra,
     FactoMineR,
     here,
     httr,
     jsonlite,
     knitr,
-    mapview,
     missMDA,
     mixtools,
     RColorBrewer,

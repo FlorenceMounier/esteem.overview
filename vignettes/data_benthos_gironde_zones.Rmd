@@ -8,7 +8,16 @@ vignette: >
 ---
 
 ```{r setup}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(
+  echo = FALSE, 
+  message = FALSE,
+  comment = FALSE,
+  warning = FALSE,
+  fig.show='hold',
+  fig.align="center",
+  dev.args = list(family = "Arial")
+  )
+
 library(esteem.overview)
 library(tidyverse, quietly = TRUE)
 library(writexl)
@@ -25,7 +34,7 @@ library(benthos)
 
 ```{r}
 data_REBENT <- esteem.overview::data_benthos_REBENT_cleaned |> 
-  filter(ESTUARY == "Gironde", YEAR == 2008)
+  filter(estuary == "Gironde", YEAR == 2008)
 ```
 
 
@@ -315,7 +324,7 @@ ggsave(plot = ggplot_species_richness_year, filename = "../inst/results/data_ben
 
 ```{r}
 ref_values <- tribble(
-  ~ ESTUARY, ~ tidal, ~ EUNIS, ~ AMBI_ref, ~ H_ref, ~ S_ref,
+  ~ estuary, ~ tidal, ~ EUNIS, ~ AMBI_ref, ~ H_ref, ~ S_ref,
   "Gironde", "intertidal", "A2.31", 2.5, 2.9, 14,
   "Gironde", "subtidal", "A5.32", 1.9, 2.5, 10
 )
@@ -360,14 +369,14 @@ ambi_index <- data_REBENT |>
   mutate(species = case_when(
     species == "Nemertes" ~ "Nemertea",
     TRUE ~ species)) |> 
-  group_by(zone, tidal, species) |> 
+  group_by(haline_zone, tidal, species) |> 
   summarise(count = sum(RESULTAT)) |> 
   summarise(ambi = ambi(taxon = species, count = count), .groups = "drop")
 ```
 
 ```{r}
 ggplot_ambi_index <- ggplot(ambi_index) +
-  aes(x = tidal, y = ambi, color = zone) +
+  aes(x = tidal, y = ambi, color = haline_zone) +
   geom_point() +
   labs(title = "REBENT macrobenthic fauna - AMBI Gironde 2008", 
        x = NULL, y = "AZTI Marine Biotic Index")
@@ -387,7 +396,7 @@ left_join(ref_values, by = c("tidal")) |>
   ))
 
 ggplot_EQR_ambi_index <- ggplot(EQR_ambi) +
-  aes(x = tidal, y = EQR_ambi, color = zone) +
+  aes(x = tidal, y = EQR_ambi, color = haline_zone) +
   geom_point() +
   geom_hline(yintercept = 0.2) +
   geom_hline(yintercept = 0.4) +
@@ -428,7 +437,7 @@ BEQI <- species_richness |>
 
 ```{r}
 ggplot_BEQI_index <- ggplot(BEQI) +
-  aes(x = tidal, y = BEQIFR, color = zone, shape = zone) +
+  aes(x = tidal, y = BEQIFR, color = haline_zone, shape = haline_zone) +
   geom_point(size = 3) +
   geom_hline(yintercept = 0.86) +
   geom_hline(yintercept = 0.67) +

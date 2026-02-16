@@ -103,7 +103,8 @@ data_PCBi_lw |>
   ggplot() +
   aes(x = YEAR, y = RESULTAT, colour = espece) +
   geom_line() +
-  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y")
+  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y") +
+  theme_esteem()
 ```
 
 Simplify with two species groups
@@ -177,7 +178,8 @@ ggplot_PCBi_lw <- ggplot(data_PCBi_lw) +
     data = res_PCBi_lw_trends,
     aes(yintercept = log(EAC_OSPAR_ng_g_lw)),
     color = "red", linetype = "dashed"
-  )
+  ) +
+  theme_esteem()
 
 ggplot_PCBi_lw
 
@@ -210,7 +212,8 @@ plot_PCBi_lw_periode <- data_PCBi_lw_norm_relative |>
             inherit.aes = FALSE, 
             aes(x = ESTUARY, y = 0.9*y_pos, label = trend), size = rel(6),
     family = "DejaVu Sans",   # specify the font that contains arrows
-    show.legend = FALSE)
+    show.legend = FALSE) +
+  theme_esteem()
 
 plot_PCBi_lw_periode
 
