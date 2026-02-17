@@ -436,7 +436,7 @@ if (length(mapping) > 0) {
     nudge_y = 0.01,            # décale légèrement le texte
     size = 3,
     color = "black",
-    text_family = "sans"
+    family = "sans"
   )
   }
 
@@ -502,10 +502,9 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
     pad_x = unit(0.5, "cm"), # décale horizontalement
     pad_y = unit(0.7, "cm"), # décale verticalement
     which_north = "true",
-    style = ggspatial::north_arrow_orienteering(),
+    style = ggspatial::north_arrow_orienteering(text_family = "sansv"),
     height = grid::unit(0.5, "cm"),   # hauteur totale de la flèche
-    width  = grid::unit(0.5, "cm"),  # largeur
-    text_family = "sans"
+    width  = grid::unit(0.5, "cm")  # largeur
   ) +
   ggplot2::labs(title = paste0(estuary_name, " estuary"))
     

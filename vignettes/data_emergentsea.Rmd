@@ -136,7 +136,7 @@ percent_france_POCIS_colors <- percent_france_POCIS |>
   select(ESTUARY, PARAMETRE_LIBELLE, family, matrix, UNITE, color) |> 
   pivot_wider(names_from = ESTUARY, values_from = color)
 
-writexl::write_xlsx(x = percent_france_POCIS_colors, path = "../inst/results/data_contam/emergentsea/percent_france_POCIS_colors.xlsx")
+# writexl::write_xlsx(x = percent_france_POCIS_colors, path = "inst/results/data_contam/emergentsea/percent_france_POCIS_colors.xlsx")
 
 
 # Levels
@@ -171,10 +171,11 @@ ggplot_percent_france_POCIS <- ggplot(percent_france_POCIS) +
   labs(x = NULL, y = "% of French mean value in POCIS") +
   facet_grid(vars(matrix)) +
   coord_flip() +
-  theme_bw()
+  theme_esteem()
+
 ggplot_percent_france_POCIS
-ggsave(plot = ggplot_percent_france_POCIS, 
-       filename = "../inst/results/data_contam/emergentsea/ggplot_emergentsea_POCIS.jpg")
+# ggsave(plot = ggplot_percent_france_POCIS, 
+#        filename = "inst/results/data_contam/emergentsea/ggplot_emergentsea_POCIS.jpg")
 ```
 
 ## Graphs for BIOTE
@@ -203,7 +204,7 @@ percent_france_BIOTE_colors <- percent_france_BIOTE |>
   select(ESTUARY, PARAMETRE_LIBELLE, family, matrix, UNITE, color) |> 
   pivot_wider(names_from = ESTUARY, values_from = color)
 
-writexl::write_xlsx(x = percent_france_BIOTE_colors, path = "../inst/results/data_contam/emergentsea/percent_france_BIOTE_colors.xlsx")
+# writexl::write_xlsx(x = percent_france_BIOTE_colors, path = "inst/results/data_contam/emergentsea/percent_france_BIOTE_colors.xlsx")
 ```
 
 ```{r}
@@ -264,7 +265,6 @@ percent_PNEC_BIOTE |>
 ```{r}
 percent_PNEC_BIOTE_colors <- percent_PNEC_BIOTE |> 
   left_join(PNEC) |> 
-  select(-mean_france) |> 
   mutate(percent_PNEC = mean_estuary / PNEC * 100) |> 
   mutate(color = case_when(
     percent_PNEC < 100 ~ "blue",
@@ -283,7 +283,7 @@ percent_PNEC_BIOTE_colors <- percent_PNEC_BIOTE |>
 
 percent_PNEC_BIOTE_colors
 
-writexl::write_xlsx(x = percent_PNEC_BIOTE_colors, path = "../inst/results/data_contam/emergentsea/percent_PNEC_BIOTE_colors.xlsx")
+# writexl::write_xlsx(x = percent_PNEC_BIOTE_colors, path = "inst/results/data_contam/emergentsea/percent_PNEC_BIOTE_colors.xlsx")
 ```
 
 ```{r}
@@ -306,8 +306,8 @@ ggplot_percent_france_BIOTE <- ggplot(percent_france_BIOTE) +
   theme_esteem()
 
 ggplot_percent_france_BIOTE
-ggsave(plot = ggplot_percent_france_BIOTE, 
-       filename = "../inst/results/data_contam/emergentsea/ggplot_emergentsea_BIOTE.jpg")
+# ggsave(plot = ggplot_percent_france_BIOTE, 
+#        filename = "inst/results/data_contam/emergentsea/ggplot_emergentsea_BIOTE.jpg")
 ```
 
 # Comparison with the French median
