@@ -24,14 +24,14 @@ library(tidyverse)
 
 ## Gironde
 ```{r, echo=FALSE, out.width="50%"}
-img_path <- system.file("results", "data_maps", "plot_map_gironde.jpg",
+img_path <- system.file("results", "data_maps", "POMET", "plot_POMET_map_gironde.jpg",
                         package = "esteem.overview")
 
 knitr::include_graphics(img_path)
 ```
 
 ```{r, echo=FALSE, out.width="40%"}
-img_path <- system.file("results", "data_maps", "plot_salinity_zones_gironde.jpg",
+img_path <- system.file("results", "data_maps", "POMET", "plot_POMET_salinity_zones_gironde.jpg",
                         package = "esteem.overview")
 
 knitr::include_graphics(img_path)
@@ -39,14 +39,14 @@ knitr::include_graphics(img_path)
 
 ## Loire
 ```{r, echo=FALSE, out.width="80%"}
-img_path <- system.file("results", "data_maps", "plot_map_loire.jpg",
+img_path <- system.file("results", "data_maps", "POMET", "plot_POMET_map_loire.jpg",
                         package = "esteem.overview")
 
 knitr::include_graphics(img_path)
 ```
 
 ```{r, echo=FALSE, out.width="40%"}
-img_path <- system.file("results", "data_maps", "plot_salinity_zones_loire.jpg",
+img_path <- system.file("results", "data_maps", "POMET", "plot_POMET_salinity_zones_loire.jpg",
                         package = "esteem.overview")
 
 knitr::include_graphics(img_path)
@@ -54,14 +54,14 @@ knitr::include_graphics(img_path)
 
 ## Seine
 ```{r, echo=FALSE, out.width="80%"}
-img_path <- system.file("results", "data_maps", "plot_map_seine.jpg",
+img_path <- system.file("results", "data_maps", "POMET", "plot_POMET_map_seine.jpg",
                         package = "esteem.overview")
 
 knitr::include_graphics(img_path)
 ```
 
 ```{r, echo=FALSE, out.width="40%"}
-img_path <- system.file("results", "data_maps", "plot_salinity_zones_seine.jpg",
+img_path <- system.file("results", "data_maps", "POMET", "plot_POMET_salinity_zones_seine.jpg",
                         package = "esteem.overview")
 
 knitr::include_graphics(img_path)

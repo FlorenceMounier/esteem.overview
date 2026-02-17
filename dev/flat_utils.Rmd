@@ -72,8 +72,13 @@ make_points_sf <- function(data) {
 
 ```{r function-theme_esteem}
 #' Theme global pour le package avec police Windows sûre
+#' @importFrom ggplot2 theme_minimal
+#'
+#' @param base_size 
+#' @param base_family 
+#'
 #' @export
-theme_esteem <- function(base_size = 11, base_family = "Arial") {
+theme_esteem <- function(base_size = 11, base_family = "sans") {
   ggplot2::theme_minimal(base_size = base_size, base_family = base_family)
 }
 ```

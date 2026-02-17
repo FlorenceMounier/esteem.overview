@@ -4,7 +4,12 @@
 \alias{theme_esteem}
 \title{Theme global pour le package avec police Windows sûre}
 \usage{
-theme_esteem(base_size = 11, base_family = "Arial")
+theme_esteem(base_size = 11, base_family = "sans")
+}
+\arguments{
+\item{base_size}{}
+
+\item{base_family}{}
 }
 \description{
 Theme global pour le package avec police Windows sûre

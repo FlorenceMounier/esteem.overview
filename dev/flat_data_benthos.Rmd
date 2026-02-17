@@ -90,7 +90,7 @@ gg_map_parametre_data_benthos <- function(data, estuaire) {
   
   # Plot
   plot <- ggplot() +
-    ggspatial::layer_spatial(tiles) +
+    ggspatial::layer_spatial(tiles, text_family = "sans") +
     geom_sf(data = sf::st_transform(points_sf, 3857), size = 1, 
             aes(color = zone, shape = tidal)) +
     geom_text(data = annot_df, aes(x = longitude, y = latitude, label = label), 
@@ -98,7 +98,7 @@ gg_map_parametre_data_benthos <- function(data, estuaire) {
     coord_sf(xlim = xlim, ylim = ylim, expand = FALSE) +
     facet_wrap(vars(YEAR)) +
     labs(title = estuaire) +
-    theme_minimal() +
+    theme_esteem() +
     theme(legend.position = "none")  
   
   return(plot)

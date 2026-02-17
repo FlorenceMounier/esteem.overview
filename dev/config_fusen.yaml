@@ -73,6 +73,21 @@ flat_maps.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
+flat_POMET.Rmd:
+  path: dev/flat_POMET.Rmd
+  state: active
+  R: R/fct_size_class.R
+  tests: []
+  vignettes: []
+  inflate:
+    flat_file: dev/flat_POMET.Rmd
+    vignette_name: ~
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
 flat_utils.Rmd:
   path: dev/flat_utils.Rmd
   state: active

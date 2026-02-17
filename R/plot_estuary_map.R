@@ -157,7 +157,7 @@ if (length(mapping) > 0) {
     nudge_y = 0.01,            # décale légèrement le texte
     size = 3,
     color = "black",
-    text_family = "Arial"
+    text_family = "sans"
   )
   }
 
@@ -204,7 +204,7 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
       ylim = basemap$ylim,
       expand = FALSE
     ) +
-    ggplot2::theme_esteem() +
+    theme_esteem() +
     ggplot2::theme(
       axis.title = ggplot2::element_blank()
     )
@@ -217,7 +217,7 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
     location = "bl",      # bas gauche
     width_hint = 0.2,     # proportion de la carte
     text_cex = 1,         # taille du texte
-    text_family = "Arial"
+    text_family = "sans"
   ) +
   ggspatial::annotation_north_arrow(
     pad_x = unit(0.5, "cm"), # décale horizontalement
@@ -226,7 +226,7 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
     style = ggspatial::north_arrow_orienteering(),
     height = grid::unit(0.5, "cm"),   # hauteur totale de la flèche
     width  = grid::unit(0.5, "cm"),  # largeur
-    text_family = "Arial"
+    text_family = "sans"
   ) +
   ggplot2::labs(title = paste0(estuary_name, " estuary"))
     

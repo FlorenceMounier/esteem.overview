@@ -1,9 +1,19 @@
-library(esteem.overview)
-library(tidyverse)
-library(magick)
+# =====================================================
+# Dataset: base map files in inst/extdata
+# Preparation script
+# Author: FM
+# Date: 2026-02-17
+# =====================================================
 
-# ---------------------------------------------------------------------------
-# Halin limits by estuary
+# =====================================================
+# 00. Packages
+# =====================================================
+
+library(tidyverse)
+
+# =====================================================
+# 01. Halin limits by estuary
+# =====================================================
 
 halin_table <- tibble::tibble(
   estuary = c("Gironde", "Loire", "Seine"),
@@ -14,8 +24,9 @@ halin_table <- tibble::tibble(
 usethis::use_data(halin_table, overwrite = TRUE)
 
 
-# ---------------------------------------------------------------------------
-# Base OpenStreetMaps by estuary
+# =====================================================
+# 02. Base OpenStreetMaps by estuary
+# =====================================================
 
 fct_build_and_save_basemap(
   data = data_POMET |> filter(estuary == "Gironde"),
