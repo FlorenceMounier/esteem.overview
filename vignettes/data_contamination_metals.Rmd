@@ -90,8 +90,8 @@ factors_metals <- data_metals_loire |>
     factor_mussel_to_oyster = oyster / mussel
   )
 
-# # Save conversion factors
-# writexl::write_xlsx(x = factors_metals, path = "../inst/results/data_contam/metals/conversion_factors_metal.xlsx")
+# Save conversion factors
+usethis::use_data(factors_metals)
 ```
 
 Compute results in "equivalent mussels"
@@ -181,8 +181,7 @@ data_metals_ww <- data_metals_ww |>
 
 ```{r}
 res_metals_trends <- get_last_trend_info(data = data_metals_ww, norm = metals)
-
-writexl::write_xlsx(res_metals_trends, "../inst/results/data_contam/metals/recent_trends_metals_µg_ww.xlsx")
+usethis::use_data(res_metals_trends)
 ```
 
 

@@ -88,6 +88,36 @@ theme_esteem <- function(base_size = 11, base_family = "sans") {
   
 ```{r tests-theme_esteem}
 ```
+
+# get_shortened_path
+
+```{r function-get_shortened_path}
+#' Title
+#' 
+#' Description
+#' 
+#' @return
+#' 
+#' @export
+get_shortened_path <- function(complete_path){
+    img_path <- system.file(complete_path,
+  package = "esteem.overview"
+)
+
+short_path <- file.path(tempdir(), "plot.jpg")
+file.copy(img_path, short_path, overwrite = TRUE)
+
+return(short_path)
+}
+```
+  
+```{r example-get_shortened_path}
+
+```
+  
+```{r tests-get_shortened_path}
+
+```
   
 
 ```{r development-inflate, eval=FALSE}

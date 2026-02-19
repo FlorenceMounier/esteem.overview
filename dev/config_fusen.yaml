@@ -92,6 +92,7 @@ flat_utils.Rmd:
   path: dev/flat_utils.Rmd
   state: active
   R:
+  - R/get_shortened_path.R
   - R/ggplot2_colors.R
   - R/make_points_sf.R
   - R/theme_esteem.R

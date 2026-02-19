@@ -28,13 +28,10 @@ Imports:
     tidyterra,
     writexl
 Suggests: 
-    benthos,
     DT,
     factoextra,
     FactoMineR,
     here,
-    httr,
-    jsonlite,
     knitr,
     missMDA,
     RColorBrewer,

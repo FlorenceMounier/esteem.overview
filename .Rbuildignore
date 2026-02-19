@@ -9,3 +9,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^esteem\.overview\.Rproj$
+^doc$
+^inst/doc$
+^Meta$

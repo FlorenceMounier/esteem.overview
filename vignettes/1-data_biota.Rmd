@@ -63,12 +63,7 @@ knitr::include_graphics(
 ### Salinity - Temporal evolution in the central zone
 
 ```{r}
-knitr::include_graphics(
-  system.file(
-    "results/data_POMET/salinity/plot_POMET_central_salinity_evolution.jpg",
-    package = "esteem.overview"
-  )
-)
+get_shortened_path("results/data_POMET/salinity/plot_POMET_central_salinity_evolution.jpg")
 ```
 
 ## POMET dataset (demerso-pellagical)
@@ -83,43 +78,23 @@ Juvenile marine fish indicators :
 Observation period: autumn
 
 ```{r}
-knitr::include_graphics(
-  system.file(
-    "results/data_POMET/fish_size_class/plot_POMET_sole_size_class.jpg",
-    package = "esteem.overview"
-  )
-)
+get_shortened_path("results/data_POMET/fish_size_class/plot_POMET_sole_size_class.jpg")
 ```
 
 ```{r}
-knitr::include_graphics(
-  system.file(
-    "results/data_POMET/fish_size_class/plot_POMET_seabass_size_class.jpg",
-    package = "esteem.overview"
-  )
-)
+get_shortened_path("results/data_POMET/fish_size_class/plot_POMET_seabass_size_class.jpg")
 ```
 
 ### Fish densities
 
 ```{r}
-knitr::include_graphics(
-  system.file(
-    "results/data_POMET/species_densities/plot_POMET_density_fish.jpg",
-    package = "esteem.overview"
-  )
-)
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_density_fish.jpg")
 ```
 
 ### Shrimps densities
 
 ```{r}
-knitr::include_graphics(
-  system.file(
-    "results/data_POMET/species_densities/plot_POMET_density_shrimps.jpg",
-    package = "esteem.overview"
-  )
-)
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_density_shrimps.jpg")
 ```
 
 ### Prey species
@@ -137,11 +112,11 @@ data_POMET |>
 
 ## REBENT dataset (benthic)
 
-```{r}
-data_REBENT <- esteem.overview::data_benthos_REBENT_cleaned
-```
+Source code: 2.1-data_REBENT.R
 
 ### Maps
+
+Source code: 2.2-data_REBENT_maps.R
 
 ```{r}
 knitr::include_graphics(
@@ -170,26 +145,67 @@ knitr::include_graphics(
 )
 ```
 
+### Taxonomy
+
+Source code: 2.3-data_REBENT_taxonomy.R
+
+#### Detail by taxa
+```{r}
+get_shortened_path("results/data_benthos/indicators/ggplot_REBENT_abundance_taxonomy.jpg")
+```
+
+#### Detail by major species
+```{r}
+get_shortened_path("results/data_benthos/indicators/ggplot_REBENT_abundance_species.jpg")
+```
+
+
 ### Indicators
+
+Source code: 2.4-data_REBENT_indicators.R
 
 #### Species richness
 
 ```{r}
-knitr::include_graphics(
-  system.file(
-    "results/data_benthos/indicators/ggplot_REBENT_species_richness.jpg",
-    package = "esteem.overview"
-  )
-)
+get_shortened_path("results/data_benthos/indicators/ggplot_REBENT_species_richness.jpg")
 ```
 
 #### Shannon index (H')
 
 ```{r}
-knitr::include_graphics(
-  system.file(
-    "results/data_benthos/indicators/ggplot_REBENT_shannon_index.jpg",
-    package = "esteem.overview"
-  )
-)
+get_shortened_path("results/data_benthos/indicators/ggplot_REBENT_shannon_index.jpg")
+```
+
+#### Abundance / density
+
+```{r}
+get_shortened_path("results/data_benthos/indicators/ggplot_REBENT_density.jpg")
+```
+
+#### AMBI
+
+```{r}
+get_shortened_path("results/data_benthos/indicators/ggplot_REBENT_AMBI_index.jpg")
+```
+
+#### BEQI-FR
+
+```{r}
+get_shortened_path("results/data_benthos/indicators/ggplot_REBENT_BEQIFR_index.jpg")
+```
+
+### Sediment characteristics
+
+Source code: 2.5-data_REBENT_sediment.R
+
+#### Organic matter
+
+```{r}
+get_shortened_path("results/data_benthos/sediment/ggplot_sediment_organic_matter.jpg")
+```
+
+#### Grain size
+
+```{r}
+get_shortened_path("results/data_benthos/sediment/ggplot_sediment_grain_size.jpg")
 ```

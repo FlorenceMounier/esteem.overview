@@ -3,7 +3,6 @@
 
 library(esteem.overview)
 library(tidyverse, quietly = TRUE)
-library(writexl)
 # Maps
 library(sf)
 
@@ -91,5 +90,4 @@ data_ROCCHMV_summarised <- data_ROCCHMV_summarised |>
 
 data_ROCCHMV_cleaned <- data_ROCCHMV_summarised
 usethis::use_data(data_ROCCHMV_cleaned, overwrite = TRUE)
-write_xlsx(data_ROCCHMV_cleaned, "inst/results/data_contam/data_ROCCHMV_cleaned.xlsx")
 
