@@ -2,10 +2,15 @@
 % Please edit documentation in R/get_shortened_path.R
 \name{get_shortened_path}
 \alias{get_shortened_path}
-\title{Title}
+\title{Copy an image in a temporary shortened path
+Necessary to use knitr::include_graphics for long paths}
 \usage{
 get_shortened_path(complete_path)
 }
+\value{
+short path to a temp file copy "plot.jpg"
+}
 \description{
-Description
+Copy an image in a temporary shortened path
+Necessary to use knitr::include_graphics for long paths
 }

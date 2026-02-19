@@ -92,11 +92,10 @@ theme_esteem <- function(base_size = 11, base_family = "sans") {
 # get_shortened_path
 
 ```{r function-get_shortened_path}
-#' Title
+#' Copy an image in a temporary shortened path 
+#' Necessary to use knitr::include_graphics for long paths
 #' 
-#' Description
-#' 
-#' @return
+#' @return short path to a temp file copy "plot.jpg"
 #' 
 #' @export
 get_shortened_path <- function(complete_path){

@@ -41,7 +41,7 @@ ggplot_data_summarized <- data_summarized |>
   facet_grid(rows = vars(PARAMETRE_LIBELLE), scales = "free_y")
 ggplot_data_summarized
 
-# ggsave(plot = ggplot_data_summarized, filename =  "../inst/results/data_physico_chemistry/ggplot_yearly_summarized_physiochem_parameters.jpg", 
+# ggsave(plot = ggplot_data_summarized, filename =  "../inst/results/data_physico_chemistry/ggplot_all_physiochem_param.jpg", 
 #        width = 10, height = 25, units = "cm")
 ```
 
