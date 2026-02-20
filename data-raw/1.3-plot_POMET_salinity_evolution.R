@@ -16,7 +16,7 @@ library(dplyr)
 # =====================================================
 
 # ----- filter central zone -----
-data_center_estuary_gironde <- data_POMET |>
+data_center_estuary_gironde <- data_POMET_densities |>
   filter(estuary == "Gironde",
          haline_zone == "mesohalin",
          latitude >= 45.3)
@@ -39,7 +39,7 @@ ggsave(filename = "inst/results/data_POMET/salinity/plot_POMET_map_central_salin
 # =====================================================
 
 # ----- filter central zone -----
-data_center_estuary_loire <- data_POMET |>
+data_center_estuary_loire <- data_POMET_densities |>
   filter(estuary == "Loire",
          haline_zone == "mesohalin",
          longitude <= -1.9)
@@ -60,7 +60,7 @@ ggsave(filename = "inst/results/data_POMET/salinity/plot_POMET_map_central_salin
 # =====================================================
 
 # ----- filter central zone -----
-data_center_estuary_seine <- data_POMET |>
+data_center_estuary_seine <- data_POMET_densities |>
   filter(estuary == "Seine",
          haline_zone == "mesohalin",
          longitude <= 0.4)

@@ -23,6 +23,7 @@ Imports:
     rlang,
     sf,
     stats,
+    stringr,
     terra,
     tidyr,
     tidyterra,

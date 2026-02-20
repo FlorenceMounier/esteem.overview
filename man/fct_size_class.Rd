@@ -17,6 +17,3 @@ fct_size_class(data, species)
 \description{
 fct_size_class Title
 }
-\examples{
-fct_size_class(data = data_POMET, species = "Solea solea")
-}

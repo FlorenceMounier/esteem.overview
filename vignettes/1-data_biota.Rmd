@@ -87,28 +87,47 @@ get_shortened_path("results/data_POMET/fish_size_class/plot_POMET_seabass_size_c
 
 ### Fish densities
 
+#### Size effect
 ```{r}
-get_shortened_path("results/data_POMET/species_densities/plot_POMET_density_fish.jpg")
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_size_density_fish.jpg")
+```
+
+#### Sole
+```{r}
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_estuary_density_sole.jpg")
+```
+
+```{r}
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_haline_density_sole.jpg")
+```
+
+```{r}
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_haline_size_density_sole.jpg")
+```
+
+#### Seabass
+```{r}
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_estuary_density_seabass.jpg")
+```
+
+```{r}
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_haline_density_seabass.jpg")
+```
+
+```{r}
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_haline_size_density_seabass.jpg")
 ```
 
 ### Shrimps densities
 
 ```{r}
-get_shortened_path("results/data_POMET/species_densities/plot_POMET_density_shrimps.jpg")
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_estuary_density_shrimps.jpg")
 ```
-
-### Prey species
 
 ```{r}
-data_POMET |>
-  distinct(phylum)
-
-data_POMET |>
-  filter(phylum != "Chordata") |>
-  distinct(phylum, famille, name) |>
-  arrange(phylum, famille) |>
-  print(n = 48)
+get_shortened_path("results/data_POMET/species_densities/plot_POMET_haline_density_shrimps.jpg")
 ```
+
 
 ## REBENT dataset (benthic)
 

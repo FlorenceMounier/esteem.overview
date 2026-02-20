@@ -15,8 +15,8 @@ library(dplyr)
 # 01. Biological size class
 # =====================================================
 
-sole_size_class <- fct_size_class(data = data_POMET, species = "Solea solea")
-seabass_size_class <- fct_size_class(data = data_POMET, species = "Dicentrarchus labrax")
+sole_size_class <- fct_size_class(data = data_POMET_indiv, species = "Solea solea")
+seabass_size_class <- fct_size_class(data = data_POMET_indiv, species = "Dicentrarchus labrax")
 
 # =====================================================
 # 02. Save plot results
@@ -34,7 +34,7 @@ ggsave(filename = "inst/results/data_POMET/fish_size_class/plot_POMET_seabass_si
 # 03. Increment data_POMET
 # =====================================================
 
-data_POMET <- data_POMET |>
+data_POMET_indiv <- data_POMET_indiv |>
   mutate(size_class = case_when(
     name == "Dicentrarchus labrax" & longueur <= seabass_size_class$size_threshold ~ "G0",
     name == "Dicentrarchus labrax" & longueur > seabass_size_class$size_threshold ~ "G1",
@@ -43,4 +43,4 @@ data_POMET <- data_POMET |>
     TRUE ~ NA
   ))
 
-usethis::use_data(data_POMET, overwrite = TRUE)
+usethis::use_data(data_POMET_indiv, overwrite = TRUE)

@@ -10,8 +10,6 @@
 #' @return 1
 #' @export
 #'
-#' @examples
-#' fct_size_class(data = data_POMET, species = "Solea solea")
 fct_size_class <- function(data, species){
 
   # ----- filter species lengths -----

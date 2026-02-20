@@ -76,7 +76,9 @@ flat_maps.Rmd:
 flat_POMET.Rmd:
   path: dev/flat_POMET.Rmd
   state: active
-  R: R/fct_size_class.R
+  R:
+  - R/fct_formatting_raw_data_pomet.R
+  - R/fct_size_class.R
   tests: []
   vignettes: []
   inflate:
