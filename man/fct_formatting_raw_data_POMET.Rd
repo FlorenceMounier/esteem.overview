@@ -4,10 +4,14 @@
 \alias{fct_formatting_raw_data_POMET}
 \title{Formatting POMET raw datasets}
 \usage{
-fct_formatting_raw_data_POMET(data_POMET)
+fct_formatting_raw_data_POMET(
+  data_POMET,
+  species = c("Solea solea", "Solea senegalensis", "Dicentrarchus labrax",
+    "Palaemon longirostris", "Crangon crangon")
+)
 }
 \arguments{
-\item{data_POMET}{}
+\item{species}{}
 }
 \value{
 tibble
