@@ -30,11 +30,8 @@ Imports:
     writexl
 Suggests: 
     DT,
-    factoextra,
-    FactoMineR,
     here,
     knitr,
-    missMDA,
     RColorBrewer,
     rmarkdown,
     testthat,

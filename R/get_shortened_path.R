@@ -7,12 +7,12 @@
 #' 
 #' @export
 get_shortened_path <- function(complete_path){
-    img_path <- system.file(complete_path,
-  package = "esteem.overview"
-)
-
-short_path <- file.path(tempdir(), "plot.jpg")
-file.copy(img_path, short_path, overwrite = TRUE)
-
-return(short_path)
+  
+  img_path <- system.file(complete_path, package = "esteem.overview")
+  
+  short_path <- tempfile(fileext = ".jpg")
+  
+  file.copy(img_path, short_path)
+  
+  return(short_path)
 }

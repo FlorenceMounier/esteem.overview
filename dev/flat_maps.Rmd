@@ -419,7 +419,7 @@ if (length(mapping) > 0) {
       shape = 21,
       fill = "black",
       color = "black",
-      size = 3
+      size = 2
     )
     
      # Convertir coordonnées pour labels

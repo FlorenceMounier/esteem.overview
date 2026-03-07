@@ -1,0 +1,60 @@
+---
+title: "data_physico_chimie"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{data_physico_chimie}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  fig.width = 7,
+  fig.height = 5,
+  out.width = "95%"
+)
+library(esteem.overview)
+library(tidyverse)
+```
+
+# Temperature
+
+## Gironde
+```{r}
+knitr::include_graphics(get_shortened_path("results/data_physico_chemistry/temperature/ggplot_temp_gironde_map.jpg"))
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/temperature/ggplot_temp_gironde_trend.jpg")
+)
+```
+
+
+## Loire
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/temperature/ggplot_temp_loire_map.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/temperature/ggplot_temp_loire_trend.jpg")
+)
+```
+
+## Seine
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/temperature/ggplot_temp_seine_map.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/temperature/ggplot_temp_seine_trend.jpg")
+)
+```
+
