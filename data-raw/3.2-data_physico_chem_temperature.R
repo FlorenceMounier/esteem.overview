@@ -92,7 +92,11 @@ ggsave(ggplot_temp_gironde_map,
 # ---- Temperature trend ----
 
 data_temp_gironde <- data_temp_gironde |>
-  complete(year)
+  complete(year) |>
+  mutate(period = case_when(
+    year >= min(year) & year <= min(year)+9 ~ "first period",
+    year >= max(year)-9 & year <= max(year) ~ "last period",
+  ))
 
 ## Time series segmentation
 
@@ -108,6 +112,7 @@ davies.test(lm_model_gironde)
 
 
 ## Testing for a non-monotonic trend
+
 temp_timeseries_gironde <- data_temp_gironde |> pull(RESULTAT)
 years_gironde <- data_temp_gironde |> pull(year)
 
@@ -117,7 +122,16 @@ mk_gironde <- mmkh(temp_timeseries_gironde)
 sen_gironde <- sens.slope(temp_timeseries_gironde)
 
 
+## First and last 10 years period mean differences
+data_temp_gironde_period <- data_temp_gironde |>
+  drop_na(period) |>
+  group_by(year, period) |>
+  summarise(mean_temp = mean(RESULTAT, na.rm = TRUE))
+kruskal_pvalue_gironde <- signif(kruskal.test(data_temp_gironde_period$mean_temp,
+                                      data_temp_gironde_period$period)[["p.value"]], digits = 3)
+
 ## Trend graph
+
 ggplot_temp_gironde_trend <- ggplot(data_temp_gironde,
                                     aes(x = year, y = RESULTAT)) +
   geom_point(aes(colour = id)) +
@@ -204,7 +218,11 @@ ggsave(ggplot_temp_loire_map,
 # ---- Temperature trend ----
 
 data_temp_loire <- data_temp_loire |>
-  complete(year)
+  complete(year) |>
+  mutate(period = case_when(
+    year >= min(year) & year <= min(year)+9 ~ "first period",
+    year >= max(year)-9 & year <= max(year) ~ "last period",
+  ))
 
 ## Time series segmentation
 
@@ -227,6 +245,15 @@ years_loire <- data_temp_loire |> pull(year)
 mk_loire <- mmkh(temp_timeseries_loire)
 # Theil–Sen estimator
 sen_loire <- sens.slope(temp_timeseries_loire)
+
+
+## First and last 10 years period mean differences
+data_temp_loire_period <- data_temp_loire |>
+  drop_na(period) |>
+  group_by(year, period) |>
+  summarise(mean_temp = mean(RESULTAT, na.rm = TRUE))
+kruskal_pvalue_loire <- signif(kruskal.test(data_temp_loire_period$mean_temp,
+                                      data_temp_loire_period$period)[["p.value"]], digits = 3)
 
 
 ## Trend graph
@@ -319,7 +346,11 @@ ggsave(ggplot_temp_seine_map,
 # ---- Temperature trend ----
 
 data_temp_seine <- data_temp_seine |>
-  complete(year)
+  complete(year) |>
+  mutate(period = case_when(
+    year >= min(year) & year <= min(year)+9 ~ "first period",
+    year >= max(year)-9 & year <= max(year) ~ "last period",
+  ))
 
 ## Time series segmentation
 
@@ -342,6 +373,14 @@ years_seine <- data_temp_seine |> pull(year)
 mk_seine <- mmkh(temp_timeseries_seine)
 # Theil–Sen estimator
 sen_seine <- sens.slope(temp_timeseries_seine)
+
+## First and last 10 years period mean differences
+data_temp_seine_period <- data_temp_seine |>
+  drop_na(period) |>
+  group_by(year, period) |>
+  summarise(mean_temp = mean(RESULTAT, na.rm = TRUE))
+kruskal_pvalue_seine <- signif(kruskal.test(data_temp_seine_period$mean_temp,
+                                      data_temp_seine_period$period)[["p.value"]], digits = 3)
 
 
 ## Trend graph
