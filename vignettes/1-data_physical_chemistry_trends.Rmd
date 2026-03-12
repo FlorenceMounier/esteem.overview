@@ -58,3 +58,102 @@ get_shortened_path("results/data_physico_chemistry/temperature/ggplot_temp_seine
 )
 ```
 
+
+# Salinity
+
+## Gironde
+```{r}
+knitr::include_graphics(get_shortened_path("results/data_physico_chemistry/salinity/ggplot_salin_gironde_map.jpg"))
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/salinity/ggplot_salin_gironde_trend.jpg")
+)
+```
+
+
+## Loire
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/salinity/ggplot_salin_loire_map.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/salinity/ggplot_salin_loire_trend.jpg")
+)
+```
+
+## Seine
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/salinity/ggplot_salin_seine_map.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/salinity/ggplot_salin_seine_trend.jpg")
+)
+```
+
+
+# Ammonium proportion
+
+L’indicateur fraction ammonium dans l’azote inorganique dissous (NH₄⁺/DIN) est utilisé pour caractériser la forme dominante d’azote disponible et renseigner sur les processus du cycle de l’azote (régénération, nitrification, apports anthropiques). En estuaire, cet indicateur est particulièrement utile car ces systèmes sont des réacteurs biogéochimiques où l’azote est intensément transformé.
+
+Nitrification is the microbially catalyzed oxidation of ammonia (NH3) or reduced ammonium (NH4+) to nitrite (NO2 −), followed by oxidation of NO2 − to nitrate (NO3 −). (Damashek, J., Casciotti, K.L. & Francis, C.A. Variable Nitrification Rates Across Environmental Gradients in Turbid, Nutrient-Rich Estuary Waters of San Francisco Bay. Estuaries and Coasts 39, 1050–1071 (2016). https://doi.org/10.1007/s12237-016-0071-7)
+
+remineralization: phytoplankton and other heterotrophic bacteria break down nitrite into reduced nitrate and ammonium
+
+Ammonium ++ = sources terrestres d'azote OU forte activité du phytoplancton
+
+NH₄⁺/DIN = NH₄⁺ / (NH₄⁺ + NO₃⁻+ NO₂⁻)
+
+Le DIN (Dissolved Inorganic Nitrogen) correspond à la somme des formes inorganiques dissoutes de l’azote. Cet indicateur permet d’évaluer la part relative de l’azote réduit (NH₄⁺) par rapport aux formes oxydées (NO₃⁻, NO₂⁻).
+Les concentrations élevées d’ammonium dans les estuaires eutrophes (MO +++) stimulent fortement la nitrification (Damashek, J., Casciotti, K.L. & Francis, C.A. Variable Nitrification Rates Across Environmental Gradients in Turbid, Nutrient-Rich Estuary Waters of San Francisco Bay. Estuaries and Coasts 39, 1050–1071 (2016). https://doi.org/10.1007/s12237-016-0071-7)
+
+ - < 0.1	: système dominé par nitrate (apports fluviaux agriculture/bassin versant, nitrification très efficace car assimilation de l'ammonium par le phytoplankton, dilution marine)
+ - [0.1-0.3]	: situation fréquente en estuaire modérément productif
+ - [0.3-0.6] :	forte régénération ou influence anthropique
+ - > 0.6	: dominance ammonium (forte décomposition de matière organique libérant de l'ammonium, hypoxie ou turbidité élevée empêchant l'activité de nitrification du phytoplancton recyclage intense)
+
+## Gironde
+```{r}
+knitr::include_graphics(get_shortened_path("results/data_physico_chemistry/nitrogen/ggplot_nitro_gironde_map.jpg"))
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/nitrogen/ggplot_nitro_gironde_trend.jpg")
+)
+```
+
+
+## Loire
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/nitrogen/ggplot_nitro_loire_map.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/nitrogen/ggplot_nitro_loire_trend.jpg")
+)
+```
+
+## Seine
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/nitrogen/ggplot_nitro_seine_map.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_physico_chemistry/nitrogen/ggplot_nitro_seine_trend.jpg")
+)
+```

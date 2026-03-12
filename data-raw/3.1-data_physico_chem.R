@@ -25,18 +25,18 @@ data_physico_chem <- esteem.overview::data_physico_chem
 # =====================================================
 
 data_physchem <- data_physico_chem |>
-  mutate(ESTUARY = case_when(
-    ZONE_MARINE_QUADRIGE == "085 - Estuaire de la Gironde" ~ "Gironde",
-    ZONE_MARINE_QUADRIGE == "070 - Estuaire de la Loire" ~ "Loire",
-    ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine" ~ "Seine"
+  mutate(estuary = case_when(
+    str_starts(string = LIEU_MNEMONIQUE, pattern = "085") ~ "Gironde",
+    str_starts(string = LIEU_MNEMONIQUE, pattern = "070") ~ "Loire",
+    str_starts(string = LIEU_MNEMONIQUE, pattern = "011") ~ "Seine",
+    TRUE ~ NA_character_
   )) |>
-  select(-c(THEME, PARAMETRE_GROUPE, ZONE_MARINE_QUADRIGE,
+  dplyr::select(-c(THEME, PARAMETRE_GROUPE, ZONE_MARINE_QUADRIGE,
             SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE, LIEU_IDENTIFIANT,
             PARAMETRE_LIBELLE_COMPLET, PARAMETRE_CODE,
             GROUPE_TAXON_LIBELLE, TAXON_LIBELLE, NUMERO_INDIVIDU_OBSERVATION,
             PASSAGE_COORDONNEES, PRELEVEMENT_COORDONNEES,
-            NIVEAU_QUALITE, QUALITE_DESCRIPTION)) |>
-  rename(estuary = ESTUARY)
+            NIVEAU_QUALITE, QUALITE_DESCRIPTION))
 
 # # PARAMETRE_GROUPE: Biologie/Phytoplancton
 #       "Chlorophylle a", "Phéopigments", # > production primaire
@@ -88,6 +88,7 @@ mutate(
     TRUE ~ NA
   )
 )  |>
+  filter(!is.na(estuary)) |>
 
   # ----- Create haline_zone variable -----
 mutate(
@@ -100,7 +101,8 @@ mutate(
     estuary == "Seine" & longitude <= limits_seine$estuary_limit_lon_max ~ "mesohalin",
     TRUE ~ NA
   )
-)
+)  |>
+  filter(!is.na(haline_zone))
 
 # =====================================================
 # 04. Extract years, months

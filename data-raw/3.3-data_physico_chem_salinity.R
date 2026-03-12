@@ -1,11 +1,16 @@
 # =====================================================
-# Datasets:
-#
-# Plots:
-#  - ggplot_temp_loire_map.jpg
 # Preparation script
+# Datasets:
+#  - data_salin.rda
+# Plots:
+#  - ggplot_salin_gironde_map.jpg
+#  - ggplot_salin_gironce_trend.jpg
+#  - ggplot_salin_loire_map.jpg
+#  - ggplot_salin_loire_trend.jpg
+#  - ggplot_salin_seine_map.jpg
+#  - ggplot_salin_seine_trend.jpg
 # Author: FM
-# Date: 2026-03-05
+# Date: 2026-03-09
 # =====================================================
 
 # =====================================================
@@ -16,6 +21,7 @@ library(esteem.overview)
 library(tidyverse, quietly = TRUE)
 library(ggrepel)
 library(changepoint)
+library(segmented)
 library(trend)
 library(modifiedmk) # modified Mann-Kendall autocorrelation
 library(mgcv) # Generalized Additive Model (GAM) tendance non linéaire
@@ -24,419 +30,393 @@ library(mgcv) # Generalized Additive Model (GAM) tendance non linéaire
 # 01. Gironde
 # =====================================================
 
-## ---- Code for exploration ----
+GPS_box_gironde <- GPS_box |> filter(estuary == "Gironde")
 
-data_physchem |>
+## ---- Filtered data inside GPS box ----
+
+data_salin_gironde <- data_physchem |>
+  filter(PARAMETRE_LIBELLE == "Salinité") |>
   filter(estuary == "Gironde") |>
-  filter(PARAMETRE_LIBELLE == "Température de l'eau") |>
-  distinct(haline_zone, year, latitude, longitude) |>
-  arrange(haline_zone, year) |>
-  filter(latitude == 45.18) |>
-  View("Gironde")
+  filter(latitude >= GPS_box_gironde$min_lat &
+           latitude <= GPS_box_gironde$max_lat &
+           longitude >= GPS_box_gironde$min_lon &
+           longitude <= GPS_box_gironde$max_lon) |>
+  filter(month %in% c(9, 10))
 
 
-## ---- Recurrent GPS positions ----
+# ---- Filter outliers ----
 
-# Gironde mesohalin :
-## XXX 1980-2006 : 45.37 / -0.81 (un seul point de mesure sur cette période, trop central)
-## 1985-2006 : 45.18 / -0.72 => OK
-## 2007-2024 (sauf 2009) :  45.25 / -0.73 => OK
+mean_salin_gironde <- mean(data_salin_gironde$RESULTAT, na.rm = TRUE)
+sd_salin_gironde <- sd(data_salin_gironde$RESULTAT, na.rm = TRUE)
 
-# Gironde polyhalin : => trop à l'embouchure
-## XXX 1974-1978 + 1997 : latitude 45.58 longitude -1.05
-## 1975-1984 : 45.55 / -0.98
-## 1985-2024 (sauf 2009) : 45.52 / -0.99
-
-
-## ---- Filtered data ----
-
-data_temp_gironde <- data_physchem |>
-  filter(PARAMETRE_LIBELLE == "Température de l'eau") |>
-  filter(estuary == "Gironde") |>
-  filter(latitude %in% c(45.18, 45.25),
-         longitude %in% c(-0.72, -0.73)) |>
-  filter(month %in% c(9, 10)) |>
-  filter(SUPPORT_NIVEAU_PRELEVEMENT %in%  c("Niveau : Surface (0-1m)",
-                                            "Support : Masse d'eau, eau brute - Niveau : Surface (0-1m)")) |>
-  mutate(point = case_when(longitude == -0.72 ~ "A",
-                           longitude == -0.73 ~ "B",
-                           TRUE ~ NA)) |>
-  group_by(year, point, latitude, longitude) |>
-  summarise(mean_temp = mean(RESULTAT, na.rm = TRUE),
-         n = n(), .groups = "drop") |>
-  mutate(estuary = "Gironde")
+data_salin_gironde <- data_salin_gironde |>
+  filter(
+    between(RESULTAT,
+            mean_salin_gironde - 1.96 * sd_salin_gironde,
+            mean_salin_gironde + 1.96 * sd_salin_gironde)
+  )
 
 
-# ---- Map with selected points ----
+# ----  Assigning an identifier to each measurement point ----
 
-ggplot_temp_gironde_map <- plot_estuary_map(data = data_temp_gironde,
-                 estuary_name = "Gironde", colour = point) +
-  geom_text_repel(data = data_temp_gironde |> distinct(point, latitude, longitude),
-             aes(x = longitude, y = latitude, label = point, colour = point),
-            fontface = "bold") +
-  theme(legend.position = "none")
+id_gironde <- data_salin_gironde |>
+  distinct(latitude, longitude) |>
+  mutate(id = LETTERS[row_number()])
 
-ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_gironde_map.jpg")
+data_salin_gironde <- data_salin_gironde |>
+  left_join(id_gironde, by = c("latitude", "longitude"))
 
-# ---- Graph of temperature trend ----
 
-ggplot(data_temp_gironde) +
-  aes(x = year, y = mean_temp) +
-  geom_point(aes(colour = point)) +
-  geom_smooth() +
-  labs(title = "Température de surface sept-octobre Pauillac Gironde")
+# ----  Map of measurement points ----
 
+ggplot_salin_gironde_map <- plot_estuary_map(data = data_salin_gironde,
+                 estuary_name = "Gironde",
+                 colour_var = id) +
+  scale_color_manual(values = id_colors) +
+  geom_rect(
+    data = GPS_box_gironde,
+    aes(
+      xmin = min_lon,
+      xmax = max_lon,
+      ymin = min_lat,
+      ymax = max_lat
+    ),
+    fill = NA,
+    color = "black",
+    linewidth = 0.8
+  ) +
+  labs(title = "Gironde - Salinity sampling points")
+
+ggsave(ggplot_salin_gironde_map,
+       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_gironde_map.jpg")
+
+
+# ---- Salinity trend ----
+
+data_salin_gironde <- data_salin_gironde |>
+  complete(year) |>
+  mutate(period = case_when(
+    year >= min(year) & year <= min(year)+9 ~ "first period",
+    year >= max(year)-9 & year <= max(year) ~ "last period",
+  ))
+
+## Time series segmentation
+
+salin_timeseries_gironde <- data_salin_gironde |> pull(RESULTAT)
+years_gironde <- data_salin_gironde |> pull(year)
+
+
+# Testing for a change in means
+cp_gironde <- changepoint::cpt.meanvar(salin_timeseries_gironde, method = "BinSeg")
+plot(cp_gironde)
+break_year_gironde <- years_gironde[cpts(cp_gironde)]
+
+# Testing for a change in the slope with a linear model
+lm_model_gironde <- lm(RESULTAT ~ year, data = data_salin_gironde)
+summary(lm_model_gironde)
+davies.test(lm_model_gironde)
+
+
+## Testing for a non-monotonic trend
+
+# Mann-Kendall non-monotonic trend test with autocorrelation correction
+mk_gironde <- mmkh(salin_timeseries_gironde)
+# Theil–Sen estimator
+sen_gironde <- sens.slope(salin_timeseries_gironde)
+
+
+## First and last 10 years period mean differences
+data_salin_gironde_period <- data_salin_gironde |>
+  drop_na(period) |>
+  group_by(year, period) |>
+  summarise(mean_temp = mean(RESULTAT, na.rm = TRUE))
+kruskal_pvalue_gironde <- signif(kruskal.test(data_salin_gironde_period$mean_temp,
+                                      data_salin_gironde_period$period)[["p.value"]], digits = 3)
+
+## Trend graph
+
+ggplot_salin_gironde_trend <- ggplot(data_salin_gironde,
+                                    aes(x = year, y = RESULTAT)) +
+  geom_point(aes(colour = id)) +
+  scale_color_manual(values = id_colors) +
+  geom_smooth(color = "red") +
+  geom_line() +
+  geom_vline(xintercept = break_year_gironde,
+             linetype = "dashed",
+             colour = "red") +
+  labs(
+    title = "Gironde - Salinity and potential breaking point (September-October)",
+    subtitle = paste(
+      "Mann-Kendall p =", round(mk_gironde[["new P-value"]], 5),
+      "| Sen slope =", round(sen_gironde$estimates,3), "-/an"
+    ))
+
+ggsave(ggplot_salin_gironde_trend,
+       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_gironde_trend.jpg")
 
 
 # =====================================================
 # 02. Loire
 # =====================================================
 
-## ---- Code for exploration ----
+GPS_box_loire <- GPS_box |> filter(estuary == "Loire")
 
-data_physchem |>
+## ---- Filtered data inside GPS box ----
+
+data_salin_loire <- data_physchem |>
+  filter(PARAMETRE_LIBELLE == "Salinité") |>
   filter(estuary == "Loire") |>
-  filter(month %in% c(9, 10)) |>
-  filter(PARAMETRE_LIBELLE == "Température de l'eau") |>
-  filter(SUPPORT_NIVEAU_PRELEVEMENT %in% c("Niveau : Surface (0-1m)",
-                                           "Support : Masse d'eau, eau brute - Niveau : Surface (0-1m)")) |>
-  distinct(haline_zone, year, latitude, longitude, SUPPORT_NIVEAU_PRELEVEMENT) |>
-  arrange(haline_zone, year) |>
-  # filter(latitude == 47.28 & longitude == -1.97) |>
-  View("Loire")
-
-## ---- Recurrent GPS positions ----
-
-# Loire mesohalin :
-# 1985-2007 : 47.28 / -1.97
-# 1992-2024 : 47.28 / -1.90
-
-## ---- Filtered data ----
-
-data_temp_loire <- data_physchem |>
-  filter(PARAMETRE_LIBELLE == "Température de l'eau") |>
-  filter(estuary == "Loire") |>
-  filter(latitude %in% c(47.28, 47.28),
-         longitude %in% c(-1.97, -1.90)) |>
-  filter(month %in% c(9, 10)) |>
-  filter(SUPPORT_NIVEAU_PRELEVEMENT %in% c("Niveau : Surface (0-1m)",
-                                           "Support : Masse d'eau, eau brute - Niveau : Surface (0-1m)")) |>
-  mutate(point = case_when(longitude == -1.97 ~ "A",
-                           longitude == -1.90 ~ "B",
-                           TRUE ~ NA)) |>
-  group_by(year, point, latitude, longitude) |>
-  summarise(mean_temp = mean(RESULTAT, na.rm = TRUE),
-            n = n(), .groups = "drop") |>
-  mutate(estuary = "Loire")
+  filter(latitude >= GPS_box_loire$min_lat &
+           latitude <= GPS_box_loire$max_lat &
+           longitude >= GPS_box_loire$min_lon &
+           longitude <= GPS_box_loire$max_lon) |>
+  filter(month %in% c(9, 10))
 
 
-# ---- Map with selected points ----
+# ---- Filter outliers ----
 
-ggplot_temp_loire_map <- plot_estuary_map(data = data_temp_loire,
-                 estuary_name = "Loire", colour = point) +
-  geom_text_repel(data = data_temp_loire |> distinct(point, latitude, longitude),
-                  aes(x = longitude, y = latitude, label = point, colour = point),
-                  fontface = "bold") +
-  theme(legend.position = "none")
+mean_salin_loire <- mean(data_salin_loire$RESULTAT, na.rm = TRUE)
+sd_salin_loire <- sd(data_salin_loire$RESULTAT, na.rm = TRUE)
 
-ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_loire_map.jpg")
+data_salin_loire <- data_salin_loire |>
+  filter(
+    between(RESULTAT,
+            mean_salin_loire - 1.96 * sd_salin_loire,
+            mean_salin_loire + 1.96 * sd_salin_loire)
+  )
 
 
-# ---- Graph of temperature trend ----
+# ----  Assigning an identifier to each measurement point ----
 
-ggplot(data_temp_loire) +
-  aes(x = year, y = mean_temp) +
-  geom_point(aes(colour = point)) +
-  geom_smooth() +
-  labs(title = "Température de surface sept-octobre Cordemais Loire")
+id_loire <- data_salin_loire |>
+  distinct(latitude, longitude) |>
+  mutate(id = LETTERS[row_number()])
 
+data_salin_loire <- data_salin_loire |>
+  left_join(id_loire, by = c("latitude", "longitude"))
+
+
+# ----  Map of measurement points ----
+
+ggplot_salin_loire_map <- plot_estuary_map(data = data_salin_loire,
+                                            estuary_name = "Loire",
+                                            colour_var = id) +
+  scale_color_manual(values = id_colors) +
+  geom_rect(
+    data = GPS_box_loire,
+    aes(
+      xmin = min_lon,
+      xmax = max_lon,
+      ymin = min_lat,
+      ymax = max_lat
+    ),
+    fill = NA,
+    color = "black",
+    linewidth = 0.8
+  ) +
+  labs(title = "Loire - Salinity sampling points")
+
+ggsave(ggplot_salin_loire_map,
+       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_loire_map.jpg")
+
+# ---- Salinity trend ----
+
+data_salin_loire <- data_salin_loire |>
+  complete(year) |>
+  mutate(period = case_when(
+    year >= min(year) & year <= min(year)+9 ~ "first period",
+    year >= max(year)-9 & year <= max(year) ~ "last period",
+  ))
+
+## Time series segmentation
+
+salin_timeseries_loire <- data_salin_loire |> pull(RESULTAT)
+years_loire <- data_salin_loire |> pull(year)
+
+# Testing for a change in means
+cp_loire <- changepoint::cpt.meanvar(salin_timeseries_loire, method = "BinSeg")
+plot(cp_loire)
+break_year_loire <- years_loire[cpts(cp_loire)]
+
+# Testing for a change in the slope with a linear model
+lm_model_loire <- lm(RESULTAT ~ year, data = data_salin_loire)
+summary(lm_model_loire)
+davies.test(lm_model_loire)
+
+
+## Testing for a non-monotonic trend
+
+# Mann-Kendall non-monotonic trend test with autocorrelation correction
+mk_loire <- mmkh(salin_timeseries_loire)
+# Theil–Sen estimator
+sen_loire <- sens.slope(salin_timeseries_loire)
+
+
+## First and last 10 years period mean differences
+data_salin_loire_period <- data_salin_loire |>
+  drop_na(period) |>
+  group_by(year, period) |>
+  summarise(mean_temp = mean(RESULTAT, na.rm = TRUE))
+kruskal_pvalue_loire <- signif(kruskal.test(data_salin_loire_period$mean_temp,
+                                      data_salin_loire_period$period)[["p.value"]], digits = 3)
+
+
+## Trend graph
+ggplot_salin_loire_trend <- ggplot(data_salin_loire,
+                                    aes(x = year, y = RESULTAT)) +
+  geom_point(aes(colour = id)) +
+  scale_color_manual(values = id_colors) +
+  geom_smooth(color = "red") +
+  geom_line() +
+  geom_vline(xintercept = break_year_loire,
+             linetype = "dashed",
+             colour = "red") +
+  labs(
+    title = "Loire - Salinity and potential breaking point (September-October)",
+    subtitle = paste(
+      "Mann-Kendall p =", round(mk_loire[["new P-value"]], 5),
+      "| Sen slope =", round(sen_loire$estimates,3), "-/an"
+    ))
+
+ggsave(ggplot_salin_loire_trend,
+       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_loire_trend.jpg")
 
 
 # =====================================================
 # 03. Seine
 # =====================================================
 
-## ---- Code for exploration ----
+GPS_box_seine <- GPS_box |> filter(estuary == "Seine")
 
-data_physchem |>
+## ---- Filtered data inside GPS box ----
+
+data_salin_seine <- data_physchem |>
+  filter(PARAMETRE_LIBELLE == "Salinité") |>
   filter(estuary == "Seine") |>
-  filter(month %in% c(9, 10)) |>
-  filter(PARAMETRE_LIBELLE == "Température de l'eau") |>
-  filter(haline_zone == "polyhalin") |>
-  filter(SUPPORT_NIVEAU_PRELEVEMENT %in% c("Niveau : Surface (0-1m)",
-                                           "Support : Masse d'eau, eau brute - Niveau : Surface (0-1m)")) |>
-  distinct(haline_zone, year, month, latitude, longitude, SUPPORT_NIVEAU_PRELEVEMENT) |>
-  arrange(haline_zone, year, month) |>
-  filter(latitude == 49.44 & longitude == 0.11) |>
-  View("Seine")
+  filter(latitude >= GPS_box_seine$min_lat &
+           latitude <= GPS_box_seine$max_lat &
+           longitude >= GPS_box_seine$min_lon &
+           longitude <= GPS_box_seine$max_lon) |>
+  filter(month %in% c(9, 10))
 
 
-## ---- Recurrent GPS positions ----
+# ---- Filter outliers ----
 
-# Seine mesohalin :
-# 1977-2004 : 49.47 / 0.47 => no data after 2004
+mean_salin_seine <- mean(data_salin_seine$RESULTAT, na.rm = TRUE)
+sd_salin_seine <- sd(data_salin_seine$RESULTAT, na.rm = TRUE)
 
-# Seine polyhalin :
-# 1980-2006 : 49.44 / 0.11
-# 1974-1980 & 2008-2024 : 49.48 / 0.05
-
-
-## ---- Filtered data ----
-
-data_temp_seine <- data_physchem |>
-  filter(PARAMETRE_LIBELLE == "Température de l'eau") |>
-  filter(estuary == "Seine") |>
-  filter(latitude %in% c(49.48, 49.44),
-         longitude %in% c(0.05, 0.11)) |>
-  filter(month %in% c(9, 10)) |>
-  filter(SUPPORT_NIVEAU_PRELEVEMENT %in% c("Niveau : Surface (0-1m)",
-                                           "Support : Masse d'eau, eau brute - Niveau : Surface (0-1m)")) |>
-  mutate(point = case_when(latitude == 49.48 ~ "A",
-                           latitude == 49.44 ~ "B",
-                           TRUE ~ NA)) |>
-  group_by(year, month, point, latitude, longitude) |>
-  summarise(mean_temp = mean(RESULTAT, na.rm = TRUE),
-            n = n(), .groups = "drop") |>
-  group_by(year, point, latitude, longitude) |>
-  summarise(mean_temp = mean(mean_temp, na.rm = TRUE),
-            n = n(), .groups = "drop") |>
-  mutate(estuary = "Seine")
+data_salin_seine <- data_salin_seine |>
+  filter(
+    between(RESULTAT,
+            mean_salin_seine - 1.96 * sd_salin_seine,
+            mean_salin_seine + 1.96 * sd_salin_seine)
+  )
 
 
-# ---- Map with selected points ----
+# ----  Assigning an identifier to each measurement point ----
 
-ggplot_temp_seine_map <- plot_estuary_map(data = data_temp_seine,
-                 estuary_name = "Seine", colour = point) +
-  geom_text_repel(data = data_temp_seine |> distinct(point, latitude, longitude),
-                  aes(x = longitude, y = latitude, label = point, colour = point),
-                  fontface = "bold") +
-  theme(legend.position = "none")
+id_seine <- data_salin_seine |>
+  distinct(latitude, longitude) |>
+  filter(latitude != 49.5 & longitude != 0.15) |>  # point in the harbour
+  mutate(id = LETTERS[row_number()])
 
-ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_seine_map.jpg")
-
-
-# ---- Graph of temperature trend ----
-
-ggplot(data_temp_seine) +
-  aes(x = year, y = mean_temp) +
-  geom_point(aes(colour = point)) +
-  geom_smooth() +
-  labs(title = "Température de surface sept-octobre embouchure Seine")
-
-# =====================================================
-# 04. Join datasets
-# =====================================================
-
-data_temp <- full_join(data_temp_gironde, data_temp_loire) |>
-  full_join(data_temp_seine)
-
-usethis::use_data(data_temp)
-
-ggplot(data_temp) +
-  aes(x = year, y = mean_temp) +
-  geom_point(aes(colour = point)) +
-  geom_smooth() +
-  facet_grid(vars(estuary), scales = "free_y")
-
-# =====================================================
-# 05. Trends tests
-# =====================================================
-
-# ---- Gironde ----
-
-data_temp_gironde_meanpoint <- data_temp_gironde |>
-  group_by(year, point) |>
-  summarise(mean_temp = mean(mean_temp, na.rm = TRUE), .groups = "drop") |>
-  complete(year)
-
-lm_model_gironde <- lm(mean_temp ~ year, data = data_temp_gironde_meanpoint)
-summary(lm_model_gironde)
-
-temp_timeseries_gironde <- data_temp_gironde_meanpoint |> pull(mean_temp)
-years_gironde <- data_temp_gironde_meanpoint |> pull(year)
-
-# Package {changepoint}
-cp_gironde <- cpt.meanvar(temp_timeseries_gironde, method = "BinSeg")
-plot(cp_gironde)
-break_year_gironde <- years_gironde[cpts(cp_gironde)] # no breakpoint
-
-# Test de tendance Mann-Kendall
-acf(temp_timeseries_gironde) # => pas d'autocorrelation
-mk_gironde <- mk.test(temp_timeseries_gironde) # => NS
-# Theil–Sen estimator
-sen_gironde <- sens.slope(temp_timeseries_gironde)
-
-ggplot_temp_gironde_trend <- ggplot(data_temp_gironde_meanpoint, aes(x = year, y = mean_temp)) +
-  geom_point(aes(colour = point)) +
-  geom_smooth(method = "lm", color = "red") +
-  geom_line() +
-  geom_vline(xintercept = break_year_gironde,
-             linetype = "dashed",
-             colour = "red") +
-  labs(
-    title = "Gironde - Tendance de la température et potentiel point de rupture",
-    subtitle = paste(
-      "Mann-Kendall p =", round(mk_gironde$p.value,3),
-      "| Sen slope =", round(sen_gironde$estimates,3), "°C/an"
-    ))
-
-ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_gironde_trend.jpg")
+data_salin_seine <- data_salin_seine |>
+  left_join(id_seine, by = c("latitude", "longitude")) |>
+  drop_na(id)
 
 
-# ---- Loire ----
+# ----  Map of measurement points ----
 
-data_temp_loire_meanpoint <- data_temp_loire |>
-  group_by(year, point) |>
-  summarise(mean_temp = mean(mean_temp, na.rm = TRUE), .groups = "drop") |>
-  complete(year)
+ggplot_salin_seine_map <- plot_estuary_map(data = data_salin_seine,
+                                            estuary_name = "Seine",
+                                            colour_var = id) +
+  scale_color_manual(values = id_colors) +
+  geom_rect(
+    data = GPS_box_seine,
+    aes(
+      xmin = min_lon,
+      xmax = max_lon,
+      ymin = min_lat,
+      ymax = max_lat
+    ),
+    fill = NA,
+    color = "black",
+    linewidth = 0.8
+  ) +
+  labs(title = "Seine - Salinity sampling points")
 
-lm_model_loire <- lm(mean_temp ~ year, data = data_temp_loire_meanpoint)
-summary(lm_model_loire)
-
-temp_timeseries_loire <- data_temp_loire_meanpoint |> pull(mean_temp)
-years_loire <- data_temp_loire_meanpoint |> pull(year)
-
-# Package {changepoint}
-cp_loire <- cpt.meanvar(temp_timeseries_loire, method = "BinSeg")
-plot(cp_loire)
-break_year_loire <- years_loire[cpts(cp_loire)] # => no break point
-
-# Test de tendance Mann-Kendall {trend}
-acf(temp_timeseries_loire) # => pas d'autocorrelation
-mk_loire <- mk.test(temp_timeseries_loire) # => NS
-# Theil–Sen estimator
-sen_loire <- sens.slope(temp_timeseries_loire) #  °C/an
-
-
-ggplot_temp_loire_trend <- ggplot(data_temp_loire_meanpoint, aes(x = year, y = mean_temp)) +
-  geom_point(aes(point)) +
-  geom_smooth(method = "lm", color = "red") +
-  geom_line() +
-  geom_vline(xintercept = break_year_loire,
-             linetype = "dashed",
-             colour = "red") +
-  labs(
-    title = "Loire - Tendance de la température et potentiel point de rupture",
-    subtitle = paste(
-      "Mann-Kendall p =", round(mk_loire$p.value,3),
-      "| Sen slope =", round(sen_loire$estimates,3), "°C/an"
-    ))
-
-ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_loire_trend.jpg")
+ggsave(ggplot_salin_seine_map,
+       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_seine_map.jpg")
 
 
-# ---- Seine ----
+# ---- Salinity trend ----
 
-data_temp_seine_meanpoint <- data_temp_seine |>
-  group_by(year, point) |>
-  summarise(mean_temp = mean(mean_temp, na.rm = TRUE), .groups = "drop") |>
-  complete(year)
+data_salin_seine <- data_salin_seine |>
+  complete(year) |>
+  mutate(period = case_when(
+    year >= min(year) & year <= min(year)+9 ~ "first period",
+    year >= max(year)-9 & year <= max(year) ~ "last period",
+  ))
 
-lm_model_seine <- lm(mean_temp ~ year, data = data_temp_seine_meanpoint)
-summary(lm_model_seine)
+## Time series segmentation
 
-temp_timeseries_seine <- data_temp_seine_meanpoint |>
-  pull(mean_temp)
-years_seine <- data_temp_seine_meanpoint |>
-  pull(year)
+salin_timeseries_seine <- data_salin_seine |> pull(RESULTAT)
+years_seine <- data_salin_seine |> pull(year)
 
-# Package {changepoint}
-cp_seine <- cpt.meanvar(temp_timeseries_seine, method = "BinSeg")
+# Testing for a change in means
+cp_seine <- changepoint::cpt.meanvar(salin_timeseries_seine, method = "BinSeg")
 plot(cp_seine)
-break_year_seine <- years[cpts(cp_seine)] # => 1986
+break_year_seine <- years_seine[cpts(cp_seine)]
 
-# Test de tendance Mann-Kendall {trend}
-acf(temp_timeseries_seine) # => pas d'autocorrelation
-mk_seine <- mk.test(temp_timeseries_seine)
+# Testing for a change in the slope with a linear model
+lm_model_seine <- lm(RESULTAT ~ year, data = data_salin_seine)
+summary(lm_model_seine)
+davies.test(lm_model_seine)
+
+
+## Testing for a non-monotonic trend
+
+# Mann-Kendall non-monotonic trend test with autocorrelation correction
+mk_seine <- mmkh(salin_timeseries_seine)
 # Theil–Sen estimator
-sen_seine <- sens.slope(temp_timeseries_seine)
+sen_seine <- sens.slope(salin_timeseries_seine)
 
-ggplot_temp_seine_trend <- ggplot(data_temp_seine_meanpoint, aes(x = year, y = mean_temp)) +
-  geom_point(aes(colour = point)) +
-  geom_smooth(method = "lm", color = "red") +
+## First and last 10 years period mean differences
+data_salin_seine_period <- data_salin_seine |>
+  drop_na(period) |>
+  group_by(year, period) |>
+  summarise(mean_temp = mean(RESULTAT, na.rm = TRUE))
+kruskal_pvalue_seine <- signif(kruskal.test(data_salin_seine_period$mean_temp,
+                                      data_salin_seine_period$period)[["p.value"]], digits = 3)
+
+
+## Trend graph
+ggplot_salin_seine_trend <- ggplot(data_salin_seine,
+                                    aes(x = year, y = RESULTAT)) +
+  geom_point(aes(colour = id)) +
+  scale_color_manual(values = id_colors) +
+  geom_smooth(color = "red") +
   geom_line() +
   geom_vline(xintercept = break_year_seine,
              linetype = "dashed",
              colour = "red") +
   labs(
-    title = "Seine - Tendance de la température et potentiel point de rupture",
+    title = "Seine - Salinity and potential breaking point (September-October)",
     subtitle = paste(
-      "Mann-Kendall p =", round(mk_seine$p.value,3),
-      "| Sen slope =", round(sen_seine$estimates,3), "°C/an"
+      "Mann-Kendall p =", round(mk_seine[["new P-value"]], 5),
+      "| Sen slope =", round(sen_seine$estimates,3), "-/an"
     ))
 
-ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_seine_trend.jpg")
+ggsave(ggplot_salin_seine_trend,
+       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_seine_trend.jpg")
 
-# Une tendance significative a été détectée avec le test de Mann-Kendall (p = 0.01),
-# mais la pente de la régression linéaire n’est pas significative (p = 0.109).
-# En l'absence d'autocorrélation détectée, et avec un point de rupture détecté en 1986
-# ces résultats suggèrent une évolution non strictement linéaire sur la période.
 
 # =====================================================
-# 02. Salinité
+# 04. Join and save datasets
 # =====================================================
 
-data_physchem_GPS_ronded |>
-  filter(PARAMETRE_LIBELLE == "Salinité") |>
-  group_by(estuary, haline_zone, year, month, latitude, longitude) |>
-  summarise(res = mean(RESULTAT, na.rm = TRUE)) |>
-  arrange(estuary, haline_zone, year) |>
-  # filter(latitude == 45.18) |>
-  View()
+data_salin <- data_salin_gironde |>
+  full_join(data_salin_loire) |>
+  full_join(data_salin_seine)
 
-data_salin_gironde <- data_physchem_GPS_ronded |>
-  filter(PARAMETRE_LIBELLE == "Salinité") |>
-  filter(estuary == "Gironde") |>
-  filter(latitude %in% c(45.18, 45.25, 45.27),
-         longitude %in% c(-0.72, -0.73, -0.75)) |>
-  filter(month %in% c(9, 10)) |>
-  group_by(year) |>
-  summarise(mean_salin = mean(RESULTAT, na.rm = TRUE),
-            n = n(), .groups = "drop")
-
-plot_estuary_map(data = data_salin_gironde,
-                 estuary_name = "Gironde")
-
-ggplot(data_salin_gironde) +
-  aes(x = year, y = mean_salin) +
-  geom_point() +
-  geom_smooth() +
-  labs(title = "Salinité de surface sept-octobre Pauillac Gironde")
-
-#------------------------------------
-# Oxygène dissous
-
-data_physchem |>
-  filter(PARAMETRE_LIBELLE == "Oxygène dissous") |>
-  group_by(estuary, haline_zone, year, month, latitude, longitude) |>
-  summarise(res = mean(RESULTAT, na.rm = TRUE)) |>
-  arrange(estuary, haline_zone, year) |>
-  # filter(latitude == 45.18) |>
-  View()
-
-# Gironde mesohalin :
-## XXX 1980-2006 : 45.37 / -0.81 (un seul point de mesure sur cette période, trop central)
-## 1985-2006 : 45.18 / -0.72
-## 2007-2024 (sauf 2009) :  45.25 / -0.73
-
-
-data_O2_gironde <- data_physchem |>
-  filter(PARAMETRE_LIBELLE == "Oxygène dissous") |>
-  filter(estuary == "Gironde") |>
-  filter(latitude %in% c(45.18, 45.25, 45.1),
-         longitude %in% c(-0.72, -0.73, -0.68)) |>
-  filter(month %in% c(9, 10)) |>
-  filter(SUPPORT_NIVEAU_PRELEVEMENT != c("Niveau : Fond-sonde-1m")) |>
-  group_by(latitude, longitude, year, PROGRAMME) |>
-  summarise(mean_O2 = mean(RESULTAT, na.rm = TRUE),
-            n = n(), .groups = "drop")
-
-plot_estuary_map(data = data_O2_gironde,
-                 estuary_name = "Gironde")
-
-ggplot(data_O2_gironde) +
-  aes(x = year, y = mean_O2) +
-  geom_point(aes(colour = PROGRAMME)) +
-  geom_smooth() +
-  labs(title = "Oxygène dissous de surface sept-octobre Pauillac Gironde")
-
+usethis::use_data(data_salin, overwrite = TRUE)

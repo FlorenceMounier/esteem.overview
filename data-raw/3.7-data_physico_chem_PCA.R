@@ -1,11 +1,9 @@
 # =====================================================
-# Datasets:
-# -
 # Plots:
-# -
+#   - ggplot_PCA.jpg
 # Preparation script
 # Author: FM
-# Date: 2026-03-05
+# Date: 2026-03-09
 # =====================================================
 
 # =====================================================
@@ -17,170 +15,89 @@ library(tidyverse, quietly = TRUE)
 # ACP
 library(FactoMineR)
 library(factoextra)
-library(missMDA) # missing values handling
 
 # =====================================================
 #
 # =====================================================
 
-# Simple PCA
-
-data_summarized_wide <- data_summarized |>
-  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
+data_PCA <- data_temp |>
+  full_join(data_salin) |>
+  full_join(data_nitro) |>
   mutate(DECADE = case_when(
-    YEAR %in% c(1970:1979) ~ "1970's",
-    YEAR %in% c(1980:1989) ~ "1980's",
-    YEAR %in% c(1990:1999) ~ "1990's",
-    YEAR %in% c(2000:2009) ~ "2000's",
-    YEAR %in% c(2010:2019) ~ "2010's",
-    YEAR %in% c(2020:2029) ~ "2020's",
-  ))
-
-
+    year %in% c(1970:1979) ~ "1970's",
+    year %in% c(1980:1989) ~ "1980's",
+    year %in% c(1990:1999) ~ "1990's",
+    year %in% c(2000:2009) ~ "2000's",
+    year %in% c(2010:2019) ~ "2010's",
+    year %in% c(2020:2029) ~ "2020's",
+  )) |>
+  group_by(DECADE, PARAMETRE_LIBELLE, estuary) |>
+  summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop") |>
+  dplyr::select(DECADE, PARAMETRE_LIBELLE, RESULTAT, estuary) |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT)
 
 # Get only numerical values for PCA
-data_summarized_wide_num <- data_summarized_wide[, sapply(data_summarized_wide, is.numeric)]
-group_var_1 <- data_summarized_wide$ESTUARY
-group_var_2 <- data_summarized_wide$DECADE |> as.factor()
-
-# Estimating the number of optimal components
-nb_comp <- estim_ncpPCA(data_summarized_wide_num, method = "Regularized")$ncp
-# Mixed NA allocation with the right number of components
-df_num_imp <- imputePCA(data_summarized_wide_num, ncp = nb_comp)
+data_pca_numerical <- data_PCA |>
+  dplyr::select(Salinité, `Température de l'eau`, N_indicator)
 
 # Compute PCA
-res_pca <- FactoMineR::PCA(df_num_imp$completeObs,
-                           scale.unit = TRUE,
-                           graph = TRUE)
+res_pca <- PCA(data_pca_numerical, scale.unit = TRUE, graph = FALSE)
+
+# Points coordinates
+scores <- as.data.frame(res_pca$ind$coord) |>
+  mutate(
+    DECADE = data_PCA$DECADE,
+    estuary = data_PCA$estuary
+  )
+
+# Variables coordinates & contributions to PCA factorial design
+var <- as.data.frame(res_pca$var$coord)
+var$varname <- rownames(var)
+var$contrib <- res_pca$var$contrib[,1] + res_pca$var$contrib[,2]
+
+# Explained variance
+eig <- res_pca$eig
+pc1 <- round(eig[1,2],1)
+pc2 <- round(eig[2,2],1)
+
+#
+
+fviz_contrib(res_pca, choice="var", axes = 1 )
+fviz_contrib(res_pca, choice="var", axes = 2 )
+
+# Biplot: Individual ESTUARY & DECADE graph
+
+ggplot_PCA <- ggplot(scores, aes(Dim.1, Dim.2)) +
+  geom_path(aes(group = estuary, color = estuary)) + # decade trajectories
+  geom_point(aes(color = estuary)) +
+  geom_text(aes(label = DECADE), size = 3) +
+  stat_ellipse(aes(color = estuary), linewidth = 1) + # estuary ellipses
+  # variables projetées
+  geom_segment(
+    data = var,
+    aes(x = 0, y = 0, xend = Dim.1*3, yend = Dim.2*3),
+    color = "black",
+    arrow = arrow(length = unit(0.25,"cm")),
+    linewidth = 1
+  ) +
+  geom_text(
+    data = var,
+    aes(x = Dim.1*3, y = Dim.2*3, label = varname),
+    color = "black",
+    vjust = -0.5
+  ) +
+  labs(
+    x = paste0("PC1 (", pc1, "%)"),
+    y = paste0("PC2 (", pc2, "%)"),
+    color = "Estuary"
+  ) +
+  theme_minimal()
+
+ggplot_PCA
+
+#------------------------------------------------------------------------
 
 
-
-
-# Variables graph
-pca_physicochemistry_var <- fviz_pca_var(
-  res_pca,
-  col.var = "contrib",
-  # couleur = contribution à l'axe
-  gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-  repel = TRUE,
-  title = "PCA variables"
-)
-pca_physicochemistry_var
-
-# ggsave(plot = pca_physicochemistry_var, filename = "../inst/results/data_physico_chemistry/PCA/ggplot_PCA_variables.jpg",
-#        width = 20, height = 20, units = "cm")
-
-
-
-
-# Individual ESTUARY graph
-pca_physicochemistry_ind_ESTUARY <- fviz_pca_ind(
-  res_pca,
-  habillage = group_var_1,
-  palette = "jco",
-  addEllipses = TRUE,
-  ellipse.type = "confidence",
-  title = "PCA individuals by estuary"
-)
-pca_physicochemistry_ind_ESTUARY
-
-# ggsave(plot = pca_physicochemistry_ind_ESTUARY, filename = "../inst/results/data_physico_chemistry/PCA/ggplot_PCA_ind_estuary.jpg",
-#        width = 20, height = 20, units = "cm")
-
-
-
-
-# Individual DECADE graph
-pca_physicochemistry_ind_DECADE <- fviz_pca_ind(
-  res_pca,
-  habillage = group_var_2,
-  palette = "jco",
-  addEllipses = TRUE,
-  ellipse.type = "confidence",
-  title = "PCA individuals by decade"
-)
-pca_physicochemistry_ind_DECADE
-
-# ggsave(plot = pca_physicochemistry_ind_DECADE, filename = "../inst/results/data_physico_chemistry/PCA/ggplot_PCA_ind_decade.jpg",
-#        width = 20, height = 20, units = "cm")
-
-
-
-# Individual ESTUARY & DECADE graph
-df_res_pca <- as.data.frame(res_pca$ind$coord)
-df_res_pca$ESTUARY <- group_var_1
-df_res_pca$DECADE <- group_var_2
-
-pca_physicochemistry_ind_ESTUARY_DECADE <- ggplot(df_res_pca, aes(x = Dim.1, y = Dim.2, color = ESTUARY, shape = DECADE)) +
-  geom_point(size = 3) +
-  stat_ellipse(aes(group = interaction(ESTUARY, DECADE)), type = "norm", linetype = 2) +
-  theme_minimal() +
-  labs(title = "PCA with double grouping: estuary and decade", x = "Dim 1", y = "Dim 2")
-pca_physicochemistry_ind_ESTUARY_DECADE
-
-# ggsave(plot = pca_physicochemistry_ind_ESTUARY_DECADE, filename = "../inst/results/data_physico_chemistry/PCA/ggplot_PCA_ind_estuary_decade.jpg",
-#        width = 20, height = 20, units = "cm")
-
-
-## cos²
-
-fviz_pca_var(res_pca, col.var = "cos2") # variables
-
-
-
-
-fviz_pca_ind(res_pca, col.ind = "cos2") # individus
-
-
-fviz_pca_ind(res_pca, col.ind = "contrib")
-
-
-
-# Nitrogen cycle
-
-# Compute the sum of nitrite + nitrate
-
-data_summarized_N0 <- data_summarized |>
-  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
-  mutate(sumNO2NO3 = `Azote nitreux (nitrite)` + `Azote nitrique (nitrate)`) |>
-  pivot_longer(cols = -c(ESTUARY, YEAR, PROGRAMME),
-               names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT")
-
-
-# Compare the computed sum levels with existing sum
-
-data_N0sum_comparison <- data_summarized_N0 |>
-  filter(PARAMETRE_LIBELLE %in% c("sumNO2NO3", "Nitrate + nitrite"))
-
-ggplot_N0sum_comparison <- ggplot(data_N0sum_comparison) +
-  aes(x = YEAR, y = RESULTAT, colour = PARAMETRE_LIBELLE) +
-  geom_line() +
-  facet_grid(rows = vars(ESTUARY))
-ggplot_N0sum_comparison
-
-# ggsave(plot = ggplot_N0sum_comparison, filename = "../inst/results/data_physico_chemistry/ggplot_nitrogen_sum_comparison.jpg",width = 15, height = 10, units = "cm")
-
-
-
-
-data_nitrogen_cycle <- data_summarized_N0 |>
-  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
-  group_by(ESTUARY, YEAR) |>
-  mutate(max_NO2NO3 = max(sumNO2NO3, `Nitrate + nitrite`, na.rm = TRUE)) |>
-  ungroup() |>
-  mutate(nitrogen_indicator = Ammonium / max_NO2NO3) |>
-  pivot_longer(cols = -c(ESTUARY, YEAR, PROGRAMME),
-               names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT")
-
-data_N_indicator <- data_nitrogen_cycle |>
-  filter(PARAMETRE_LIBELLE == "nitrogen_indicator")
-
-ggplot_data_N_indicator <- ggplot(data_N_indicator) +
-  aes(x = YEAR, y = RESULTAT, colour = ESTUARY) +
-  geom_line()
-ggplot_data_N_indicator
-
-# ggsave(plot = ggplot_data_N_indicator, filename = "../inst/results/data_physico_chemistry/ggplot_nitrogen_cycle_indicator.jpg",width = 15, height = 10, units = "cm")
 
 
 # Primary production activity

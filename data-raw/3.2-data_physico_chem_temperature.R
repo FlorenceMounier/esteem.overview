@@ -1,5 +1,7 @@
 # =====================================================
 # Preparation script
+# Datasets:
+#  - data_temp.rda
 # Plots:
 #  - ggplot_temp_gironde_map.jpg
 #  - ggplot_temp_gironce_trend.jpg
@@ -100,6 +102,9 @@ data_temp_gironde <- data_temp_gironde |>
 
 ## Time series segmentation
 
+temp_timeseries_gironde <- data_temp_gironde |> pull(RESULTAT)
+years_gironde <- data_temp_gironde |> pull(year)
+
 # Testing for a change in means
 cp_gironde <- changepoint::cpt.meanvar(temp_timeseries_gironde, method = "BinSeg")
 plot(cp_gironde)
@@ -112,9 +117,6 @@ davies.test(lm_model_gironde)
 
 
 ## Testing for a non-monotonic trend
-
-temp_timeseries_gironde <- data_temp_gironde |> pull(RESULTAT)
-years_gironde <- data_temp_gironde |> pull(year)
 
 # Mann-Kendall non-monotonic trend test with autocorrelation correction
 mk_gironde <- mmkh(temp_timeseries_gironde)
@@ -136,7 +138,7 @@ ggplot_temp_gironde_trend <- ggplot(data_temp_gironde,
                                     aes(x = year, y = RESULTAT)) +
   geom_point(aes(colour = id)) +
   scale_color_manual(values = id_colors) +
-  geom_smooth(method = "lm", color = "red") +
+  geom_smooth(, color = "red") +
   geom_line() +
   geom_vline(xintercept = break_year_gironde,
              linetype = "dashed",
@@ -226,6 +228,9 @@ data_temp_loire <- data_temp_loire |>
 
 ## Time series segmentation
 
+temp_timeseries_loire <- data_temp_loire |> pull(RESULTAT)
+years_loire <- data_temp_loire |> pull(year)
+
 # Testing for a change in means
 cp_loire <- changepoint::cpt.meanvar(temp_timeseries_loire, method = "BinSeg")
 plot(cp_loire)
@@ -238,8 +243,6 @@ davies.test(lm_model_loire)
 
 
 ## Testing for a non-monotonic trend
-temp_timeseries_loire <- data_temp_loire |> pull(RESULTAT)
-years_loire <- data_temp_loire |> pull(year)
 
 # Mann-Kendall non-monotonic trend test with autocorrelation correction
 mk_loire <- mmkh(temp_timeseries_loire)
@@ -261,7 +264,7 @@ ggplot_temp_loire_trend <- ggplot(data_temp_loire,
                                     aes(x = year, y = RESULTAT)) +
   geom_point(aes(colour = id)) +
   scale_color_manual(values = id_colors) +
-  geom_smooth(method = "lm", color = "red") +
+  geom_smooth(, color = "red") +
   geom_line() +
   geom_vline(xintercept = break_year_loire,
              linetype = "dashed",
@@ -354,6 +357,9 @@ data_temp_seine <- data_temp_seine |>
 
 ## Time series segmentation
 
+temp_timeseries_seine <- data_temp_seine |> pull(RESULTAT)
+years_seine <- data_temp_seine |> pull(year)
+
 # Testing for a change in means
 cp_seine <- changepoint::cpt.meanvar(temp_timeseries_seine, method = "BinSeg")
 plot(cp_seine)
@@ -366,8 +372,6 @@ davies.test(lm_model_seine)
 
 
 ## Testing for a non-monotonic trend
-temp_timeseries_seine <- data_temp_seine |> pull(RESULTAT)
-years_seine <- data_temp_seine |> pull(year)
 
 # Mann-Kendall non-monotonic trend test with autocorrelation correction
 mk_seine <- mmkh(temp_timeseries_seine)
@@ -388,7 +392,7 @@ ggplot_temp_seine_trend <- ggplot(data_temp_seine,
                                     aes(x = year, y = RESULTAT)) +
   geom_point(aes(colour = id)) +
   scale_color_manual(values = id_colors) +
-  geom_smooth(method = "lm", color = "red") +
+  geom_smooth(, color = "red") +
   geom_line() +
   geom_vline(xintercept = break_year_seine,
              linetype = "dashed",
@@ -403,40 +407,16 @@ ggplot_temp_seine_trend <- ggplot(data_temp_seine,
 ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_seine_trend.jpg")
 
 
-
-
-
-
 # =====================================================
-# 02. Salinité
+# 04. Join and save datasets
 # =====================================================
 
-data_physchem_GPS_ronded |>
-  filter(PARAMETRE_LIBELLE == "Salinité") |>
-  group_by(estuary, haline_zone, year, month, latitude, longitude) |>
-  summarise(res = mean(RESULTAT, na.rm = TRUE)) |>
-  arrange(estuary, haline_zone, year) |>
-  # filter(latitude == 45.18) |>
-  View()
+data_temp <- data_temp_gironde |>
+  full_join(data_temp_loire) |>
+  full_join(data_temp_seine)
 
-data_salin_gironde <- data_physchem_GPS_ronded |>
-  filter(PARAMETRE_LIBELLE == "Salinité") |>
-  filter(estuary == "Gironde") |>
-  filter(latitude %in% c(45.18, 45.25, 45.27),
-         longitude %in% c(-0.72, -0.73, -0.75)) |>
-  filter(month %in% c(9, 10)) |>
-  group_by(year) |>
-  summarise(mean_salin = mean(RESULTAT, na.rm = TRUE),
-            n = n(), .groups = "drop")
+usethis::use_data(data_temp, overwrite = TRUE)
 
-plot_estuary_map(data = data_salin_gironde,
-                 estuary_name = "Gironde")
-
-ggplot(data_salin_gironde) +
-  aes(x = year, y = mean_salin) +
-  geom_point() +
-  geom_smooth() +
-  labs(title = "Salinité de surface sept-octobre Pauillac Gironde")
 
 #------------------------------------
 # Oxygène dissous
@@ -455,23 +435,23 @@ data_physchem |>
 ## 2007-2024 (sauf 2009) :  45.25 / -0.73
 
 
-data_O2_gironde <- data_physchem |>
-  filter(PARAMETRE_LIBELLE == "Oxygène dissous") |>
-  filter(estuary == "Gironde") |>
-  filter(latitude %in% c(45.18, 45.25, 45.1),
-         longitude %in% c(-0.72, -0.73, -0.68)) |>
-  filter(month %in% c(9, 10)) |>
-  filter(SUPPORT_NIVEAU_PRELEVEMENT != c("Niveau : Fond-sonde-1m")) |>
-  group_by(latitude, longitude, year, PROGRAMME) |>
-  summarise(mean_O2 = mean(RESULTAT, na.rm = TRUE),
-            n = n(), .groups = "drop")
-
-plot_estuary_map(data = data_O2_gironde,
-                 estuary_name = "Gironde")
-
-ggplot(data_O2_gironde) +
-  aes(x = year, y = mean_O2) +
-  geom_point(aes(colour = PROGRAMME)) +
-  geom_smooth() +
-  labs(title = "Oxygène dissous de surface sept-octobre Pauillac Gironde")
-
+# data_O2_gironde <- data_physchem |>
+#   filter(PARAMETRE_LIBELLE == "Oxygène dissous") |>
+#   filter(estuary == "Gironde") |>
+#   filter(latitude %in% c(45.18, 45.25, 45.1),
+#          longitude %in% c(-0.72, -0.73, -0.68)) |>
+#   filter(month %in% c(9, 10)) |>
+#   filter(SUPPORT_NIVEAU_PRELEVEMENT != c("Niveau : Fond-sonde-1m")) |>
+#   group_by(latitude, longitude, year, PROGRAMME) |>
+#   summarise(mean_O2 = mean(RESULTAT, na.rm = TRUE),
+#             n = n(), .groups = "drop")
+#
+# plot_estuary_map(data = data_O2_gironde,
+#                  estuary_name = "Gironde")
+#
+# ggplot(data_O2_gironde) +
+#   aes(x = year, y = mean_O2) +
+#   geom_point(aes(colour = PROGRAMME)) +
+#   geom_smooth() +
+#   labs(title = "Oxygène dissous de surface sept-octobre Pauillac Gironde")
+#
