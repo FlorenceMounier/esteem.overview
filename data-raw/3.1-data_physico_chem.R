@@ -133,7 +133,7 @@ usethis::use_data(data_physchem, overwrite = TRUE)
 GPS_box <- tribble(
   ~ estuary, ~ haline_zone, ~ min_lon, ~ max_lon, ~ min_lat, ~ max_lat,
   "Gironde", "mesohalin", -0.78, -0.65, 45.15, 45.3,
-  "Loire", "mesohalin", -2.0, -1.88, 47.27, 47.30,
+  "Loire", "mesohalin", -2.0, -1.85, 47.26, 47.29,
   "Seine", "polyhalin", 0.0, 0.2, 49.42, 49.49
 )
 

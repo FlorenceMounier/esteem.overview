@@ -1,10 +1,6 @@
 ---
 title: "data_contamination_OC_pesticides"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{data_contamination_OC_pesticides}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output: html_document
 ---
 
 ```{r setup, include=FALSE}

@@ -36,8 +36,8 @@ options("scipen"=2, "digits"=3) # use exponential notation
 
 data_NO <- data_physchem |>
   filter(PARAMETRE_LIBELLE %in% c("Azote nitreux (nitrite)","Azote nitrique (nitrate)")) |>
-  filter(month %in% c(9, 10)) |>
-  group_by(estuary, LIEU_MNEMONIQUE, DATE, SUPPORT_NIVEAU_PRELEVEMENT, PRELEVEMENT_DESCRIPTION,
+  filter(month %in% c(9, 10, 11)) |>
+  group_by(estuary, PROGRAMME, LIEU_MNEMONIQUE, DATE, SUPPORT_NIVEAU_PRELEVEMENT, PRELEVEMENT_DESCRIPTION,
            PARAMETRE_LIBELLE, longitude, latitude, haline_zone, year, month) |>
   summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE)) |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
@@ -47,8 +47,8 @@ data_NO <- data_physchem |>
   rename(RESULTAT = sumNO2NO3) |>
   full_join(data_physchem |>
               filter(PARAMETRE_LIBELLE %in% c("Nitrate + nitrite", "Ammonium")) |>
-              filter(month %in% c(9, 10)))
-
+              filter(month %in% c(9, 10, 11))) |>
+  filter(year >= 1987)
 
 # Compare the computed sum levels with existing sum
 
@@ -60,12 +60,12 @@ ggplot_N0sum_comparison <- data_NO |>
   facet_grid(rows = vars(estuary))
 ggplot_N0sum_comparison
 
-ggsave(plot = ggplot_N0sum_comparison, filename = "inst/results/data_physico_chemistry/nitrogen/ggplot_nitrogen_sum_comparison.jpg",width = 15, height = 10, units = "cm")
+ggsave(plot = ggplot_N0sum_comparison, filename = "inst/results/data_phychem/nitrogen/ggplot_nitrogen_sum_comparison.jpg",width = 15, height = 10, units = "cm")
 
 # Nitrogen cycle indicator
 
 data_nitrogen_cycle <- data_NO |>
-  group_by(estuary, LIEU_MNEMONIQUE, DATE, SUPPORT_NIVEAU_PRELEVEMENT, PRELEVEMENT_DESCRIPTION,
+  group_by(estuary, PROGRAMME, LIEU_MNEMONIQUE, DATE, SUPPORT_NIVEAU_PRELEVEMENT, PRELEVEMENT_DESCRIPTION,
            PARAMETRE_LIBELLE, longitude, latitude, haline_zone, year, month) |>
   summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE)) |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
@@ -75,7 +75,7 @@ data_nitrogen_cycle <- data_NO |>
     TRUE ~ Ammonium / (Ammonium + `Nitrate + nitrite`)
   )) |>
   pivot_longer(cols = N_indicator, names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT") |>
-  select(-c(Ammonium, sumNO2NO3, `Nitrate + nitrite`))
+  dplyr::select(-c(Ammonium, sumNO2NO3, `Nitrate + nitrite`))
 
 ggplot_data_N_indicator <- ggplot(data_nitrogen_cycle) +
   aes(x = year, y = RESULTAT, colour = estuary) +
@@ -84,9 +84,9 @@ ggplot_data_N_indicator <- ggplot(data_nitrogen_cycle) +
   geom_hline(yintercept = 0.4, colour = "orange") +
   geom_hline(yintercept = 0.7, colour = "red") +
   facet_grid(vars(estuary), scales = "free_y")
-ggplot_data_N_indicator
+# ggplot_data_N_indicator
 
-# ggsave(plot = ggplot_data_N_indicator, filename = "inst/results/data_physico_chemistry/nitrogen/ggplot_nitrogen_cycle_indicator.jpg",width = 15, height = 10, units = "cm")
+ggsave(plot = ggplot_data_N_indicator, filename = "inst/results/data_phychem/nitrogen/ggplot_nitrogen_cycle_indicator.jpg",width = 15, height = 10, units = "cm")
 
 
 
@@ -105,7 +105,8 @@ data_nitro_gironde <- data_nitrogen_cycle |>
            latitude <= GPS_box_gironde$max_lat &
            longitude >= GPS_box_gironde$min_lon &
            longitude <= GPS_box_gironde$max_lon) |>
-  filter(month %in% c(9, 10))
+  filter(month %in% c(9, 10, 11)) |>
+  filter(year >= 1987)
 
 
 # ---- Filter outliers ----
@@ -121,21 +122,17 @@ data_nitro_gironde <- data_nitro_gironde |>
   )
 
 
-# ----  Assigning an identifier to each measurement point ----
+# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
 
-id_gironde <- data_nitro_gironde |>
-  distinct(latitude, longitude) |>
-  mutate(id = LETTERS[row_number()])
-
-data_nitro_gironde <- data_nitro_gironde |>
-  left_join(id_gironde, by = c("latitude", "longitude"))
+program_lieu_NO_gironde <- data_nitro_gironde |>
+  distinct(year, LIEU_MNEMONIQUE, PROGRAMME, month)
 
 
 # ----  Map of measurement points ----
 
 ggplot_nitro_gironde_map <- plot_estuary_map(data = data_nitro_gironde,
                  estuary_name = "Gironde",
-                 colour_var = id) +
+                 colour_var = LIEU_MNEMONIQUE) +
   scale_color_manual(values = id_colors) +
   geom_rect(
     data = GPS_box_gironde,
@@ -152,7 +149,7 @@ ggplot_nitro_gironde_map <- plot_estuary_map(data = data_nitro_gironde,
   labs(title = "Gironde - Nitrogen sampling points")
 
 ggsave(ggplot_nitro_gironde_map,
-       filename = "inst/results/data_physico_chemistry/nitrogen/ggplot_nitro_gironde_map.jpg")
+       filename = "inst/results/data_phychem/nitrogen/ggplot_nitro_gironde_map.jpg")
 
 
 # ---- Nitrogen trend ----
@@ -201,7 +198,7 @@ kruskal_pvalue_gironde <- signif(kruskal.test(data_nitro_gironde_period$mean_tem
 
 ggplot_nitro_gironde_trend <- ggplot(data_nitro_gironde,
                                     aes(x = year, y = RESULTAT)) +
-  geom_point(aes(colour = id)) +
+  geom_point(aes(colour = LIEU_MNEMONIQUE)) +
   scale_color_manual(values = id_colors) +
   geom_smooth(color = "red") +
   geom_line() +
@@ -216,7 +213,7 @@ ggplot_nitro_gironde_trend <- ggplot(data_nitro_gironde,
     ))
 
 ggsave(ggplot_nitro_gironde_trend,
-       filename = "inst/results/data_physico_chemistry/nitrogen/ggplot_nitro_gironde_trend.jpg")
+       filename = "inst/results/data_phychem/nitrogen/ggplot_nitro_gironde_trend.jpg")
 
 
 # =====================================================
@@ -234,7 +231,8 @@ data_nitro_loire <- data_nitrogen_cycle |>
            latitude <= GPS_box_loire$max_lat &
            longitude >= GPS_box_loire$min_lon &
            longitude <= GPS_box_loire$max_lon) |>
-  filter(month %in% c(9, 10))
+  filter(month %in% c(9, 10, 11))|>
+  filter(year >= 1987)
 
 
 # ---- Filter outliers ----
@@ -249,22 +247,21 @@ data_nitro_loire <- data_nitro_loire |>
             mean_nitro_loire + 1.96 * sd_nitro_loire)
   )
 
+# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
 
-# ----  Assigning an identifier to each measurement point ----
+program_lieu_NO_loire <- data_nitro_loire |>
+  distinct(year, LIEU_MNEMONIQUE, PROGRAMME, month)
 
-id_loire <- data_nitro_loire |>
-  distinct(latitude, longitude) |>
-  mutate(id = LETTERS[row_number()])
+# ---- Filter redondant points ----
 
 data_nitro_loire <- data_nitro_loire |>
-  left_join(id_loire, by = c("latitude", "longitude"))
-
+  filter(LIEU_MNEMONIQUE != "070-P-035")
 
 # ----  Map of measurement points ----
 
 ggplot_nitro_loire_map <- plot_estuary_map(data = data_nitro_loire,
                                             estuary_name = "Loire",
-                                            colour_var = id) +
+                                            colour_var = LIEU_MNEMONIQUE) +
   scale_color_manual(values = id_colors) +
   geom_rect(
     data = GPS_box_loire,
@@ -281,7 +278,7 @@ ggplot_nitro_loire_map <- plot_estuary_map(data = data_nitro_loire,
   labs(title = "Loire - Nitrogen sampling points")
 
 ggsave(ggplot_nitro_loire_map,
-       filename = "inst/results/data_physico_chemistry/nitrogen/ggplot_nitro_loire_map.jpg")
+       filename = "inst/results/data_phychem/nitrogen/ggplot_nitro_loire_map.jpg")
 
 # ---- Nitrogen trend ----
 
@@ -328,7 +325,7 @@ kruskal_pvalue_loire <- signif(kruskal.test(data_nitro_loire_period$mean_temp,
 ## Trend graph
 ggplot_nitro_loire_trend <- ggplot(data_nitro_loire,
                                     aes(x = year, y = RESULTAT)) +
-  geom_point(aes(colour = id)) +
+  geom_point(aes(colour = LIEU_MNEMONIQUE)) +
   scale_color_manual(values = id_colors) +
   geom_smooth(color = "red") +
   geom_line() +
@@ -343,7 +340,7 @@ ggplot_nitro_loire_trend <- ggplot(data_nitro_loire,
     ))
 
 ggsave(ggplot_nitro_loire_trend,
-       filename = "inst/results/data_physico_chemistry/nitrogen/ggplot_nitro_loire_trend.jpg")
+       filename = "inst/results/data_phychem/nitrogen/ggplot_nitro_loire_trend.jpg")
 
 
 # =====================================================
@@ -361,7 +358,8 @@ data_nitro_seine <- data_nitrogen_cycle |>
            latitude <= GPS_box_seine$max_lat &
            longitude >= GPS_box_seine$min_lon &
            longitude <= GPS_box_seine$max_lon) |>
-  filter(month %in% c(9, 10))
+  filter(month %in% c(9, 10, 11)) |>
+  filter(year >= 1987)
 
 
 # ---- Filter outliers ----
@@ -376,24 +374,23 @@ data_nitro_seine <- data_nitro_seine |>
             mean_nitro_seine + 1.96 * sd_nitro_seine)
   )
 
+# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
 
-# ----  Assigning an identifier to each measurement point ----
+program_lieu_NO_seine <- data_nitro_seine |>
+  distinct(year, LIEU_MNEMONIQUE, PROGRAMME, month)
 
-id_seine <- data_nitro_seine |>
-  distinct(latitude, longitude) |>
-  filter(latitude != 49.5 & longitude != 0.15) |>  # point in the harbour
-  mutate(id = LETTERS[row_number()])
+# ---- Filter redondant points ----
 
 data_nitro_seine <- data_nitro_seine |>
-  left_join(id_seine, by = c("latitude", "longitude")) |>
-  drop_na(id)
+  filter(LIEU_MNEMONIQUE != "070-P-035")
+
 
 
 # ----  Map of measurement points ----
 
 ggplot_nitro_seine_map <- plot_estuary_map(data = data_nitro_seine,
                                             estuary_name = "Seine",
-                                            colour_var = id) +
+                                            colour_var = LIEU_MNEMONIQUE) +
   scale_color_manual(values = id_colors) +
   geom_rect(
     data = GPS_box_seine,
@@ -410,7 +407,7 @@ ggplot_nitro_seine_map <- plot_estuary_map(data = data_nitro_seine,
   labs(title = "Seine - Nitrogen sampling points")
 
 ggsave(ggplot_nitro_seine_map,
-       filename = "inst/results/data_physico_chemistry/nitrogen/ggplot_nitro_seine_map.jpg")
+       filename = "inst/results/data_phychem/nitrogen/ggplot_nitro_seine_map.jpg")
 
 
 # ---- Nitrogen trend ----
@@ -457,7 +454,7 @@ kruskal_pvalue_seine <- signif(kruskal.test(data_nitro_seine_period$mean_temp,
 ## Trend graph
 ggplot_nitro_seine_trend <- ggplot(data_nitro_seine,
                                     aes(x = year, y = RESULTAT)) +
-  geom_point(aes(colour = id)) +
+  geom_point(aes(colour = LIEU_MNEMONIQUE)) +
   scale_color_manual(values = id_colors) +
   geom_smooth(color = "red") +
   geom_line() +
@@ -472,7 +469,7 @@ ggplot_nitro_seine_trend <- ggplot(data_nitro_seine,
     ))
 
 ggsave(ggplot_nitro_seine_trend,
-       filename = "inst/results/data_physico_chemistry/nitrogen/ggplot_nitro_seine_trend.jpg")
+       filename = "inst/results/data_phychem/nitrogen/ggplot_nitro_seine_trend.jpg")
 
 
 # =====================================================
@@ -484,3 +481,4 @@ data_nitro <- data_nitro_gironde |>
   full_join(data_nitro_seine)
 
 usethis::use_data(data_nitro, overwrite = TRUE)
+

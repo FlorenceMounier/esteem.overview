@@ -1,10 +1,6 @@
 ---
 title: "data_contamination_brominated"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{data_contamination_brominated}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output: html_document
 ---
 
 ```{r setup, include=FALSE}

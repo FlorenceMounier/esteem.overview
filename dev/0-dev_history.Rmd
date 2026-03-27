@@ -131,3 +131,33 @@ devtools::build(vignettes = TRUE)
 fusen::init_share_on_github()
 ```
 
+# {renv} problems
+
+```{r}
+Sys.setenv(RENV_CONFIG_CACHE_ENABLED = "FALSE")
+renv::settings$use.cache(FALSE) # Force renv use simple cache
+
+# ------
+list.files("C:/Users/fmounier/AppData/Local/R/cache/R/renv", 
+           recursive = TRUE, 
+           pattern = "00LOCK")
+locks <- list.files(
+  "C:/Users/fmounier/AppData/Local/R/cache/R/renv",
+  recursive = TRUE,
+  full.names = TRUE,
+  pattern = "00LOCK"
+)
+unlink(locks, recursive = TRUE, force = TRUE)
+
+# ------
+build_dirs <- list.files(
+  "C:/Users/fmounier/AppData/Local/R/cache/R/renv",
+  recursive = TRUE,
+  full.names = TRUE,
+  pattern = "_build$"
+)
+unlink(build_dirs, recursive = TRUE, force = TRUE)
+# reboot Rstudio Ctrl + Shift + F10
+renv::restore()
+```
+

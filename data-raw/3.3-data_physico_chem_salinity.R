@@ -41,7 +41,8 @@ data_salin_gironde <- data_physchem |>
            latitude <= GPS_box_gironde$max_lat &
            longitude >= GPS_box_gironde$min_lon &
            longitude <= GPS_box_gironde$max_lon) |>
-  filter(month %in% c(9, 10))
+  filter(month %in% c(9, 10)) |>
+  filter(year >= 1987)
 
 
 # ---- Filter outliers ----
@@ -56,22 +57,21 @@ data_salin_gironde <- data_salin_gironde |>
             mean_salin_gironde + 1.96 * sd_salin_gironde)
   )
 
+# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
 
-# ----  Assigning an identifier to each measurement point ----
+program_lieu_gironde <- data_salin_gironde |>
+  distinct(year, LIEU_LIBELLE, PROGRAMME)
 
-id_gironde <- data_salin_gironde |>
-  distinct(latitude, longitude) |>
-  mutate(id = LETTERS[row_number()])
+# ---- Filter redondant points ----
 
 data_salin_gironde <- data_salin_gironde |>
-  left_join(id_gironde, by = c("latitude", "longitude"))
-
+  filter(PROGRAMME != "REPOMO")
 
 # ----  Map of measurement points ----
 
 ggplot_salin_gironde_map <- plot_estuary_map(data = data_salin_gironde,
                  estuary_name = "Gironde",
-                 colour_var = id) +
+                 colour_var = LIEU_MNEMONIQUE) +
   scale_color_manual(values = id_colors) +
   geom_rect(
     data = GPS_box_gironde,
@@ -88,7 +88,7 @@ ggplot_salin_gironde_map <- plot_estuary_map(data = data_salin_gironde,
   labs(title = "Gironde - Salinity sampling points")
 
 ggsave(ggplot_salin_gironde_map,
-       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_gironde_map.jpg")
+       filename = "inst/results/data_phychem/salinity/ggplot_salin_gironde_map.jpg")
 
 
 # ---- Salinity trend ----
@@ -137,7 +137,7 @@ kruskal_pvalue_gironde <- signif(kruskal.test(data_salin_gironde_period$mean_tem
 
 ggplot_salin_gironde_trend <- ggplot(data_salin_gironde,
                                     aes(x = year, y = RESULTAT)) +
-  geom_point(aes(colour = id)) +
+  geom_point(aes(colour = LIEU_MNEMONIQUE)) +
   scale_color_manual(values = id_colors) +
   geom_smooth(color = "red") +
   geom_line() +
@@ -152,7 +152,7 @@ ggplot_salin_gironde_trend <- ggplot(data_salin_gironde,
     ))
 
 ggsave(ggplot_salin_gironde_trend,
-       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_gironde_trend.jpg")
+       filename = "inst/results/data_phychem/salinity/ggplot_salin_gironde_trend.jpg")
 
 
 # =====================================================
@@ -170,7 +170,8 @@ data_salin_loire <- data_physchem |>
            latitude <= GPS_box_loire$max_lat &
            longitude >= GPS_box_loire$min_lon &
            longitude <= GPS_box_loire$max_lon) |>
-  filter(month %in% c(9, 10))
+  filter(month %in% c(9, 10))  |>
+  filter(year >= 1987)
 
 
 # ---- Filter outliers ----
@@ -185,22 +186,21 @@ data_salin_loire <- data_salin_loire |>
             mean_salin_loire + 1.96 * sd_salin_loire)
   )
 
+# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
 
-# ----  Assigning an identifier to each measurement point ----
+program_lieu_loire <- data_salin_loire |>
+  distinct(year, LIEU_LIBELLE, PROGRAMME)
 
-id_loire <- data_salin_loire |>
-  distinct(latitude, longitude) |>
-  mutate(id = LETTERS[row_number()])
+# ---- Filter redondant points ----
 
-data_salin_loire <- data_salin_loire |>
-  left_join(id_loire, by = c("latitude", "longitude"))
-
+data_temp_loire <- data_temp_loire |>
+  filter(LIEU_MNEMONIQUE != "070-P-035")
 
 # ----  Map of measurement points ----
 
 ggplot_salin_loire_map <- plot_estuary_map(data = data_salin_loire,
                                             estuary_name = "Loire",
-                                            colour_var = id) +
+                                            colour_var = LIEU_MNEMONIQUE) +
   scale_color_manual(values = id_colors) +
   geom_rect(
     data = GPS_box_loire,
@@ -217,7 +217,7 @@ ggplot_salin_loire_map <- plot_estuary_map(data = data_salin_loire,
   labs(title = "Loire - Salinity sampling points")
 
 ggsave(ggplot_salin_loire_map,
-       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_loire_map.jpg")
+       filename = "inst/results/data_phychem/salinity/ggplot_salin_loire_map.jpg")
 
 # ---- Salinity trend ----
 
@@ -264,7 +264,7 @@ kruskal_pvalue_loire <- signif(kruskal.test(data_salin_loire_period$mean_temp,
 ## Trend graph
 ggplot_salin_loire_trend <- ggplot(data_salin_loire,
                                     aes(x = year, y = RESULTAT)) +
-  geom_point(aes(colour = id)) +
+  geom_point(aes(colour = LIEU_MNEMONIQUE)) +
   scale_color_manual(values = id_colors) +
   geom_smooth(color = "red") +
   geom_line() +
@@ -279,7 +279,7 @@ ggplot_salin_loire_trend <- ggplot(data_salin_loire,
     ))
 
 ggsave(ggplot_salin_loire_trend,
-       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_loire_trend.jpg")
+       filename = "inst/results/data_phychem/salinity/ggplot_salin_loire_trend.jpg")
 
 
 # =====================================================
@@ -297,7 +297,8 @@ data_salin_seine <- data_physchem |>
            latitude <= GPS_box_seine$max_lat &
            longitude >= GPS_box_seine$min_lon &
            longitude <= GPS_box_seine$max_lon) |>
-  filter(month %in% c(9, 10))
+  filter(month %in% c(9, 10))  |>
+  filter(year >= 1987)
 
 
 # ---- Filter outliers ----
@@ -312,24 +313,22 @@ data_salin_seine <- data_salin_seine |>
             mean_salin_seine + 1.96 * sd_salin_seine)
   )
 
+# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
 
-# ----  Assigning an identifier to each measurement point ----
+program_lieu_seine <- data_salin_seine |>
+  distinct(year, LIEU_LIBELLE, PROGRAMME)
 
-id_seine <- data_salin_seine |>
-  distinct(latitude, longitude) |>
-  filter(latitude != 49.5 & longitude != 0.15) |>  # point in the harbour
-  mutate(id = LETTERS[row_number()])
+# ---- Filter redondant points ----
 
 data_salin_seine <- data_salin_seine |>
-  left_join(id_seine, by = c("latitude", "longitude")) |>
-  drop_na(id)
+  filter(PROGRAMME != "REPOMO")
 
 
 # ----  Map of measurement points ----
 
 ggplot_salin_seine_map <- plot_estuary_map(data = data_salin_seine,
                                             estuary_name = "Seine",
-                                            colour_var = id) +
+                                            colour_var = LIEU_MNEMONIQUE) +
   scale_color_manual(values = id_colors) +
   geom_rect(
     data = GPS_box_seine,
@@ -346,7 +345,7 @@ ggplot_salin_seine_map <- plot_estuary_map(data = data_salin_seine,
   labs(title = "Seine - Salinity sampling points")
 
 ggsave(ggplot_salin_seine_map,
-       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_seine_map.jpg")
+       filename = "inst/results/data_phychem/salinity/ggplot_salin_seine_map.jpg")
 
 
 # ---- Salinity trend ----
@@ -393,7 +392,7 @@ kruskal_pvalue_seine <- signif(kruskal.test(data_salin_seine_period$mean_temp,
 ## Trend graph
 ggplot_salin_seine_trend <- ggplot(data_salin_seine,
                                     aes(x = year, y = RESULTAT)) +
-  geom_point(aes(colour = id)) +
+  geom_point(aes(colour = LIEU_MNEMONIQUE)) +
   scale_color_manual(values = id_colors) +
   geom_smooth(color = "red") +
   geom_line() +
@@ -408,7 +407,7 @@ ggplot_salin_seine_trend <- ggplot(data_salin_seine,
     ))
 
 ggsave(ggplot_salin_seine_trend,
-       filename = "inst/results/data_physico_chemistry/salinity/ggplot_salin_seine_trend.jpg")
+       filename = "inst/results/data_phychem/salinity/ggplot_salin_seine_trend.jpg")
 
 
 # =====================================================

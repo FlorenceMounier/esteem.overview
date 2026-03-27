@@ -41,7 +41,8 @@ data_temp_gironde <- data_physchem |>
            latitude <= GPS_box_gironde$max_lat &
            longitude >= GPS_box_gironde$min_lon &
            longitude <= GPS_box_gironde$max_lon) |>
-  filter(month %in% c(9, 10))
+  filter(month %in% c(9, 10)) |>
+  filter(year >= 1987)
 
 
 # ---- Filter outliers ----
@@ -56,22 +57,22 @@ data_temp_gironde <- data_temp_gironde |>
             mean_temp_gironde + 1.96 * sd_temp_gironde)
   )
 
+# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
 
-# ----  Assigning an identifier to each measurement point ----
+program_lieu_gironde <- data_temp_gironde |>
+  distinct(year, LIEU_LIBELLE, PROGRAMME)
 
-id_gironde <- data_temp_gironde |>
-  distinct(latitude, longitude) |>
-  mutate(id = LETTERS[row_number()])
+# ---- Filter redondant points ----
 
 data_temp_gironde <- data_temp_gironde |>
-  left_join(id_gironde, by = c("latitude", "longitude"))
+  filter(PROGRAMME != "REPOMO")
 
 
 # ----  Map of measurement points ----
 
 ggplot_temp_gironde_map <- plot_estuary_map(data = data_temp_gironde,
                  estuary_name = "Gironde",
-                 colour_var = id) +
+                 colour_var = LIEU_MNEMONIQUE) +
   scale_color_manual(values = id_colors) +
   geom_rect(
     data = GPS_box_gironde,
@@ -88,7 +89,7 @@ ggplot_temp_gironde_map <- plot_estuary_map(data = data_temp_gironde,
   labs(title = "Gironde - Temperature sampling points")
 
 ggsave(ggplot_temp_gironde_map,
-       filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_gironde_map.jpg")
+       filename = "inst/results/data_phychem/temperature/ggplot_temp_gironde_map.jpg")
 
 
 # ---- Temperature trend ----
@@ -136,7 +137,7 @@ kruskal_pvalue_gironde <- signif(kruskal.test(data_temp_gironde_period$mean_temp
 
 ggplot_temp_gironde_trend <- ggplot(data_temp_gironde,
                                     aes(x = year, y = RESULTAT)) +
-  geom_point(aes(colour = id)) +
+  geom_point(aes(colour = LIEU_MNEMONIQUE)) +
   scale_color_manual(values = id_colors) +
   geom_smooth(, color = "red") +
   geom_line() +
@@ -150,7 +151,7 @@ ggplot_temp_gironde_trend <- ggplot(data_temp_gironde,
       "| Sen slope =", round(sen_gironde$estimates,3), "°C/an"
     ))
 
-ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_gironde_trend.jpg")
+ggsave(filename = "inst/results/data_phychem/temperature/ggplot_temp_gironde_trend.jpg")
 
 
 # =====================================================
@@ -168,7 +169,8 @@ data_temp_loire <- data_physchem |>
            latitude <= GPS_box_loire$max_lat &
            longitude >= GPS_box_loire$min_lon &
            longitude <= GPS_box_loire$max_lon) |>
-  filter(month %in% c(9, 10))
+  filter(month %in% c(9, 10)) |>
+  filter(year >= 1987)
 
 
 # ---- Filter outliers ----
@@ -183,22 +185,21 @@ data_temp_loire <- data_temp_loire |>
             mean_temp_loire + 1.96 * sd_temp_loire)
   )
 
+# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
 
-# ----  Assigning an identifier to each measurement point ----
+program_lieu_loire <- data_temp_loire |>
+  distinct(year, LIEU_LIBELLE, PROGRAMME)
 
-id_loire <- data_temp_loire |>
-  distinct(latitude, longitude) |>
-  mutate(id = LETTERS[row_number()])
+# ---- Filter redondant points ----
 
 data_temp_loire <- data_temp_loire |>
-  left_join(id_loire, by = c("latitude", "longitude"))
-
+  filter(LIEU_MNEMONIQUE != "070-P-035")
 
 # ----  Map of measurement points ----
 
 ggplot_temp_loire_map <- plot_estuary_map(data = data_temp_loire,
                                             estuary_name = "Loire",
-                                            colour_var = id) +
+                                            colour_var = LIEU_MNEMONIQUE) +
   scale_color_manual(values = id_colors) +
   geom_rect(
     data = GPS_box_loire,
@@ -215,7 +216,7 @@ ggplot_temp_loire_map <- plot_estuary_map(data = data_temp_loire,
   labs(title = "Loire - Temperature sampling points")
 
 ggsave(ggplot_temp_loire_map,
-       filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_loire_map.jpg")
+       filename = "inst/results/data_phychem/temperature/ggplot_temp_loire_map.jpg")
 
 # ---- Temperature trend ----
 
@@ -262,7 +263,7 @@ kruskal_pvalue_loire <- signif(kruskal.test(data_temp_loire_period$mean_temp,
 ## Trend graph
 ggplot_temp_loire_trend <- ggplot(data_temp_loire,
                                     aes(x = year, y = RESULTAT)) +
-  geom_point(aes(colour = id)) +
+  geom_point(aes(colour = LIEU_MNEMONIQUE)) +
   scale_color_manual(values = id_colors) +
   geom_smooth(, color = "red") +
   geom_line() +
@@ -276,7 +277,7 @@ ggplot_temp_loire_trend <- ggplot(data_temp_loire,
       "| Sen slope =", round(sen_loire$estimates,3), "°C/an"
     ))
 
-ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_loire_trend.jpg")
+ggsave(filename = "inst/results/data_phychem/temperature/ggplot_temp_loire_trend.jpg")
 
 
 # =====================================================
@@ -294,7 +295,8 @@ data_temp_seine <- data_physchem |>
            latitude <= GPS_box_seine$max_lat &
            longitude >= GPS_box_seine$min_lon &
            longitude <= GPS_box_seine$max_lon) |>
-  filter(month %in% c(9, 10))
+  filter(month %in% c(9, 10)) |>
+  filter(year >= 1987)
 
 
 # ---- Filter outliers ----
@@ -309,24 +311,25 @@ data_temp_seine <- data_temp_seine |>
             mean_temp_seine + 1.96 * sd_temp_seine)
   )
 
+# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
 
-# ----  Assigning an identifier to each measurement point ----
+program_lieu_seine <- data_temp_seine |>
+  distinct(year, LIEU_LIBELLE, PROGRAMME)
 
-id_seine <- data_temp_seine |>
-  distinct(latitude, longitude) |>
-  filter(latitude != 49.5 & longitude != 0.15) |>  # point in the harbour
-  mutate(id = LETTERS[row_number()])
+# ---- Filter redondant points ----
 
 data_temp_seine <- data_temp_seine |>
-  left_join(id_seine, by = c("latitude", "longitude")) |>
-  drop_na(id)
-
+  filter(LIEU_MNEMONIQUE != "011-P-030") |>
+  filter(LIEU_MNEMONIQUE != "011-P-031") |>
+  filter(LIEU_MNEMONIQUE != "011-P-032") |>
+  filter(LIEU_MNEMONIQUE != "011-P-034") |>
+  filter(LIEU_MNEMONIQUE != "011-P-035")
 
 # ----  Map of measurement points ----
 
 ggplot_temp_seine_map <- plot_estuary_map(data = data_temp_seine,
                                             estuary_name = "Seine",
-                                            colour_var = id) +
+                                            colour_var = LIEU_MNEMONIQUE) +
   scale_color_manual(values = id_colors) +
   geom_rect(
     data = GPS_box_seine,
@@ -343,7 +346,7 @@ ggplot_temp_seine_map <- plot_estuary_map(data = data_temp_seine,
   labs(title = "Seine - Temperature sampling points")
 
 ggsave(ggplot_temp_seine_map,
-       filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_seine_map.jpg")
+       filename = "inst/results/data_phychem/temperature/ggplot_temp_seine_map.jpg")
 
 
 # ---- Temperature trend ----
@@ -390,7 +393,7 @@ kruskal_pvalue_seine <- signif(kruskal.test(data_temp_seine_period$mean_temp,
 ## Trend graph
 ggplot_temp_seine_trend <- ggplot(data_temp_seine,
                                     aes(x = year, y = RESULTAT)) +
-  geom_point(aes(colour = id)) +
+  geom_point(aes(colour = LIEU_MNEMONIQUE)) +
   scale_color_manual(values = id_colors) +
   geom_smooth(, color = "red") +
   geom_line() +
@@ -404,7 +407,7 @@ ggplot_temp_seine_trend <- ggplot(data_temp_seine,
       "| Sen slope =", round(sen_seine$estimates,3), "°C/an"
     ))
 
-ggsave(filename = "inst/results/data_physico_chemistry/temperature/ggplot_temp_seine_trend.jpg")
+ggsave(filename = "inst/results/data_phychem/temperature/ggplot_temp_seine_trend.jpg")
 
 
 # =====================================================
