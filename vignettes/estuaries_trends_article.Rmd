@@ -1,0 +1,300 @@
+---
+title: "Historical Trends and Emerging Environmental Pressures on Nursery Function in French Estuaries: An Integrated Approach Combining Contaminants, Water Quality, Benthic Fauna and Fish Communities"
+documentclass: article
+link-citations: yes
+author:
+  - Florence MOUNIER:
+      email: florence.moounier@inrae.fr
+      institute: [inrae]
+      correspondence: true
+  - Henrique Cabral:
+      institute: [inrae]
+  - Jérémy Lobry:
+      institute: [inrae]
+institute:
+  - inrae: INRAE, UR EABX, 50 avenue de Verdun, 33612 Cestas Cedex, France
+output: 
+  officedown::rdocx_document:
+    reference_docx: template.docx
+    tables:
+      caption:
+        style: "Table Caption"
+    plots:
+      caption:
+        style: "Figure caption"
+    pandoc_args:
+      - '--lua-filter=scholarly-metadata.lua'
+      - '--lua-filter=author-info-blocks.lua'
+bibliography: references.bib
+number-sections: true
+csl: "aquatic-living-resources.csl"
+editor: 
+  markdown: 
+    wrap: 72
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  fig.width = 7,
+  fig.height = 5,
+  out.width = "95%"
+)
+library(esteem.overview)
+library(officer)
+library(tidyverse)
+```
+
+##### Abstract
+
+##### keywords
+
+nursery quality, global changes, estuaries
+
+\newpage
+
+# Introduction
+
+Comparaison de la qualité de la fonctionnalité de nourriceries des trois plus grands estuaires français (Gironde, Loire et Seine) et de leurs tendances d’évolution à long terme et sur les 20 dernières années.
+
+Diagnostic basé sur l’étude des paramètres impliqués dans la qualité de la fonctionnalité de nourricerie des estuaires : paramètres physico-chimiques, contamination, diversité et qualité écologique des communautés de faune benthique et de poissons (+ indices de condition poisson ?)
+
+« La fonction de nourricerie est l’une des principales assurées par les estuaires de la Mer du Nord et ceux de l’Atlantique européen [@whitfield2002]( ; Franco et al, 2008). Une fraction importante de l'ichtyofaune estuarienne est originaire du milieu marin et constitue la guilde des espèces migrantes marines, qui naissent en mer et peuvent pénétrer dans les estuaires de façon plus ou moins régulière puis retournent en mer pour leurs stades ultérieurs de développement. Le bar (Dicentrarchus labrax) et la sole (Solea solea), d'origine marine, dépendent plus étroitement au stage juvénile des habitats abrités estuariens, avec des niveaux d’abondance pouvant être très élevés pour les stades juvéniles. Ce sont ces espèces de la guilde des espèces marines migrantes estuariennes-dépendantes (MMD) que nous avons choisies pour représenter les habitats de la fonction de nourricerie de poissons marins. Nous nous sommes particulièrement focalisés sur les groupes d’âge G0 (1ère année de vie) et G1 (2ème année de vie) de ces espèces, correspondants aux stades de vie pour lesquels les estuaires sont des habitats préférentiels (Bacq et al., 2013).
+
+An integrated methodology for assessment of estuarine trophic status <https://www-sciencedirect-com.inrae.idm.oclc.org/science/article/pii/S0304380003001996>
+
+# Materials and Methods
+
+## Datasets
+
+All data used in this study were obtained from Ifremer’s Quadrige database, which is freely accessible via [surval.ifremer.fr](surval.ifremer.fr). This database compiles data from various monitoring and research programs at a broad spatial scale. The extracted data correspond to the following Quadrige marine areas: “085 – Gironde Estuary,” “070 – Loire Estuary,” and “011 – Seine Estuary.”
+
+### Physico-chemical parameters
+
+#### Observation and surveillance programs
+
+The selected physico-chemical data originate from the following monitoring programs:
+
+-   RNOHYD (RNO Hydrology) is the oldest program within the French National Monitoring Network for Marine Environment Quality (RNO, established in 1974). Its objective is to assess the levels and trends of coastal marine environmental quality parameters through water measurements (temperature, salinity, nutrients, etc.).
+
+-   REPHY (Phytoplankton and Hydrology Observation and Monitoring Network in coastal waters) has been contributing to long-term time series on ocean health for more than 30 years. RHLN is a complementary local observation and monitoring network for hydrological parameters along the Normandy coast. Established in 2000, the Normandy Coastal Hydrological Network (RHLN) monitors the quality of coastal waters in Normandy within the Seine–Normandy basin. RHLN complements the REPHY monitoring and observation strategy by adding sampling stations and extending the sampling period for nutrients and physico-chemical parameters. Sampling and analytical methods are identical between RHLN and REPHY.
+
+-   RESLOC_44 is a complementary local observation and monitoring network in the Loire-Atlantique area.
+
+All these programs perform only one measurement per month at each sampling site; however, not all months of the year are systematically covered by sampling campaigns.
+
+#### Physicochemical parameters and measurment point selection
+
+The variables and sampling stations were selected to obtain annual data over the longest possible time period across all estuaries, within a restricted spatial extent of each estuary. The selected variables include temperature, salinity, and nitrogen compounds (ammonium NH₄⁺, nitrate NO3-, and nitrite NO2-). The study period spans 1987–2024 and focuses exclusively on autumn. Monthly values were averaged over September and October for temperature and salinity, and over September, October, and November for nitrogen compounds.
+
+Temperature sensors at the selected sampling stations were deployed between 0 and 12 m depth. For salinity, in situ conductivity sensors (REPHY; RHLN) were positioned between 10 and 15 m, while samples analyzed using the Knudsen titration method (RNOHYD) were collected between 2 and 12 m. Nitrogen compounds were measured between 0.5 and 1 m depth. Ammonium was measured by spectrometry or fluorimetry, whereas nitrate and nitrite were measured by spectrophotometry, chromatography, or colorimetry.
+
+Based on measurements of the different nitrogen compounds, a nitrification indicator was calculated as the ratio of ammonium to total dissolved inorganic nitrogen: NH₄⁺ / (NH₄⁺ + NO₃⁻ + NO₂⁻). This ratio is used to characterize the dominant form of available nitrogen and provides insight into nitrogen cycle processes (regeneration, nitrification, anthropogenic inputs). In estuarine environments, this indicator is particularly relevant, as these systems act as biogeochemical reactors where nitrogen undergoes intense transformations.
+
+The sampled stations, monitoring programs, and measurement periods are summarized by estuary in the following table:
+
+```{r}
+tribble(
+  ~estuary, ~period, ~program, ~location,
+  "Gironde", "1987-2004", "RNOHYD", "085-P-014 & 085-P015",
+  "Gironde", "2007-2024", "REPHY", "085-P-087",
+  "Loire", "1987-2007", "RNOHYD", "070-P-034",
+  "Loire", "1992-2024", "REPHY & RESLOC_44", "070-P-21",
+  "Seine", "1987-2006", "RNOHYD", "011-P-016 & 011-P-017",
+  "Seine", "2008-2024", "REPHY;RHLN", "011-P-010",
+)
+```
+
+The sampling stations were mapped onto estuary charts in the following figures:
+```{r fig.cap="Physico-chemical sampling points in the Gironde estuary.", fig.width=6, fig.height=4}
+knitr::include_graphics(
+  get_shortened_path("results/data_phychem/temperature/ggplot_temp_gironde_map.jpg")
+)
+```
+
+```{r fig.cap="Physico-chemical sampling points in the Loire estuary.", fig.width=6, fig.height=4}
+knitr::include_graphics(
+  get_shortened_path("results/data_phychem/temperature/ggplot_temp_loire_map.jpg")
+)
+```
+
+```{r fig.cap="Physico-chemical sampling points in the Seine estuary.", fig.width=6, fig.height=4}
+knitr::include_graphics(
+  get_shortened_path("results/data_phychem/temperature/ggplot_temp_seine_map.jpg")
+)
+```
+
+### Contamination of biota by legislated compounds
+
+#### Surveillance program
+
+Concentrations of various contaminants were measured in bivalves collected from three major French estuaries (Gironde, Loire, and Seine) over the period 1979 to 2024, as part of the ROCCHMV monitoring program. In the Gironde estuary, the Pacific oysters (_Crassostrea gigas_) was monitored. In the Seine estuary, the blue mussel (_Mytilus edulis_) was studied. In the Loire estuary, the blue mussel was initially monitored, and, from 2017 onward, oysters were also included in parallel. Sampling was conducted in the most saline zones of each estuary, near their respective mouths (Figure \@ref(fig:map_phychem)).
+
+```{r map_phychem, fig.cap="Map of sampling points for the ROCCHMV program. The numbers indicate the number of years these points have been monitored.", fig.width=6, fig.height=2, out.width="33%", fig.show='hold'}
+knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_gironde_map.jpg"))
+knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_loire_map.jpg"))
+knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_seine_map.jpg"))
+```
+
+#### Data transformations
+
+When multiple measurements were available for the same year, the annual median value was used. Values under limit of detection were replaced by zero value. The similarity in bioaccumulation potential between mussels and oysters was assessed based on differences in their contamination levels. Where differences were observed, such as those documented for several metals [@ifremerQualiteMilieuMarin2024], all concentrations were expressed in “mussel equivalents” using an oyster-to-mussel conversion factor. This factor was calculated for each metal as the ratio of median contamination levels in oysters to those in mussels, based on seven years (2017-2024) of parallel monitoring in the Loire estuary. The resulting conversion factors were 0.634 for mercury, 0.718 for cadmium, 0.898 for lead, and 0.036 for copper.
+
+#### Data analysis
+
+Recent trends were estimated using the last 15 years of time series data, applying Spearman’s rank correlation coefficient (ρ). Statistical significance of the correlations was tested using the cor.test function from the {stats} package in R. For each estuary and each compound, the correlation coefficient and its associated p-value were used to evaluate the presence and direction of recent trends.
+Long-term trends were assessed using the Kruskal-Wallis rank sum test (kruskal.test, {stats} package), based on contamination data from the first and last five-year periods, for compounds with more than 20 years of monitoring data. To compare contamination levels between compounds and estuaries, median values were calculated for both periods. For compounds monitored for fewer than 20 years, long-term trends were not estimated. Instead, contamination levels were compared using median values calculated over the entire monitoring period.
+When a decreasing trend was observed, the time required for concentrations to fall below the EQS was estimated by comparing values from the first and last years of the monitoring period. Assuming a linear rate of decline, this approach allowed for projection of the time needed to reach compliance with the EQS.
+
+#### Studied compounds
+
+The full list of contaminants monitored under the ROCCHMV program is available on the “Envlit” website maintained by Ifremer (<https://envlit.ifremer.fr/Surveillance-du-littoral/Contaminants-chimiques/Contaminants-suivis>). For the present study, a subset of compounds was selected and is listed in Table 1, based on the following criteria: (1) inclusion in European or national regulatory framework with established thresholds for human health and ecotoxicological risk in biota [@europeancommissionDIRECTIVE2013392013; @legifranceArticle3Larrete2023; @osparStatusTrendHeavy2023; @osparStatusTrendsConcentrations2023; @osparStatusTrendsLevels2023; @osparStatusTrendsPolychlorinated2023]; and (2) detection above analytical limits in the present dataset. These criteria ensure that the selected compounds are ecologically and toxicologically relevant and reflect the contamination levels to which juvenile organisms and their prey are exposed.
+
+Table 1 summarizes the main sources and ecotoxicological effects as synthetized from (Ifremer, 2021). The table also presents the relevant legislative thresholds, specifying their regulatory context (human health or ecotoxicology), the biological matrix of reference (primarily bivalves or fish), and the legislative source.
+
+Three legislated heavy metals have been studied (mercury, cadmium, and lead). Copper was also included due to its historical significance as a pollutant in the Gironde estuary (Ifremer, 2024). Two types of organochlorine (OC) pesticides are under legislative thresholds: γ-HCH (or Lindane) and so called DDT total (sum of isomers p,p'-DDT (4,4’-DDT), o,p’-DDT (2,4’-DDT), p,p'-DDE (4,4’-DDE), p,p'-DDD (4,4’-DDD)). Eight Polycyclic Aromatic Hydrocarbon (PAH) are under OSPAR legislation: fluoranthene, benzo(a)pyrene (abr. benzo-pyr.), anthracene, naphthalene, phenanthrene, pyrene, benzo(a)anthracene (abr. benzo-anthra.), and benzo(g,h,i)perylene (abr. benzo-peryl.). Seven indicator congeners of the polychlorinated biphenyls (PCB) family are under OSPAR legislation: CB 28, CB 52, CB 101, CB 118, CB 138, CB 153, CB 180. Dioxins and dioxin-like compounds are under a European Commission legislation under the form of a weighted sum of PCDD + PCDF + PCB-DL expressed in toxic equivalents concentrations (see SI for details). Two types of brominated flame retardant were studied: the three isomers of HBCDD (hexabromocyclododecane) and the sum of Polybrominated diphenyl ethers (PBDE) congeners 28, 47, 99, 100, 153 and 154. Two emergent compounds were studied more recently: a perfluorinated compound (perfluorooctane sulfonate, PFOS), and an organostannic compound (tributyltin cation).
+
+```{r map_phychem, fig.cap="Map of sampling points for the ROCCHMV program. The numbers indicate the number of years these points have been monitored.", fig.width=6, fig.height=2, out.width="33%", fig.show='hold'}
+knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_gironde_map.jpg"))
+knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_loire_map.jpg"))
+knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_seine_map.jpg"))
+```
+
+# Results
+
+## PCA on physico-chemical variables by etuary
+
+### Gironde
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/PCA/Gironde/ggplot_biplot_PCA.jpg")
+)
+```
+
+### Loire
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/PCA/Loire/ggplot_biplot_PCA.jpg")
+)
+```
+
+### Seine
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/PCA/Seine/ggplot_biplot_PCA.jpg")
+)
+```
+
+## Physico-chemical variables dynamics by estuary
+
+### Temperature
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/temperature/ggplot_temp_gironde_trend.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/temperature/ggplot_temp_loire_trend.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/temperature/ggplot_temp_seine_trend.jpg")
+)
+```
+
+### Salinity
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/salinity/ggplot_salin_gironde_trend.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/salinity/ggplot_salin_loire_trend.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/salinity/ggplot_salin_seine_trend.jpg")
+)
+```
+
+### Ammonium proportion
+
+Nitrification is the microbially catalyzed oxidation of ammonia (NH3) or reduced ammonium (NH4+) to nitrite (NO2 −), followed by oxidation of NO2 − to nitrate (NO3 −). (Damashek, J., Casciotti, K.L. & Francis, C.A. Variable Nitrification Rates Across Environmental Gradients in Turbid, Nutrient-Rich Estuary Waters of San Francisco Bay. Estuaries and Coasts 39, 1050–1071 (2016). <https://doi.org/10.1007/s12237-016-0071-7>)
+
+remineralization: phytoplankton and other heterotrophic bacteria break down nitrite into reduced nitrate and ammonium
+
+Ammonium ++ = sources terrestres d'azote OU forte activité du phytoplancton
+
+NH₄⁺/DIN = NH₄⁺ / (NH₄⁺ + NO₃⁻+ NO₂⁻)
+
+Le DIN (Dissolved Inorganic Nitrogen) correspond à la somme des formes inorganiques dissoutes de l’azote. Cet indicateur permet d’évaluer la part relative de l’azote réduit (NH₄⁺) par rapport aux formes oxydées (NO₃⁻, NO₂⁻). Les concentrations élevées d’ammonium dans les estuaires eutrophes (MO +++) stimulent fortement la nitrification (Damashek, J., Casciotti, K.L. & Francis, C.A. Variable Nitrification Rates Across Environmental Gradients in Turbid, Nutrient-Rich Estuary Waters of San Francisco Bay. Estuaries and Coasts 39, 1050–1071 (2016). <https://doi.org/10.1007/s12237-016-0071-7>)
+
+-   \< 0.1 : système dominé par nitrate (apports fluviaux agriculture/bassin versant, nitrification très efficace car assimilation de l'ammonium par le phytoplankton, dilution marine)
+
+-   [0.1-0.3] : situation fréquente en estuaire modérément productif
+
+-   [0.3-0.6] : forte régénération ou influence anthropique
+
+-   
+
+    > 0.6 : dominance ammonium (forte décomposition de matière organique libérant de l'ammonium, hypoxie ou turbidité élevée empêchant l'activité de nitrification du phytoplancton recyclage intense)
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/nitrogen/ggplot_nitro_gironde_trend.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/nitrogen/ggplot_nitro_loire_trend.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/data_phychem/nitrogen/ggplot_nitro_seine_trend.jpg")
+)
+```
+
+# Discussion
+
+## Surfaces de vasières
+
+### Gironde
+
+Les cartes des fonds sédimentaires de la Gironde de 1960 et 1998 montrent que les fonds n'ont quasiment pas varié en termes de faciès sédimentaires, hormis le chenal aval proche de l'embouchure [@baronVariabilitePhysiqueLestuaire2020]. Des travaux plus précis de @sottolichioEvaluationRecentMorphological2013 sur la distribution of lateral intertidal areas per longitudinal segment of 10 km in the Gironde estuary, derived from interpolated bathymetries of 1962, 1970, 1980 and 1994 ont permis de mesurer plus précisément l'évolution de ces surfaces en zones polyhalines et mésohalines.
+
+
+##### References
+
+::: {#refs}
+:::
+
+\newpage
+
+
+##### Supplementary material: List of stocks in the dataset
+
+<!---BLOCK_LANDSCAPE_START--->
+
+<!---BLOCK_LANDSCAPE_STOP--->
+
