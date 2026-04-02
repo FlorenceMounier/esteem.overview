@@ -28,17 +28,10 @@ library(httr) # install.packages("httr")
 
 data_REBENT <- esteem.overview::raw_data_benthos |>
   # properly read dates
-  mutate(YEAR = year(DATE)) |>
   mutate(year_month = paste0(year(DATE), "-", month(DATE))) |>
-  # creat estuary variable
-  mutate(estuary = case_when(
-    ZONE_MARINE_QUADRIGE == "085 - Estuaire de la Gironde" ~ "Gironde",
-    ZONE_MARINE_QUADRIGE == "070 - Estuaire de la Loire" ~ "Loire",
-    ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine" ~ "Seine"
-  )) |>
+
   # clean unnecessary variables
-  select(-c(ZONE_MARINE_QUADRIGE, SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE, LIEU_IDENTIFIANT),
-         -c(SUPPORT_NIVEAU_PRELEVEMENT, PARAMETRE_LIBELLE_COMPLET, PARAMETRE_CODE),
+  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, PARAMETRE_LIBELLE_COMPLET, PARAMETRE_CODE),
          -c(GROUPE_TAXON_LIBELLE, NIVEAU_QUALITE, QUALITE_DESCRIPTION, NUMERO_INDIVIDU_OBSERVATION))
 
 # =====================================================

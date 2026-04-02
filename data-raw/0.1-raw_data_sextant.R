@@ -23,11 +23,23 @@ write_csv2(sextant_outputs, "../SEXTANT/sextant-output-readr-csv2.csv")
 
 sextant_outputs <- sextant_outputs |>
 
+  # Identify estuaries and delete redundant variables of identification
+  dplyr::mutate(estuary = case_when(
+    str_starts(string = LIEU_MNEMONIQUE, pattern = "085") ~ "Gironde",
+    str_starts(string = LIEU_MNEMONIQUE, pattern = "070") ~ "Loire",
+    str_starts(string = LIEU_MNEMONIQUE, pattern = "011") ~ "Seine",
+    TRUE ~ NA_character_
+  )) |>
+  dplyr::select(-c(ZONE_MARINE_QUADRIGE, SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE, LIEU_IDENTIFIANT,
+            PARAMETRE_GROUPE, PARAMETRE_LIBELLE_COMPLET, PARAMETRE_CODE)) |>
+
   # Save RESULTAT results as a character value
   dplyr::mutate(RESULTAT_chr = RESULTAT) |>
 
   # Create a numerical variable for RESULTAT
   dplyr::mutate(RESULTAT = as.numeric(RESULTAT)) |>
+  # Replace missing values by 0 for numerical RESULTAT
+  dplyr::mutate(RESULTAT = replace(RESULTAT, is.na(RESULTAT), 0)) |>
 
   # Extract geographic position
   dplyr::mutate(
@@ -35,22 +47,12 @@ sextant_outputs <- sextant_outputs |>
     latitude = PRELEVEMENT_COORDONNEES |> stringr::str_extract("latitude(\\s)[0-9]+\\.[0-9]+") |> str_remove("latitude ") |>  as.numeric()
   ) |>
 
-  ## Test regex
-  # sextant_outputs |>
-  # dplyr::mutate(
-  #   longitude = PRELEVEMENT_COORDONNEES |> stringr::str_extract("longitude\\s\\-*[0-9]+\\.[0-9]+")  |> str_remove("longitude ") |>  as.numeric(),
-  #   latitude = PRELEVEMENT_COORDONNEES |> stringr::str_extract("latitude(\\s)[0-9]+\\.[0-9]+") |> str_remove("latitude ") |>  as.numeric()
-  # ) |>
-  # distinct(LIEU_MNEMONIQUE, longitude, latitude, PRELEVEMENT_COORDONNEES) |>
-  # # filter(is.na(longitude)) |>
-  # View()
-
   # Transform variables as factors
-  dplyr::mutate(ZONE_MARINE_QUADRIGE = as.factor(ZONE_MARINE_QUADRIGE)) |>
   dplyr::mutate(TAXON_LIBELLE = as.factor(TAXON_LIBELLE)) |>
+  dplyr::mutate(estuary = as.factor(estuary)) |>
 
-  # Replace missing values by 0 for numerical RESULTAT
-  dplyr::mutate(RESULTAT = replace(RESULTAT, is.na(RESULTAT), 0)) |>
+  # Extract year and month
+  dplyr::mutate(year = lubridate::year(DATE)) |>
 
   # Normalization of contaminant concentration units
   dplyr::mutate(

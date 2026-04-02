@@ -21,15 +21,8 @@ data_ROCCHMV <- esteem.overview::raw_data_contamination
 #   count(CITATION)
 
 data_ROCCHMV <- data_ROCCHMV |>
-  mutate(YEAR = year(DATE)) |>
-  mutate(estuary = case_when(
-    ZONE_MARINE_QUADRIGE == "085 - Estuaire de la Gironde" ~ "Gironde",
-    ZONE_MARINE_QUADRIGE == "070 - Estuaire de la Loire" ~ "Loire",
-    ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine" ~ "Seine")) |>
-  select(-c(THEME, ZONE_MARINE_QUADRIGE, SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE,
-            PROGRAMME, CAMPAGNE, GROUPE_TAXON_LIBELLE, TAXON_LIBELLE,
-            LIEU_IDENTIFIANT, PARAMETRE_LIBELLE_COMPLET, PASSAGE_DESCRIPTION,
-            PASSAGE_COORDONNEES, PRELEVEMENT_COORDONNEES, PARAMETRE_CODE,
+  select(-c(PROGRAMME, CAMPAGNE, GROUPE_TAXON_LIBELLE, TAXON_LIBELLE,
+            PASSAGE_DESCRIPTION, PASSAGE_COORDONNEES, PRELEVEMENT_COORDONNEES,
             NIVEAU_QUALITE, QUALITE_DESCRIPTION))
 
 # ---------------------------------------------------------------------------
@@ -76,7 +69,7 @@ ggsave(plot = ggmap_ROCCHMV_seine, filename = "inst/mat_meth/maps/ROCCHMV/ggmap_
 
 ## Summarise results per year
 data_ROCCHMV_summarised <- data_ROCCHMV |>
-  group_by(estuary, YEAR, SUPPORT_NIVEAU_PRELEVEMENT, PARAMETRE_LIBELLE, UNITE) |>
+  group_by(estuary, year, SUPPORT_NIVEAU_PRELEVEMENT, PARAMETRE_LIBELLE, UNITE) |>
   summarise(RESULTAT = median(RESULTAT), .groups = "drop")
 
 # ---------------------------------------------------------------------------

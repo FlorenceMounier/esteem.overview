@@ -25,16 +25,7 @@ data_physico_chem <- esteem.overview::raw_data_physico_chem
 # =====================================================
 
 data_physchem <- data_physico_chem |>
-  mutate(estuary = case_when(
-    str_starts(string = LIEU_MNEMONIQUE, pattern = "085") ~ "Gironde",
-    str_starts(string = LIEU_MNEMONIQUE, pattern = "070") ~ "Loire",
-    str_starts(string = LIEU_MNEMONIQUE, pattern = "011") ~ "Seine",
-    TRUE ~ NA_character_
-  )) |>
-  dplyr::select(-c(THEME, PARAMETRE_GROUPE, ZONE_MARINE_QUADRIGE,
-            SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE, LIEU_IDENTIFIANT,
-            PARAMETRE_LIBELLE_COMPLET, PARAMETRE_CODE,
-            GROUPE_TAXON_LIBELLE, TAXON_LIBELLE, NUMERO_INDIVIDU_OBSERVATION,
+  dplyr::select(-c(GROUPE_TAXON_LIBELLE, TAXON_LIBELLE, NUMERO_INDIVIDU_OBSERVATION,
             PASSAGE_COORDONNEES, PRELEVEMENT_COORDONNEES,
             NIVEAU_QUALITE, QUALITE_DESCRIPTION))
 

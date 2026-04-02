@@ -29,13 +29,8 @@ data_emergentsea <- data_emergentsea |>
   ) |>
   # Compute YEAR variable
   dplyr::mutate(YEAR = year(DATE)) |>
-  # Create ESTUARY variable
-  dplyr::mutate(ESTUARY = case_when(
-    ZONE_MARINE_QUADRIGE == "084 - Aval et large de la Gironde" ~ "Gironde",
-    ZONE_MARINE_QUADRIGE == "070 - Estuaire de la Loire" ~ "Loire",
-    ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine" ~ "Seine")) |>
   # Transform variables as factors
-  dplyr::mutate(ESTUARY = as.factor(ESTUARY)) |>
+  dplyr::mutate(estuary = as.factor(estuary)) |>
   # Change complex names
   dplyr::mutate(
     PARAMETRE_LIBELLE = case_when(
@@ -58,10 +53,8 @@ data_emergentsea <- data_emergentsea |>
     str_detect(PROGRAMME, "EMERGENTSEA_BIOTE") ~ "BIOTE"
   )) |>
   # Delete unused variables
-  dplyr::select(-c(THEME, ZONE_MARINE_QUADRIGE, SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE,
-                   PROGRAMME, CAMPAGNE, GROUPE_TAXON_LIBELLE, TAXON_LIBELLE,
+  dplyr::select(-c(PROGRAMME, CAMPAGNE, GROUPE_TAXON_LIBELLE, TAXON_LIBELLE,
                    LIEU_IDENTIFIANT, LIEU_LIBELLE,
-                   PARAMETRE_GROUPE, PARAMETRE_LIBELLE_COMPLET, PARAMETRE_CODE,
                    NUMERO_INDIVIDU_OBSERVATION, RESULTAT_COMMENTAIRE,
                    ECHANTILLON_DESCRIPTION, CITATION,
                    RESULTAT_DESCRIPTION, PRELEVEMENT_DESCRIPTION,
