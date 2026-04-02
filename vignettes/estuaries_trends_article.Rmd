@@ -48,6 +48,7 @@ knitr::opts_chunk$set(
 library(esteem.overview)
 library(officer)
 library(tidyverse)
+library(flextable)
 ```
 
 ##### Abstract
@@ -72,7 +73,9 @@ An integrated methodology for assessment of estuarine trophic status <https://ww
 
 ## Datasets
 
-All data used in this study were obtained from Ifremer’s Quadrige database, which is freely accessible via [surval.ifremer.fr](surval.ifremer.fr). This database compiles data from various monitoring and research programs at a broad spatial scale. The extracted data correspond to the following Quadrige marine areas: “085 – Gironde Estuary,” “070 – Loire Estuary,” and “011 – Seine Estuary.”
+Physico-chemical, macrobenthic, fish, shrimps, and contamination data were obtained from Ifremer’s Quadrige database, which is freely accessible via [surval.ifremer.fr](surval.ifremer.fr). This database compiles data from various monitoring and research programs at a broad spatial scale. The extracted data correspond to the following Quadrige marine areas: “085 – Gironde Estuary,” “070 – Loire Estuary,” and “011 – Seine Estuary.”
+
+Estuarine surfaces among different tidal levels, with details on the haline sector for intertidal areas were based on the extensive analysis of the literature of @lecuyerThrivingLifeBiodiversity2024a for the Loire and the Seine estuary. The same kind of data was retrieved from the work of @sottolichioEvaluationRecentMorphological2013.
 
 ### Physico-chemical parameters
 
@@ -96,10 +99,10 @@ Temperature sensors at the selected sampling stations were deployed between 0 an
 
 Based on measurements of the different nitrogen compounds, a nitrification indicator was calculated as the ratio of ammonium to total dissolved inorganic nitrogen: NH₄⁺ / (NH₄⁺ + NO₃⁻ + NO₂⁻). This ratio is used to characterize the dominant form of available nitrogen and provides insight into nitrogen cycle processes (regeneration, nitrification, anthropogenic inputs). In estuarine environments, this indicator is particularly relevant, as these systems act as biogeochemical reactors where nitrogen undergoes intense transformations.
 
-The sampled stations, monitoring programs, and measurement periods are summarized by estuary in the following table:
+The sampled stations, monitoring programs, and measurement periods are summarized by estuary in Table \@ref(fig:phychem_table):
 
-```{r}
-tribble(
+```{r phychem_table, tab.cap= "Physico-chemical sampled stations, monitoring programs, and measurement periods."}
+ft <- tribble(
   ~estuary, ~period, ~program, ~location,
   "Gironde", "1987-2004", "RNOHYD", "085-P-014 & 085-P015",
   "Gironde", "2007-2024", "REPHY", "085-P-087",
@@ -107,7 +110,11 @@ tribble(
   "Loire", "1992-2024", "REPHY & RESLOC_44", "070-P-21",
   "Seine", "1987-2006", "RNOHYD", "011-P-016 & 011-P-017",
   "Seine", "2008-2024", "REPHY;RHLN", "011-P-010",
-) |> DT::datatable()
+) |> flextable()
+
+ft <- set_table_properties(ft, width = 1, layout = "autofit")  # width = 1 → 100% de la page
+
+ft
 ```
 
 The sampling stations were mapped onto estuary charts in the following figures:
@@ -149,7 +156,7 @@ When multiple measurements were available for the same year, the annual median v
 
 The full list of contaminants monitored under the ROCCHMV program is available on the “Envlit” website maintained by Ifremer (<https://envlit.ifremer.fr/Surveillance-du-littoral/Contaminants-chimiques/Contaminants-suivis>). For the present study, a subset of compounds was selected and is listed in Table 1, based on the following criteria: (1) inclusion in European or national regulatory framework with established thresholds for human health and ecotoxicological risk in biota [@europeancommissionDIRECTIVE2013392013; @legifranceArticle3Larrete2023; @osparStatusTrendHeavy2023; @osparStatusTrendsConcentrations2023; @osparStatusTrendsLevels2023; @osparStatusTrendsPolychlorinated2023]; and (2) detection above analytical limits in the present dataset. These criteria ensure that the selected compounds are ecologically and toxicologically relevant and reflect the contamination levels to which juvenile organisms and their prey are exposed.
 
-Table \@ref(tab:tab_contam_ROCCHMV) summarizes the main sources and ecotoxicological effects as synthetized from (Ifremer, 2021). The table also presents the relevant legislative thresholds, specifying their regulatory context (human health or ecotoxicology), the biological matrix of reference (primarily bivalves or fish), and the legislative source.
+Table \@ref(fig:tab_contam_ROCCHMV) summarizes the main sources and ecotoxicological effects as synthetized from (Ifremer, 2021). The table also presents the relevant legislative thresholds, specifying their regulatory context (human health or ecotoxicology), the biological matrix of reference (primarily bivalves or fish), and the legislative source.
 
 Three legislated heavy metals have been studied (mercury, cadmium, and lead). Copper was also included due to its historical significance as a pollutant in the Gironde estuary (Ifremer, 2024). Two types of organochlorine (OC) pesticides are under legislative thresholds: γ-HCH (or Lindane) and so called DDT total (sum of isomers p,p'-DDT (4,4’-DDT), o,p’-DDT (2,4’-DDT), p,p'-DDE (4,4’-DDE), p,p'-DDD (4,4’-DDD)). Eight Polycyclic Aromatic Hydrocarbon (PAH) are under OSPAR legislation: fluoranthene, benzo(a)pyrene (abr. benzo-pyr.), anthracene, naphthalene, phenanthrene, pyrene, benzo(a)anthracene (abr. benzo-anthra.), and benzo(g,h,i)perylene (abr. benzo-peryl.). Seven indicator congeners of the polychlorinated biphenyls (PCB) family are under OSPAR legislation: CB 28, CB 52, CB 101, CB 118, CB 138, CB 153, CB 180. Dioxins and dioxin-like compounds are under a European Commission legislation under the form of a weighted sum of PCDD + PCDF + PCB-DL expressed in toxic equivalents concentrations (see SI for details). Two types of brominated flame retardant were studied: the three isomers of HBCDD (hexabromocyclododecane) and the sum of Polybrominated diphenyl ethers (PBDE) congeners 28, 47, 99, 100, 153 and 154. Two emergent compounds were studied more recently: a perfluorinated compound (perfluorooctane sulfonate, PFOS), and an organostannic compound (tributyltin cation).
 
@@ -169,22 +176,35 @@ To determine whether the estuaries were more contaminated than the French coastl
 
 ```
 
+### Macrobenthic densities
+
+#### Surveillance program
+
+Benthic invertebrate fauna was studied using data from:
+
+-	The REBENT program for the Gironde estuary (2007, 2008, 2012, 2016, 2017, 2020, 2023), the Seine estuary (2007, 2014, 2017, 2020, 2023), and the Loire estuary (2020).
+
+-	The EDF & INRAE French program of monitoring of the aquatic environment linked to the operation of the Cordemais energy production unit for the Loire estuary (2008-2024).
+
+The REBENT (Réseau de surveillance benthique) French program, used also in the DCE-Benthos (part of the Directive Cadre sur l’Eau - Water Framework Directive, or WFD) European program, proceed to a benthic macrofauna monitoring in coastal and transitional waters. These programs aim to assess the ecological quality of marine and coastal environments based on the benthic community structure, which responds to pressures like eutrophication, pollution, sediment disturbance, and climate change.
+
+The EDF program aims at monitoring the impact of discharges from cooling circuits in the immediate vicinity of the Cordemais power plant site, in compliance with legislation requiring hydrobiological monitoring of the environment.
+
+Both programs used mesh sieves of 1 mm square. Only autumn was kept to obtain annual data over the longest possible time period across surveillance programs and estuaries (Sept, Oct, and Nov for REBENT program and Oct and Nov for EDF program).
+
+
+### Fish and shrimps densities
+
+DCE (POMET)
+
 ## Data analysis
 
 ### Haline zones definition
 
-Haline zones were defined from POMET program datasets gathering the highest frequency and surface covering of salinity measurments. Estuaries were divided into two zones depending to obtain Q1-Q3 distribution of salinity values below 18 g/L for mesohalin zone and > 18 g/L for polyhalin zone (see Figures \@ref(fig:map_haline_zone_gironde), \@ref(fig:map_haline_zone_loire), and \@ref(fig:map_haline_zone_seine)).
+Haline zones were defined from POMET program datasets gathering the highest frequency and surface covering of salinity measurments. Estuaries were divided into two zones depending to obtain Q1-Q3 distribution of salinity values below 18 g/L for mesohalin zone and > 18 g/L for polyhalin zone (see Figure \@ref(fig:map_haline_zone)).
 
-```{r map_haline_zone_gironde, fig.cap="Map of POMET sampling points in the Gironde estuary for DCE program (on the left) and salinity distribution depending on the chosen haline zones delimitation. ", fig.show='hold'}
-knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_gironde.jpg"))
-```
-
-```{r map_haline_zone_loire, fig.cap="Map of POMET sampling points in the Loire estuary for DCE program (on the left) and salinity distribution depending on the chosen haline zones delimitation. ", fig.show='hold'}
-knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_loire.jpg"))
-```
-
-```{r map_haline_zone_seine, fig.cap="Map of POMET sampling points in the Seine estuary for DCE program (on the left) and salinity distribution depending on the chosen haline zones delimitation. ", fig.show='hold'}
-knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_seine.jpg"))
+```{r map_haline_zone, fig.cap="Map of POMET sampling points for DCE program (on the left) and salinity distribution depending on the defined haline sectors delimitation (on the right).", fig.show='hold', fig.height=9}
+knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_estuaries.png"))
 ```
 
 ### Long term trends analysis
