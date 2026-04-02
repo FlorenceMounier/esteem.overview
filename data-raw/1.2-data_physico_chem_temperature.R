@@ -34,7 +34,7 @@ GPS_box_gironde <- GPS_box |> filter(estuary == "Gironde")
 
 ## ---- Filtered data inside GPS box ----
 
-data_temp_gironde <- data_physchem |>
+data_temp_gironde <- data_physico_chem |>
   filter(PARAMETRE_LIBELLE == "Température de l'eau") |>
   filter(estuary == "Gironde") |>
   filter(latitude >= GPS_box_gironde$min_lat &

@@ -24,7 +24,7 @@ data_physico_chem <- esteem.overview::raw_data_physico_chem
 # 02. Clean variables
 # =====================================================
 
-data_physchem <- data_physico_chem |>
+data_physico_chem <- data_physico_chem |>
   dplyr::select(-c(GROUPE_TAXON_LIBELLE, TAXON_LIBELLE, NUMERO_INDIVIDU_OBSERVATION,
             PASSAGE_COORDONNEES, PRELEVEMENT_COORDONNEES,
             NIVEAU_QUALITE, QUALITE_DESCRIPTION))
@@ -52,11 +52,11 @@ data_physchem <- data_physico_chem |>
 # 03. Haline zones
 # =====================================================
 
-limits_gironde <- halin_table |> filter(estuary == "Gironde")
-limits_seine <- halin_table |> filter(estuary == "Seine")
-limits_loire <- halin_table |> filter(estuary == "Loire")
+limits_gironde <- esteem.overview::halin_table |> filter(estuary == "Gironde")
+limits_seine <- esteem.overview::halin_table |> filter(estuary == "Seine")
+limits_loire <- esteem.overview::halin_table |> filter(estuary == "Loire")
 
-data_physchem <- data_physchem |>
+data_physico_chem <- data_physico_chem |>
 
   # ----- Filter estuaries GPS delimitations -----
 mutate(
@@ -99,7 +99,7 @@ mutate(
 # 04. Extract years, months
 # =====================================================
 
-data_physchem <- data_physchem |>
+data_physico_chem <- data_physico_chem |>
   mutate(year = year(DATE),
          month = month(DATE))
 
@@ -107,7 +107,7 @@ data_physchem <- data_physchem |>
 # 05. Round GPS positions
 # =====================================================
 
-data_physchem <- data_physchem |>
+data_physico_chem <- data_physico_chem |>
   mutate(latitude = round(latitude, digits = 2)) |>
   mutate(longitude = round(longitude, digits = 2))
 
@@ -115,7 +115,7 @@ data_physchem <- data_physchem |>
 # 06. Save dataset for physico-chemical parameters
 # =====================================================
 
-usethis::use_data(data_physchem, overwrite = TRUE)
+usethis::use_data(data_physico_chem, overwrite = TRUE)
 
 # =====================================================
 # 07. Define the study areas for physical and chemical parameters

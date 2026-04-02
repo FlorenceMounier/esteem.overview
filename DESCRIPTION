@@ -30,6 +30,7 @@ Imports:
     writexl
 Suggests: 
     DT,
+    flextable,
     here,
     knitr,
     officedown,

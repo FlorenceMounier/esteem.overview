@@ -180,7 +180,8 @@ raw_data_contamination <- sextant_outputs |>
       # PARAMETRE_GROUPE: Contaminants/Perfluorés (PFC)
       "PFOS"
     )
-  )
+  ) |>
+  select(-c(THEME, PROGRAMME))
 
 usethis::use_data(raw_data_contamination, overwrite = TRUE)
 
@@ -212,6 +213,7 @@ raw_data_physico_chem <- sextant_outputs |>
       # PARAMETRE_GROUPE: Physicochimie
       "Oxygène dissous", "pH", "Salinité"
     )
-  )
+  ) |>
+  select(-THEME)
 
 usethis::use_data(raw_data_physico_chem, overwrite = TRUE)
