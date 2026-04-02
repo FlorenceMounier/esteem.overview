@@ -1,6 +1,16 @@
-## code to prepare `sextant_outputs` data_*.rda dataset goes here
+# =====================================================
+# Preparation script from external `sextant_outputs`
+# Datasets:
+#  - raw_data_benthos.rda
+#  - raw_data_contamination.rda
+#  - raw_data_physico_chem.rda
+# Author: FM
+# Date: 2026-04-02
+# =====================================================
 
-library(tidyverse)
+
+library(tidyverse, quietly = TRUE)
+
 
 #------------------------------------------------------------------------------
 # Read raw datasets and combine them
@@ -17,6 +27,7 @@ sextant_outputs <- sextant_output_Gironde |>
 
 # Easily opening files in Excel program
 write_csv2(sextant_outputs, "../SEXTANT/sextant-output-readr-csv2.csv")
+
 
 #------------------------------------------------------------------------------
 # Data cleaning identified thanks to the exploration with the app
