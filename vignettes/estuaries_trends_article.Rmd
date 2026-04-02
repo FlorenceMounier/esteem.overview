@@ -88,7 +88,7 @@ The selected physico-chemical data originate from the following monitoring progr
 
 All these programs perform only one measurement per month at each sampling site; however, not all months of the year are systematically covered by sampling campaigns.
 
-#### Physicochemical parameters and measurment point selection
+#### Physicochemical parameters and measurement point selection
 
 The variables and sampling stations were selected to obtain annual data over the longest possible time period across all estuaries, within a restricted spatial extent of each estuary. The selected variables include temperature, salinity, and nitrogen compounds (ammonium NH₄⁺, nitrate NO3-, and nitrite NO2-). The study period spans 1987–2024 and focuses exclusively on autumn. Monthly values were averaged over September and October for temperature and salinity, and over September, October, and November for nitrogen compounds.
 
@@ -107,7 +107,7 @@ tribble(
   "Loire", "1992-2024", "REPHY & RESLOC_44", "070-P-21",
   "Seine", "1987-2006", "RNOHYD", "011-P-016 & 011-P-017",
   "Seine", "2008-2024", "REPHY;RHLN", "011-P-010",
-)
+) |> DT::datatable()
 ```
 
 The sampling stations were mapped onto estuary charts in the following figures:
@@ -133,37 +133,74 @@ knitr::include_graphics(
 
 #### Surveillance program
 
-Concentrations of various contaminants were measured in bivalves collected from three major French estuaries (Gironde, Loire, and Seine) over the period 1979 to 2024, as part of the ROCCHMV monitoring program. In the Gironde estuary, the Pacific oysters (_Crassostrea gigas_) was monitored. In the Seine estuary, the blue mussel (_Mytilus edulis_) was studied. In the Loire estuary, the blue mussel was initially monitored, and, from 2017 onward, oysters were also included in parallel. Sampling was conducted in the most saline zones of each estuary, near their respective mouths (Figure \@ref(fig:map_phychem)).
+As part of the ROCCHMV monitoring program, concentrations of various contaminants were measured in bivalves collected over the period 1979 to 2024. In the Gironde estuary, the Pacific oysters (_Crassostrea gigas_) was monitored. In the Seine estuary, the blue mussel (_Mytilus edulis_) was studied. In the Loire estuary, the blue mussel was initially monitored, and, from 2017 onward, oysters were also included in parallel. Sampling was conducted in the most saline zones of each estuary, near their respective mouths (Figure \@ref(fig:map_phychem)).
 
-```{r map_phychem, fig.cap="Map of sampling points for the ROCCHMV program. The numbers indicate the number of years these points have been monitored.", fig.width=6, fig.height=2, out.width="33%", fig.show='hold'}
-knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_gironde_map.jpg"))
-knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_loire_map.jpg"))
-knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_seine_map.jpg"))
+```{r map_phychem, fig.cap="Map of sampling points for the ROCCHMV program.", fig.show='hold'}
+knitr::include_graphics(get_shortened_path("mat_meth/maps/ROCCHMV/ggmap_ROCCHMV_gironde.jpg"))
+knitr::include_graphics(get_shortened_path("mat_meth/maps/ROCCHMV/ggmap_ROCCHMV_loire.jpg"))
+knitr::include_graphics(get_shortened_path("mat_meth/maps/ROCCHMV/ggmap_ROCCHMV_seine.jpg"))
 ```
 
 #### Data transformations
 
 When multiple measurements were available for the same year, the annual median value was used. Values under limit of detection were replaced by zero value. The similarity in bioaccumulation potential between mussels and oysters was assessed based on differences in their contamination levels. Where differences were observed, such as those documented for several metals [@ifremerQualiteMilieuMarin2024], all concentrations were expressed in “mussel equivalents” using an oyster-to-mussel conversion factor. This factor was calculated for each metal as the ratio of median contamination levels in oysters to those in mussels, based on seven years (2017-2024) of parallel monitoring in the Loire estuary. The resulting conversion factors were 0.634 for mercury, 0.718 for cadmium, 0.898 for lead, and 0.036 for copper.
 
-#### Data analysis
-
-Recent trends were estimated using the last 15 years of time series data, applying Spearman’s rank correlation coefficient (ρ). Statistical significance of the correlations was tested using the cor.test function from the {stats} package in R. For each estuary and each compound, the correlation coefficient and its associated p-value were used to evaluate the presence and direction of recent trends.
-Long-term trends were assessed using the Kruskal-Wallis rank sum test (kruskal.test, {stats} package), based on contamination data from the first and last five-year periods, for compounds with more than 20 years of monitoring data. To compare contamination levels between compounds and estuaries, median values were calculated for both periods. For compounds monitored for fewer than 20 years, long-term trends were not estimated. Instead, contamination levels were compared using median values calculated over the entire monitoring period.
-When a decreasing trend was observed, the time required for concentrations to fall below the EQS was estimated by comparing values from the first and last years of the monitoring period. Assuming a linear rate of decline, this approach allowed for projection of the time needed to reach compliance with the EQS.
-
 #### Studied compounds
 
 The full list of contaminants monitored under the ROCCHMV program is available on the “Envlit” website maintained by Ifremer (<https://envlit.ifremer.fr/Surveillance-du-littoral/Contaminants-chimiques/Contaminants-suivis>). For the present study, a subset of compounds was selected and is listed in Table 1, based on the following criteria: (1) inclusion in European or national regulatory framework with established thresholds for human health and ecotoxicological risk in biota [@europeancommissionDIRECTIVE2013392013; @legifranceArticle3Larrete2023; @osparStatusTrendHeavy2023; @osparStatusTrendsConcentrations2023; @osparStatusTrendsLevels2023; @osparStatusTrendsPolychlorinated2023]; and (2) detection above analytical limits in the present dataset. These criteria ensure that the selected compounds are ecologically and toxicologically relevant and reflect the contamination levels to which juvenile organisms and their prey are exposed.
 
-Table 1 summarizes the main sources and ecotoxicological effects as synthetized from (Ifremer, 2021). The table also presents the relevant legislative thresholds, specifying their regulatory context (human health or ecotoxicology), the biological matrix of reference (primarily bivalves or fish), and the legislative source.
+Table \@ref(tab:tab_contam_ROCCHMV) summarizes the main sources and ecotoxicological effects as synthetized from (Ifremer, 2021). The table also presents the relevant legislative thresholds, specifying their regulatory context (human health or ecotoxicology), the biological matrix of reference (primarily bivalves or fish), and the legislative source.
 
 Three legislated heavy metals have been studied (mercury, cadmium, and lead). Copper was also included due to its historical significance as a pollutant in the Gironde estuary (Ifremer, 2024). Two types of organochlorine (OC) pesticides are under legislative thresholds: γ-HCH (or Lindane) and so called DDT total (sum of isomers p,p'-DDT (4,4’-DDT), o,p’-DDT (2,4’-DDT), p,p'-DDE (4,4’-DDE), p,p'-DDD (4,4’-DDD)). Eight Polycyclic Aromatic Hydrocarbon (PAH) are under OSPAR legislation: fluoranthene, benzo(a)pyrene (abr. benzo-pyr.), anthracene, naphthalene, phenanthrene, pyrene, benzo(a)anthracene (abr. benzo-anthra.), and benzo(g,h,i)perylene (abr. benzo-peryl.). Seven indicator congeners of the polychlorinated biphenyls (PCB) family are under OSPAR legislation: CB 28, CB 52, CB 101, CB 118, CB 138, CB 153, CB 180. Dioxins and dioxin-like compounds are under a European Commission legislation under the form of a weighted sum of PCDD + PCDF + PCB-DL expressed in toxic equivalents concentrations (see SI for details). Two types of brominated flame retardant were studied: the three isomers of HBCDD (hexabromocyclododecane) and the sum of Polybrominated diphenyl ethers (PBDE) congeners 28, 47, 99, 100, 153 and 154. Two emergent compounds were studied more recently: a perfluorinated compound (perfluorooctane sulfonate, PFOS), and an organostannic compound (tributyltin cation).
 
-```{r map_phychem, fig.cap="Map of sampling points for the ROCCHMV program. The numbers indicate the number of years these points have been monitored.", fig.width=6, fig.height=2, out.width="33%", fig.show='hold'}
-knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_gironde_map.jpg"))
-knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_loire_map.jpg"))
-knitr::include_graphics(get_shortened_path("results/data_phychem/temperature/ggplot_temp_seine_map.jpg"))
+```{r tab_contam_ROCCHMV, tab.cap="Studied compounds from the ROCCHMV program.", out.width="90%", fig.show='hold'}
+knitr::include_graphics(get_shortened_path("mat_meth/contamination/table_rocchmv.jpg"))
 ```
+
+### Contamination of biota and sea water by emerging biocides
+
+As part of the revision of the national list of Specific Pollutants of Ecological Status (PSEE), aimed at identifying relevant substances for monitoring in coastal environments, Ifremer investigated 102 emerging organic substances (i.e., not currently regulated for the marine environment), including different types of biocides [@amourouxEmergentSeaRechercheSubstances2025]. These measurements were carried out in 2021 and 2022, alongside ROCCHMV sampling, using integrative matrices—namely, bivalves and passive samplers (POCIS)—to facilitate the detection of these substances. The use of passive samplers is particularly suited for targeting organic compounds with low hydrophobicity, which are expected to exhibit limited bioconcentration and bioaccumulation in marine organisms. In addition, the compounds studied are generally less persistent than those subject to regulation, making them more susceptible to seasonal variation.
+
+Sampling sites and periods were selected to coincide with locations and times of known contaminant inputs (i.e., related to usage patterns). The emerging compounds selected for this study (see Table \@ref(tab:tab_contam_emergentsea)) include those quantified in at least one of the three estuary (Seine: Villerville site; Loire: Montoir-Ponton site; Gironde: Pontaillac site) and quantified in seawater (2 herbicides) or in bivalves (7 antifouling agents, 7 fungicides, 1 insecticide and 14 herbicides). 
+
+To determine whether the estuaries were more contaminated than the French coastline overall, annual mean concentrations were calculated at the national level and compared with the corresponding yearly means observed in each estuary. To assess the potential environmental risk associated with these contamination levels, observed concentrations were also compared to Predicted No Effect Concentration (PNEC) values. Another way to evaluate whether contamination levels exceeding the national average may reflect an environmental risk was to consider the ranking of the compounds in the Emergent’Sea program. This ranking is based on the frequency of quantification of each compound, as well as the extent and frequency of PNEC exceedances.
+
+```{r tab_contam_emergentsea, tab.cap="Studied compounds from the ROCCHMV program.", fig.width=6, fig.height=2, out.width="33%", fig.show='hold'}
+
+```
+
+## Data analysis
+
+### Haline zones definition
+
+Haline zones were defined from POMET program datasets gathering the highest frequency and surface covering of salinity measurments. Estuaries were divided into two zones depending to obtain Q1-Q3 distribution of salinity values below 18 g/L for mesohalin zone and > 18 g/L for polyhalin zone (see Figures \@ref(fig:map_haline_zone_gironde), \@ref(fig:map_haline_zone_loire), and \@ref(fig:map_haline_zone_seine)).
+
+```{r map_haline_zone_gironde, fig.cap="Map of POMET sampling points in the Gironde estuary for DCE program (on the left) and salinity distribution depending on the chosen haline zones delimitation. ", fig.show='hold'}
+knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_gironde.jpg"))
+```
+
+```{r map_haline_zone_loire, fig.cap="Map of POMET sampling points in the Loire estuary for DCE program (on the left) and salinity distribution depending on the chosen haline zones delimitation. ", fig.show='hold'}
+knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_loire.jpg"))
+```
+
+```{r map_haline_zone_seine, fig.cap="Map of POMET sampling points in the Seine estuary for DCE program (on the left) and salinity distribution depending on the chosen haline zones delimitation. ", fig.show='hold'}
+knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_seine.jpg"))
+```
+
+### Long term trends analysis
+
+Log-term studies have been carried out on physico-chemical parameters followed over the period 1987-2024, legislated compounds followed at least from 1995 until 2023 or 2024 (see Table \@ref(tab:tab_contam_ROCCHMV)), and intertidal surface areas.
+
+#### Statistical analysis
+
+Long-term trends were assessed using the Kruskal-Wallis rank sum test (kruskal.test, {stats} package), based on contamination data from the first and last five-year periods, for compounds with more than 20 years of monitoring data. To compare contamination levels between compounds and estuaries, median values were calculated for both periods. For compounds monitored for fewer than 20 years, long-term trends were not estimated. Instead, contamination levels were compared using median values calculated over the entire monitoring period.
+When a decreasing trend was observed, the time required for concentrations to fall below the EQS was estimated by comparing values from the first and last years of the monitoring period. Assuming a linear rate of decline, this approach allowed for projection of the time needed to reach compliance with the EQS.
+
+### Recent trends analysis
+
+Recent trends were estimated using the last 15 years of time series data, applying Spearman’s rank correlation coefficient (ρ). Statistical significance of the correlations was tested using the cor.test function from the {stats} package in R. For each estuary and each compound, the correlation coefficient and its associated p-value were used to evaluate the presence and direction of recent trends.
+
+
 
 # Results
 

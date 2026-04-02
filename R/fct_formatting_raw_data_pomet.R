@@ -70,13 +70,20 @@ fct_formatting_raw_data_POMET <- function(data_POMET,
   mutate(
     estuary = case_when(
       estuary == "Gironde" &
-        latitude > 45.0 &
-        latitude < 45.7 & longitude < -0.6 & longitude > -1.1 ~ "Gironde",
+        latitude >= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lat_min &
+        latitude <= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lat_max & 
+        longitude >= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lon_min & 
+        longitude <= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lon_max ~ "Gironde",
       estuary == "Loire" &
-        latitude > 47.22 &
-        latitude < 47.34 & longitude < -1.8 & longitude > -2.3 ~ "Loire",
+        latitude >= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lat_min &
+        latitude <= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lat_max & 
+        longitude >= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lon_min & 
+        longitude <= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lon_max ~ "Loire",
       estuary == "Seine" &
-        latitude > 49.4 & longitude < 0.5 ~ "Seine",
+        latitude >= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lat_min &
+        latitude <= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lat_max & 
+        longitude >= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lon_min & 
+        longitude <= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lon_max ~ "Seine",
       TRUE ~ NA
     )
   )  |>
@@ -84,12 +91,12 @@ fct_formatting_raw_data_POMET <- function(data_POMET,
     # ----- Create haline_zone variable -----
   mutate(
     haline_zone = case_when(
-      estuary == "Gironde" & latitude >= 45.4 ~ "polyhalin",
-      estuary == "Gironde" & latitude >= 45.0 ~ "mesohalin",
-      estuary == "Loire" & longitude <= -2.0 ~ "polyhalin",
-      estuary == "Loire" & longitude <= -1.8 ~ "mesohalin",
-      estuary == "Seine" & longitude <= 0.3 ~ "polyhalin",
-      estuary == "Seine" & longitude <= 0.5 ~ "mesohalin",
+      estuary == "Gironde" & latitude >= halin_table[which(halin_table$estuary == "Gironde"),]$halin_limit_lat ~ "polyhalin",
+      estuary == "Gironde" & latitude >= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lat_min ~ "mesohalin",
+      estuary == "Loire" & longitude <= halin_table[which(halin_table$estuary == "Loire"),]$halin_limit_lon ~ "polyhalin",
+      estuary == "Loire" & longitude <= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lon_max ~ "mesohalin",
+      estuary == "Seine" & longitude <= halin_table[which(halin_table$estuary == "Seine"),]$halin_limit_lon ~ "polyhalin",
+      estuary == "Seine" & longitude <= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lon_max ~ "mesohalin",
       TRUE ~ NA
     )
   ) |>

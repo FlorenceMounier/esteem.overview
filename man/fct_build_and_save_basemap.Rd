@@ -8,7 +8,7 @@ fct_build_and_save_basemap(
   data,
   estuary_name,
   villes_selection = NULL,
-  path = "inst/extdata"
+  path = "inst/extdata/basemaps"
 )
 }
 \arguments{
@@ -18,7 +18,7 @@ fct_build_and_save_basemap(
 
 \item{villes_selection}{Character vector of city names to keep (optional)}
 
-\item{path}{Base path for saving (default: inst/extdata)}
+\item{path}{Base path for saving (default: inst/extdata/basemaps)}
 }
 \value{
 A list with map components (also saved on disk)
@@ -28,10 +28,8 @@ Create and save OpenStreetMap base map for an estuary
 }
 \examples{
 # fct_build_and_save_basemap(
-#   data = data_loire,
-#   estuary_name = "loire",
-#   villes_selection = c("Saint-Nazaire",
-#                        "Pornic",
-#                        "Le Croisic")
+#   data = esteem.overview::data_POMET_ALL_densities |> filter(estuary == "Gironde"),
+#   estuary_name = "Gironde",
+#   villes_selection = c("Royan", "Pauillac", "Saint-Estèphe", "Blaye", "Saint-Christoly-Médoc")
 # )
 }

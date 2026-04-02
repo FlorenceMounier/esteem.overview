@@ -20,7 +20,7 @@
 load_estuary_basemap <- function(estuary_name,
                                  package = "esteem.overview") {
 
-  base_path <- system.file("extdata",
+  base_path <- system.file("extdata/basemaps",
                            estuary_name,
                            package = package)
 

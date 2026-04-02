@@ -5,7 +5,7 @@
 #' @param data Data frame containing latitude and longitude
 #' @param estuary_name Character name of estuary (used for folder name)
 #' @param villes_selection Character vector of city names to keep (optional)
-#' @param path Base path for saving (default: inst/extdata)
+#' @param path Base path for saving (default: inst/extdata/basemaps)
 #'
 #' @return A list with map components (also saved on disk)
 #'
@@ -18,16 +18,14 @@
 #' @export
 #' @examples
 #' # fct_build_and_save_basemap(
-#' #   data = data_loire,
-#' #   estuary_name = "loire",
-#' #   villes_selection = c("Saint-Nazaire",
-#' #                        "Pornic",
-#' #                        "Le Croisic")
+#' #   data = esteem.overview::data_POMET_ALL_densities |> filter(estuary == "Gironde"),
+#' #   estuary_name = "Gironde",
+#' #   villes_selection = c("Royan", "Pauillac", "Saint-Estèphe", "Blaye", "Saint-Christoly-Médoc")
 #' # )
 fct_build_and_save_basemap <- function(data,
                                        estuary_name,
                                        villes_selection = NULL,
-                                       path = "inst/extdata") {
+                                       path = "inst/extdata/basemaps") {
 
   # -------------------------
   # 0. Charger halin_table du package

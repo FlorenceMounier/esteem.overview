@@ -32,6 +32,8 @@ Suggests:
     DT,
     here,
     knitr,
+    officedown,
+    officer,
     RColorBrewer,
     rmarkdown,
     testthat,

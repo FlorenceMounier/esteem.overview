@@ -17,8 +17,8 @@ library(tidyverse)
 
 halin_table <- tibble::tibble(
   estuary = c("Gironde", "Loire", "Seine"),
-  halin_limit_lat = c(45.4, NA, NA),
-  halin_limit_lon = c(NA, -2.0, 0.3),
+  halin_limit_lat = c(45.45, NA, NA),
+  halin_limit_lon = c(NA, -2.1, 0.3),
   estuary_limit_lat_min = c(45.0, 47.22, 49.4),
   estuary_limit_lat_max = c(45.7, 47.34, 49.5),
   estuary_limit_lon_min = c(-1.1, -2.3, 0.0),
@@ -32,19 +32,19 @@ usethis::use_data(halin_table, overwrite = TRUE)
 # =====================================================
 
 fct_build_and_save_basemap(
-  data = data_POMET |> filter(estuary == "Gironde"),
+  data = data_POMET_ALL_densities |> filter(estuary == "Gironde"),
   estuary_name = "Gironde",
   villes_selection = c("Royan", "Pauillac", "Saint-Estèphe", "Blaye", "Saint-Christoly-Médoc")
 )
 
 fct_build_and_save_basemap(
-  data = data_POMET |> filter(estuary == "Loire"),
+  data = data_POMET_ALL_densities |> filter(estuary == "Loire"),
   estuary_name = "Loire",
   villes_selection = c("Saint-Nazaire", "Cordemais")
 )
 
 fct_build_and_save_basemap(
-  data = data_POMET |> filter(estuary == "Seine"),
+  data = data_POMET_ALL_densities |> filter(estuary == "Seine"),
   estuary_name = "Seine",
   villes_selection = c("Le Havre", "Honfleur", "Tancarville")
 )

@@ -12,17 +12,13 @@ library(testthat)
 
 # fct_build_and_save_basemap
 
-```{r development-fct_build_and_save_basemap}
-# Prepare the code of your function here
-```
-
 ```{r function-fct_build_and_save_basemap}
 #' Create and save OpenStreetMap base map for an estuary
 #'
 #' @param data Data frame containing latitude and longitude
 #' @param estuary_name Character name of estuary (used for folder name)
 #' @param villes_selection Character vector of city names to keep (optional)
-#' @param path Base path for saving (default: inst/extdata)
+#' @param path Base path for saving (default: inst/extdata/basemaps)
 #'
 #' @return A list with map components (also saved on disk)
 #'
@@ -36,7 +32,7 @@ library(testthat)
 fct_build_and_save_basemap <- function(data,
                                        estuary_name,
                                        villes_selection = NULL,
-                                       path = "inst/extdata") {
+                                       path = "inst/extdata/basemaps") {
 
   # -------------------------
   # 0. Charger halin_table du package
@@ -203,11 +199,9 @@ fct_build_and_save_basemap <- function(data,
   
 ```{r example-fct_build_and_save_basemap}
 # fct_build_and_save_basemap(
-#   data = data_loire,
-#   estuary_name = "loire",
-#   villes_selection = c("Saint-Nazaire",
-#                        "Pornic",
-#                        "Le Croisic")
+#   data = esteem.overview::data_POMET_ALL_densities |> filter(estuary == "Gironde"),
+#   estuary_name = "Gironde",
+#   villes_selection = c("Royan", "Pauillac", "Saint-Estèphe", "Blaye", "Saint-Christoly-Médoc")
 # )
 ```
     
@@ -225,7 +219,7 @@ fct_build_and_save_basemap <- function(data,
 load_estuary_basemap <- function(estuary_name,
                                  package = "esteem.overview") {
 
-  base_path <- system.file("extdata",
+  base_path <- system.file("extdata/basemaps",
                            estuary_name,
                            package = package)
 
@@ -515,15 +509,12 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
   
 ```{r example-plot_estuary_map}
 # plot_estuary_map(
-#   data = data_POMET |> filter(estuary == "Gironde"),
+#   data = esteem.overview::data_POMET_ALL_densities |> filter(estuary == "Gironde"),
 #   estuary_name = "Gironde",
 #   colour_var = salinite,
 # )
 ```
-  
-```{r tests-plot_estuary_map}
-```
-  
+
 
 # Inflate
 

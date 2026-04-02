@@ -28,7 +28,7 @@
 #' @export
 #' @examples
 #' # plot_estuary_map(
-#' #   data = data_POMET |> filter(estuary == "Gironde"),
+#' #   data = esteem.overview::data_POMET_ALL_densities |> filter(estuary == "Gironde"),
 #' #   estuary_name = "Gironde",
 #' #   colour_var = salinite,
 #' # )

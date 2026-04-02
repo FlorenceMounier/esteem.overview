@@ -5,6 +5,7 @@ library(esteem.overview)
 library(tidyverse, quietly = TRUE)
 # Maps
 library(sf)
+library(patchwork)
 
 `%!in%` = Negate(`%in%`)
 
@@ -21,7 +22,7 @@ data_ROCCHMV <- esteem.overview::data_contamination
 
 data_ROCCHMV <- data_ROCCHMV |>
   mutate(YEAR = year(DATE)) |>
-  mutate(ESTUARY = case_when(
+  mutate(estuary = case_when(
     ZONE_MARINE_QUADRIGE == "085 - Estuaire de la Gironde" ~ "Gironde",
     ZONE_MARINE_QUADRIGE == "070 - Estuaire de la Loire" ~ "Loire",
     ZONE_MARINE_QUADRIGE == "011 - Estuaire de la Seine" ~ "Seine")) |>
@@ -34,20 +35,35 @@ data_ROCCHMV <- data_ROCCHMV |>
 # ---------------------------------------------------------------------------
 # Geographical points ----
 
-data_ROCCHMV |>
-  select(ESTUARY, LIEU_MNEMONIQUE, latitude, longitude) |>
-  distinct() |>
-  group_by(ESTUARY) |>
-  summarise(lat_stat = paste0(min(latitude), " - ", max(latitude)),
-            lon_stat = paste0(min(longitude), " - ", max(longitude)))
+# data_ROCCHMV |>
+#   select(ESTUARY, LIEU_MNEMONIQUE, latitude, longitude) |>
+#   distinct() |>
+#   group_by(ESTUARY) |>
+#   summarise(lat_stat = paste0(min(latitude), " - ", max(latitude)),
+#             lon_stat = paste0(min(longitude), " - ", max(longitude)))
 
-ggmap_ROCCHMV_gironde <- gg_map_data_contamination_rocchmv(data = data_ROCCHMV, estuary = "Gironde", color = ggplot2_colors(3)[3])
-ggmap_ROCCHMV_loire <- gg_map_data_contamination_rocchmv(data = data_ROCCHMV, estuary = "Loire", color = ggplot2_colors(3)[2])
-ggmap_ROCCHMV_seine <- gg_map_data_contamination_rocchmv(data = data_ROCCHMV, estuary = "Seine", color = ggplot2_colors(3)[1])
+ggmap_ROCCHMV_gironde <- plot_estuary_map(
+  data = data_ROCCHMV |> filter(estuary == "Gironde"),
+  estuary_name = "Gironde", colour_var = ggplot2_colors(3)[3]
+) + theme_esteem() +
+  theme(legend.position = "none", axis.title = ggplot2::element_blank())
 
-ggsave(plot = ggmap_ROCCHMV_gironde, filename = "inst/results/data_contam/maps/ggmap_ROCCHMV_gironde.jpg")
-ggsave(plot = ggmap_ROCCHMV_loire, filename = "inst/results/data_contam/maps/ggmap_ROCCHMV_loire.jpg")
-ggsave(plot = ggmap_ROCCHMV_seine, filename = "inst/results/data_contam/maps/ggmap_ROCCHMV_seine.jpg")
+ggmap_ROCCHMV_loire <- plot_estuary_map(
+  data = data_ROCCHMV |> filter(estuary == "Loire"),
+  estuary_name = "Loire", colour_var = ggplot2_colors(3)[2]
+) + theme_esteem() +
+  theme(legend.position = "none", axis.title = ggplot2::element_blank())
+
+ggmap_ROCCHMV_seine <- plot_estuary_map(
+  data = data_ROCCHMV |> filter(estuary == "Seine"),
+  estuary_name = "Seine", colour_var = ggplot2_colors(3)[1]
+) + theme_esteem() +
+  theme(legend.position = "none", axis.title = ggplot2::element_blank())
+
+
+ggsave(plot = ggmap_ROCCHMV_gironde, filename = "inst/mat_meth/maps/ROCCHMV/ggmap_ROCCHMV_gironde.jpg")
+ggsave(plot = ggmap_ROCCHMV_loire, filename = "inst/mat_meth/maps/ROCCHMV/ggmap_ROCCHMV_loire.jpg")
+ggsave(plot = ggmap_ROCCHMV_seine, filename = "inst/mat_meth/maps/ROCCHMV/ggmap_ROCCHMV_seine.jpg")
 
 # ---------------------------------------------------------------------------
 # Campaign period and frequencies ----
@@ -60,7 +76,7 @@ ggsave(plot = ggmap_ROCCHMV_seine, filename = "inst/results/data_contam/maps/ggm
 
 ## Summarise results per year
 data_ROCCHMV_summarised <- data_ROCCHMV |>
-  group_by(ESTUARY, YEAR, SUPPORT_NIVEAU_PRELEVEMENT, PARAMETRE_LIBELLE, UNITE) |>
+  group_by(estuary, YEAR, SUPPORT_NIVEAU_PRELEVEMENT, PARAMETRE_LIBELLE, UNITE) |>
   summarise(RESULTAT = median(RESULTAT), .groups = "drop")
 
 # ---------------------------------------------------------------------------
