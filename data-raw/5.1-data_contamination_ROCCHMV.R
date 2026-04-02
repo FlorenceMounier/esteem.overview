@@ -12,7 +12,7 @@ library(patchwork)
 # ---------------------------------------------------------------------------
 # Read raw data from {quadrige.explorer} ----
 
-data_ROCCHMV <- esteem.overview::data_contamination
+data_ROCCHMV <- esteem.overview::raw_data_contamination
 
 # ---------------------------------------------------------------------------
 # Cleaning variables
