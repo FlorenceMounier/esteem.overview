@@ -1,27 +1,18 @@
 library(tidyverse)
 library(esteem.overview)
 
-plan_REBENT <- data_REBENT_biota |>
+plan_REBENT <- esteem.overview::data_REBENT_biota |>
   distinct(YEAR, estuary) |>
   rename(year = YEAR) |>
   mutate(parameter = "REBENT", value = 1)
 
-plan_DCE <- data_POMET_densities |>
+plan_DCE <- esteem.overview::data_POMET_densities |>
   filter(saison == "automne") |>
   distinct(annee, estuary) |>
   rename(year = annee) |>
   mutate(parameter = "DCE", value = 1)
 
-
-plan_physico_chem <- data_physchem |>
-  filter(!is.na(estuary)) |>
-  filter(!is.na(haline_zone)) |>
-  filter(PARAMETRE_LIBELLE %in% c("Salinité", "Phosphate", "Température de l'eau")) |>
-  distinct(PARAMETRE_LIBELLE, year, estuary) |>
-  rename(parameter = PARAMETRE_LIBELLE) |>
-  mutate(value = 1)
-
-plan <- rbind(plan_REBENT, plan_DCE, plan_physico_chem)
+plan <- rbind(plan_REBENT, plan_DCE)
 
 complete_plan <- plan |>
   complete(year, estuary, parameter, fill = list(value = 0)) |>

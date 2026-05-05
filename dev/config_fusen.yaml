@@ -58,9 +58,10 @@ flat_maps.Rmd:
   state: active
   R:
   - R/fct_build_and_save_basemap.R
+  - R/fct_img_crop.R
   - R/load_estuary_basemap.R
   - R/plot_estuary_map.R
-  tests: []
+  tests: tests/testthat/test-fct_img_crop.R
   vignettes: []
   inflate:
     flat_file: dev/flat_maps.Rmd

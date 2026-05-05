@@ -12,3 +12,5 @@
 ^doc$
 ^inst/doc$
 ^Meta$
+^\.positai$
+^\.claude$

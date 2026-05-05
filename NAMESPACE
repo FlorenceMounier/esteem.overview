@@ -3,6 +3,7 @@
 export(compute_ambi)
 export(fct_build_and_save_basemap)
 export(fct_formatting_raw_data_POMET)
+export(fct_img_crop)
 export(fct_size_class)
 export(get_general_evaluation)
 export(get_general_levels)

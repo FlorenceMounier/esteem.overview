@@ -515,7 +515,35 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
 # )
 ```
 
-
+# fct_img_crop
+  
+```{r function-fct_img_crop}
+#' Crop map images
+#' 
+#' Delete empty space around map ggplots
+#' 
+#' @param path file path
+#'
+#' @return a cropped map to be used in cowplot::plot_grid()
+#' 
+#' @export
+fct_img_crop <- function(path) {
+  ggdraw() +
+    draw_image(path) +
+    theme(plot.margin = margin(0, 0, 0, 0))
+}
+```
+  
+```{r example-fct_img_crop}
+fct_img_crop()
+```
+  
+```{r tests-fct_img_crop}
+test_that("fct_img_crop works", {
+  expect_true(inherits(fct_img_crop, "function")) 
+})
+```
+  
 # Inflate
 
 ```{r development-inflate, eval=FALSE}

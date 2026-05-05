@@ -13,12 +13,6 @@ library(dplyr)
 library(magick) # crop images
 library(cowplot)
 
-fct_img_crop <- function(path) {
-  ggdraw() +
-    draw_image(path) +
-    theme(plot.margin = margin(0, 0, 0, 0))
-}
-
 # =====================================================
 # 01. Gironde haline zones from POMET
 # =====================================================
