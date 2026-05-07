@@ -19,7 +19,7 @@ library(cowplot)
 
 # ----- map with haline zones -----
 plot_POMET_map_gironde <- plot_estuary_map(
-  data = data_POMET_densities |> filter(estuary == "Gironde"),
+  data = data_POMET_densities |> filter(estuary == "Gironde") |> filter(saison == "automne"),
   estuary_name = "Gironde", colour_var = haline_zone
 ) +
   theme(legend.position = "bottom") +
@@ -70,7 +70,7 @@ image_write(img_trim_gironde, "inst/mat_meth/maps/POMET/haline_zones/ggplot_POME
 
 # ----- map with haline zones -----
 plot_POMET_map_loire <- plot_estuary_map(
-  data = data_POMET_densities |> filter(estuary == "Loire"),
+  data = data_POMET_densities |> filter(estuary == "Loire") |> filter(saison == "automne"),
   estuary_name = "Loire", colour_var = haline_zone
 ) +
   theme(legend.position = "bottom") +
@@ -121,7 +121,7 @@ image_write(img_trim_loire, "inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_
 
 # ----- map with haline zones -----
 plot_POMET_map_seine <- plot_estuary_map(
-  data = data_POMET_densities |> filter(estuary == "Seine"),
+  data = data_POMET_densities |> filter(estuary == "Seine") |> filter(saison == "automne"),
   estuary_name = "Seine", colour_var = haline_zone
 ) +
   theme(legend.position = "bottom") +
@@ -174,9 +174,9 @@ image_write(img_trim_seine, "inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_
 
 
 ggplot_POMET_haline_zones_estuaries <- plot_grid(
-  img("inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_gironde.jpg"),
-  img("inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_loire.jpg"),
-  img("inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_seine.jpg"),
+  ggdraw() + draw_image("inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_gironde.jpg"),
+  ggdraw() + draw_image("inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_loire.jpg"),
+  ggdraw() + draw_image("inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_seine.jpg"),
   ncol = 1,
   align = "v"
 )

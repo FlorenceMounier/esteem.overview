@@ -77,7 +77,7 @@ Physico-chemical, macrobenthic, fish, shrimps, and contamination data were obtai
 
 Estuarine surfaces among different tidal levels, with details on the haline sector for intertidal areas were based on the extensive analysis of the literature of @lecuyerThrivingLifeBiodiversity2024a for the Loire and the Seine estuary. The same kind of data was retrieved from the work of @sottolichioEvaluationRecentMorphological2013 for the Gironde estuary.
 
-Débit !
+River flows datasets were exported from [Hydroportail v3.4.5](https://www.hydro.eaufrance.fr/).
 
 ### Physico-chemical parameters
 
@@ -105,7 +105,7 @@ The sampled stations, monitoring programs, and measurement periods are summarize
 
 ```{r phychemtab, tab.cap= "Physico-chemical sampled stations, monitoring programs, and measurement periods."}
 ft <- tribble(
-  ~Estuary, ~Period, ~Program, ~Location TAG,
+  ~Estuary, ~Period, ~Program, ~Location,
   "Gironde", "1987-2004", "RNOHYD", "085-P-014 & 085-P015",
   "Gironde", "2007-2024", "REPHY", "085-P-087",
   "Loire", "1987-2007", "RNOHYD", "070-P-034",
@@ -138,6 +138,18 @@ knitr::include_graphics(
 )
 ```
 
+### River flows
+
+River flow datasets were obtained from Hydroportail (v3.4.5; [https://www.hydro.eaufrance.fr/](https://www.hydro.eaufrance.fr/)). For the Gironde estuary, the selected discharge was calculated as the sum of flows from the two upstream rivers, using measurements from Pessac-sur-Dordogne (Dordogne River) and Tonneins (Garonne River). For the Loire and Seine estuaries, upstream discharges were derived from measurements at Montjean-sur-Loire and Vernon, respectively.
+
+Monthly mean river flows were calculated from daily or monthly data for the autumn period (September–October) of each year over 1975–2024.
+
+### Intertidal surface area
+
+Long-term intertidal surface area data, including details for each haline sector, were obtained from the study by @lecuyerThrivingLifeBiodiversity2024a for the Loire and Seine estuaries.
+
+Gironde ? XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 ### Contamination of biota by legislated compounds
 
 #### Monitoring program
@@ -158,11 +170,11 @@ When multiple measurements were available for the same year, the annual median v
 
 The full list of contaminants monitored under the ROCCHMV program is available on the “Envlit” website maintained by Ifremer (<https://envlit.ifremer.fr/Surveillance-du-littoral/Contaminants-chimiques/Contaminants-suivis>). For the present study, a subset of compounds was selected and is listed in Table 1, based on the following criteria: (1) inclusion in European or national regulatory framework with established thresholds for human health and ecotoxicological risk in biota [@europeancommissionDIRECTIVE2013392013; @legifranceArticle3Larrete2023; @osparStatusTrendHeavy2023; @osparStatusTrendsConcentrations2023; @osparStatusTrendsLevels2023; @osparStatusTrendsPolychlorinated2023]; and (2) detection above analytical limits in the present dataset. These criteria ensure that the selected compounds are ecologically and toxicologically relevant and reflect the contamination levels to which juvenile organisms and their prey are exposed.
 
-Table \@ref(tab:tab-contam-ROCCHMV) summarizes the main sources and ecotoxicological effects as synthetized from (Ifremer, 2021). The table also presents the relevant legislative thresholds, specifying their regulatory context (human health or ecotoxicology), the biological matrix of reference (primarily bivalves or fish), and the legislative source.
+Table \@ref(tab:tab-contam-rocchmv) summarizes the main sources and ecotoxicological effects as synthetized from (Ifremer, 2021). The table also presents the relevant legislative thresholds, specifying their regulatory context (human health or ecotoxicology), the biological matrix of reference (primarily bivalves or fish), and the legislative source.
 
 Three legislated heavy metals have been studied (mercury, cadmium, and lead). Copper was also included due to its historical significance as a pollutant in the Gironde estuary (Ifremer, 2024). Two types of organochlorine (OC) pesticides are under legislative thresholds: γ-HCH (or Lindane) and so called DDT total (sum of isomers p,p'-DDT (4,4’-DDT), o,p’-DDT (2,4’-DDT), p,p'-DDE (4,4’-DDE), p,p'-DDD (4,4’-DDD)). Eight Polycyclic Aromatic Hydrocarbon (PAH) are under OSPAR legislation: fluoranthene, benzo(a)pyrene (abr. benzo-pyr.), anthracene, naphthalene, phenanthrene, pyrene, benzo(a)anthracene (abr. benzo-anthra.), and benzo(g,h,i)perylene (abr. benzo-peryl.). Seven indicator congeners of the polychlorinated biphenyls (PCB) family are under OSPAR legislation: CB 28, CB 52, CB 101, CB 118, CB 138, CB 153, CB 180. Dioxins and dioxin-like compounds are under a European Commission legislation under the form of a weighted sum of PCDD + PCDF + PCB-DL expressed in toxic equivalents concentrations (see SI for details). Two types of brominated flame retardant were studied: the three isomers of HBCDD (hexabromocyclododecane) and the sum of Polybrominated diphenyl ethers (PBDE) congeners 28, 47, 99, 100, 153 and 154. Two emergent compounds were studied more recently: a perfluorinated compound (perfluorooctane sulfonate, PFOS), and an organostannic compound (tributyltin cation).
 
-```{r tab-contam-ROCCHMV, tab.cap="Studied Compounds in the ROCCHMV Program: Contaminant Families, Principal Sources, Available Time Series, Considered Measurement Matrices, and Sources of Regulatory Thresholds. Thresholds related to human health: QS(HH) (EU Quality Standard for Human Health); EC MPC (European Commission Maximum Permissible Concentrations). Thresholds related to ecotoxicology: EQS (Environmental Quality Standard); EAC (Environmental Assessment Criteria; OSPAR equivalent of EQS for the North-East Atlantic); NQE (Norme de Qualité Environnementale; French equivalent of EQS); VGE (Valeurs Guide Environnementales; French EQS equivalent for bivalves). Matrix abbreviations: f., fish; c., crustaceans; m., molluscs; b., bivalves.", out.width="90%", fig.show='hold'}
+```{r tab-contam-rocchmv, tab.cap="Studied Compounds in the ROCCHMV Program: Contaminant Families, Principal Sources, Available Time Series, Considered Measurement Matrices, and Sources of Regulatory Thresholds. Thresholds related to human health: QS(HH) (EU Quality Standard for Human Health); EC MPC (European Commission Maximum Permissible Concentrations). Thresholds related to ecotoxicology: EQS (Environmental Quality Standard); EAC (Environmental Assessment Criteria; OSPAR equivalent of EQS for the North-East Atlantic); NQE (Norme de Qualité Environnementale; French equivalent of EQS); VGE (Valeurs Guide Environnementales; French EQS equivalent for bivalves). Matrix abbreviations: f., fish; c., crustaceans; m., molluscs; b., bivalves.", out.width="90%", fig.show='hold'}
 knitr::include_graphics(get_shortened_path("mat_meth/contamination/table_rocchmv.jpg"))
 ```
 
@@ -177,40 +189,39 @@ To determine whether the estuaries were more contaminated than the French coastl
 
 ### Macrobenthic densities
 
-#### Surveillance program
+Benthic invertebrate fauna were investigated using data from two monitoring programs. The REBENT benthic network (“Réseau de surveillance benthique”), also implemented within the WFD-Benthos framework under the European Water Framework Directive (WFD), is a French monitoring program dedicated to benthic macrofauna in coastal and transitional waters. This program aims to assess the ecological quality of marine and coastal environments based on benthic community structure, which is sensitive to pressures such as eutrophication, pollution, sediment disturbance, and climate change.
 
-Benthic invertebrate fauna was studied using data from:
+However, only a single sampling year was available for the Loire estuary within the REBENT dataset (see years of REBENT macrobenthic survey campaigns for the Gironde, Loire, and Seine estuaries in \@ref(fig:biota-exp-plan)). To investigate temporal changes in macrobenthic species densities in the Loire estuary, we therefore used data from a comparable monitoring program conducted by EDF and INRAE. This program monitors the aquatic environment associated with the operation of the Cordemais power plant and has been conducted annually from 2008 to 2024. Its objective is to assess the impact of cooling-water discharges in the vicinity of the power plant, in accordance with regulatory requirements for hydrobiological environmental monitoring.
 
--	The REBENT program for the Gironde estuary (2007, 2008, 2012, 2016, 2017, 2020, 2023), the Seine estuary (2007, 2014, 2017, 2020, 2023), and the Loire estuary (2020).
-
--	The EDF & INRAE French program of monitoring of the aquatic environment linked to the operation of the Cordemais energy production unit for the Loire estuary (2008-2024).
-
-The REBENT (Réseau de surveillance benthique) French program, used also in the DCE-Benthos (part of the Directive Cadre sur l’Eau - Water Framework Directive, or WFD) European program, proceed to a benthic macrofauna monitoring in coastal and transitional waters. These programs aim to assess the ecological quality of marine and coastal environments based on the benthic community structure, which responds to pressures like eutrophication, pollution, sediment disturbance, and climate change.
-
-The EDF program aims at monitoring the impact of discharges from cooling circuits in the immediate vicinity of the Cordemais power plant site, in compliance with legislation requiring hydrobiological monitoring of the environment.
-
-Both programs used mesh sieves of 1 mm square. Only autumn was kept to obtain annual data over the longest possible time period across surveillance programs and estuaries (Sept, Oct, and Nov for REBENT program and Oct and Nov for EDF program).
+Both programs used 1-mm square mesh sieves. To maximize temporal consistency among monitoring programs and estuaries, only autumn surveys were retained to generate annual datasets (September–November for the REBENT program and October–November for the EDF program).
 
 
-### Fish and shrimps densities, and associated salinity
+### Fish and shrimp densities, and associated salinity
 
-DCE (POMET)
+Fish data were collected within the Water Framework Directive (WFD; 2000/60/EC) monitoring program established for water quality assessment. The WFD requires Member States to monitor aquatic ecosystems, including estuarine environments. To meet these requirements, a standardized methodology based on estuarine fishing surveys was developed in the early 2000s.
+
+Sampling campaigns have been conducted since 2005 in 32 French estuaries during both spring and autumn to estimate fish and shrimp densities, together with physicochemical parameters such as salinity. According to the monitoring design, surveys are theoretically carried out over three consecutive years within each six-year management cycle (see years of WFD fishing survey campaigns for the Gironde, Loire, and Seine estuaries in \@ref(fig:biota-exp-plan)).  For each campaign (i.e., one estuary, one year, and one season), fish abundance was estimated using beam trawl surveys following the protocol described in @onemaReseauxControleSurveillance2014.
+
+Briefly, two types of beam trawls were used depending on estuary size: (i) a trawl 2.9 m wide and 0.5 m high with a 20 mm stretched mesh cod-end for large estuaries, and (ii) a trawl 1.5 m wide and 0.5 m high with a 16 mm stretched mesh cod-end for small estuaries, in accordance with the standardized French estuarine protocol (NF T90-701, implemented on 2021-07-01). Trawling was conducted during daytime at speeds ranging from 1.5 to 3 knots for approximately 15 minutes. A minimum of eight samples were collected within each salinity zone (oligohaline, mesohaline, and polyhaline). Salinity was also measured during trawl surveys.
+
+```{r biota-exp-plan, fig.cap="Experimental design for REBENT and DCE programs by estuary.", fig.show='hold'}
+knitr::include_graphics(get_shortened_path("mat_meth/ggplot_exp_design_rebent_dce.jpg"))
+```
 
 ## Data analysis
 
 ### Haline zones definition
+ 
+Haline zones were defined from WFD fishing surveys datasets as they gathered the highest frequency and surface covering of salinity measurements. Estuaries were divided into two zones depending to obtain Q1-Q3 distribution of autumn salinity values below 18 g/L for mesohaline zone and > 18 g/L for polyhaline zone (see Figure \@ref(fig:map_haline_zone)).
 
-Haline zones were defined from POMET program datasets gathering the highest frequency and surface covering of salinity measurments. Estuaries were divided into two zones depending to obtain Q1-Q3 distribution of salinity values below 18 g/L for mesohalin zone and > 18 g/L for polyhalin zone (see Figure \@ref(fig:map_haline_zone)).
 
-/!\ saison à filtrer ? automne
-
-```{r map_haline_zone, fig.cap="Map of POMET sampling points for DCE program (on the left) and salinity distribution depending on the defined haline sectors delimitation (on the right).", fig.show='hold', fig.height=9}
+```{r map_haline_zone, fig.cap="Map of WFD sampling points for fishing surveys (on the left) and autumn salinity distribution depending on the defined haline sectors delimitation (on the right).", fig.show='hold', fig.height=9}
 knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_estuaries.png"))
 ```
 
 ### Long term trends analysis
 
-Log-term studies have been carried out on physico-chemical parameters followed over the period 1987-2024, legislated compounds followed at least from 1995 until 2023 or 2024 (see Table \@ref(tab:tab_contam_ROCCHMV)), and intertidal surface areas.
+Log-term studies have been carried out on physico-chemical parameters followed over the period 1987-2024, river flows over the period 1975-2024, legislated compounds followed at least from 1995 until 2023 or 2024 (see Table \@ref(tab:tab_contam_rocchmv)), and intertidal surface areas followed from the period 1970-2020 for the Seine estuary.
 
 #### Statistical analysis
 

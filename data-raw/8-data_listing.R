@@ -20,7 +20,7 @@ complete_plan <- plan |>
   mutate(fill_estuary = ifelse(value == 0, NA, estuary)) |>
   drop_na()
 
-ggplot(complete_plan, aes(x = year, y = parameter, fill = fill_estuary)) +
+ggplot_exp_design_rebent_dce <- ggplot(complete_plan, aes(x = year, y = parameter, fill = fill_estuary)) +
   geom_tile(position = position_dodge(width = 0.9),
             color = "grey80") +
     scale_fill_manual(values = c(
@@ -29,9 +29,9 @@ ggplot(complete_plan, aes(x = year, y = parameter, fill = fill_estuary)) +
       "Seine" = "#7570b3"
     )) +
   theme_minimal() +
-  labs(x = "Année",
+  labs(x = NULL,
        y = NULL,
-       fill = "Estuaire",
-       title = "Disponibilité des paramètres par année et estuaire") +
+       fill = "Estuary") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+ggsave(plot = ggplot_exp_design_rebent_dce, filename = "inst/mat_meth/ggplot_exp_design_rebent_dce.jpg")
