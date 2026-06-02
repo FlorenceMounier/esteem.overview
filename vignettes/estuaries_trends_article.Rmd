@@ -144,7 +144,7 @@ River flow datasets were obtained from Hydroportail (v3.4.5; [https://www.hydro.
 
 Monthly mean river flows were calculated from daily or monthly data for the autumn period (September–October) of each year over 1975–2024.
 
-```{r fig.cap="Physico-chemical sampling points in the Seine estuary.", fig.width=6, fig.height=4}
+```{r fig.cap="Autumn river flows.", fig.width=7, fig.height=4}
 knitr::include_graphics(
   get_shortened_path("mat_meth/ggplot_data_flow_autumn.jpg")
 )
@@ -204,11 +204,76 @@ To determine whether the estuaries were more contaminated than the French coastl
 
 ### Macrobenthic densities
 
-Benthic invertebrate fauna were investigated using data from two monitoring programs. The REBENT benthic network (“Réseau de surveillance benthique”), also implemented within the WFD-Benthos framework under the European Water Framework Directive (WFD), is a French monitoring program dedicated to benthic macrofauna in coastal and transitional waters. This program aims to assess the ecological quality of marine and coastal environments based on benthic community structure, which is sensitive to pressures such as eutrophication, pollution, sediment disturbance, and climate change.
+#### Data sources
+
+Benthic invertebrate fauna were investigated using data from two monitoring programs. The REBENT benthic network (“Réseau de surveillance benthique”), also implemented within the WFD-Benthos framework under the European Water Framework Directive (WFD), is a French monitoring program dedicated to benthic macrofauna in coastal and transitional waters. This program aims to assess the ecological quality of marine and coastal environments based on benthic community structure, which is sensitive to pressures such as eutrophication, pollution, sediment disturbance, and climate change (@blanchetMethodologiePourSurveillance).
 
 However, only a single sampling year was available for the Loire estuary within the REBENT dataset (see years of REBENT macrobenthic survey campaigns for the Gironde, Loire, and Seine estuaries in \@ref(fig:biota-exp-plan)). To investigate temporal changes in macrobenthic species densities in the Loire estuary, we therefore used data from a comparable monitoring program conducted by EDF and INRAE. This program monitors the aquatic environment associated with the operation of the Cordemais power plant and has been conducted annually from 2008 to 2024. Its objective is to assess the impact of cooling-water discharges in the vicinity of the power plant, in accordance with regulatory requirements for hydrobiological environmental monitoring.
 
 Both programs used 1-mm square mesh sieves. To maximize temporal consistency among monitoring programs and estuaries, only autumn surveys were retained to generate annual datasets (September–November for the REBENT program and October–November for the EDF program).
+
+Raw data consists of the total number of individual per square meter for each macrobenthic species over time. This data can lead to the study of taxonomic composition evolution in terms of group (e.g., polychaetes, mollusks, and crustaceans). 
+
+#### BEQI-FR quality index
+
+Each group and species present different probabilities of sole predation and also different sensitivies to pollution and organic enrichment. As a consequence, we also computed a benthic quality index reflecting the capacity of benthic communities to resist anthropic disturbances: the BEQI-FR index (French Benthic Ecosystem Quality Index). This index is an adopted indicator for assessing the quality of estuarine transitional water bodies in mainland France (@fouetSelectionDunIndicateur2018; @fouetIntercalibrationBiologicalElements2020). It combines the AMBI index (@borjaMarineBioticIndex2000a; @borjaGuidelinesUseAMBI2005a), the number of species (S), and the Shannon index (H') whose observed valued are compared to their reference values:
+
+$$
+\mathrm{BEQI\mbox{-}FR}
+=
+\frac{
+\dfrac{S_{\mathrm{obs}}}{S_{\mathrm{ref}}}
++
+\dfrac{H'_{\mathrm{obs}}}{H'_{\mathrm{ref}}}
++
+\dfrac{\mathrm{AMBI}_{\mathrm{obs}} - 7}{\mathrm{AMBI}_{\mathrm{ref}} - 7}
+}{3}
+$$
+
+Observed AMBI was computed from @blanchetMethodologiePourSurveillance methodology. First, it needs to assign species to 5 ecological groups from sensitive to opportunistic, reflecting their tolerance to organic enrichment and pollution (GI: sensitive species; GII: indifferent species; GIII: tolerant species; GIV: second-order opportunistic species; GV: first-order opportunistic species). Than compute AMBI value following the equation using the function *ambi* from the package {benthos} :
+
+$$
+\mathrm{AMBI} = \frac{0\,G_{I} + 1.5\,G_{II} + 3\,G_{III} + 4.5\,G_{IV} + 6\,G_{V}}{100}
+$$
+To define reference values for $S_{\mathrm{ref}}$, $H'_{\mathrm{ref}}$, and $AMBI_{\mathrm{ref}}$ we first need to characterize intertidal and subtidal EUNIS habitats for each estuary from main grain size, organic matter, and main phyla:
+
+```{r eunis, tab.cap="Estuaries sediment and macrobenthos characteristics and corresponding EUNIS habitat."}
+tab_habitat <- tribble(
+  ~"Estuary Level", ~Main_grain_size, ~"Organic matter", ~Main_taxa, ~EUNIS_habitat,
+
+  "Gironde Intertidal", "< 65 µm (96%)", "4.9 [4.2–5.6]",
+  "Gastropod: Peringia ulvae (48%); Bivalve: Scrobicularia plana (11%); Crustacean: Corophium volutator (11%)",
+  "MEst (A2.31)",
+
+  "Gironde Subtidal", "< 65 µm (84%)", "4.6 [2.8–5.8]",
+  "Sedentary polychaete: Heteromastus filiformis (42%); Crustacean: Mesopodopsis slabberi (21%)",
+  "SMuVS (A5.32)",
+
+  "Loire Intertidal", "< 65 µm (72%)", "4.4 [2.2–6.0]",
+  "Sedentary polychaete: Heteromastus filiformis (36%); Bivalve: Scrobicularia plana (16%)",
+  "MEst (A2.31)",
+
+  "Loire Subtidal", "< 65 µm (42%)", "2.2 [1.5–4.0]",
+  "Sedentary polychaete: Boccardiella ligerica (70%)",
+  "IMuSa (A5.25)",
+
+  "Seine Intertidal", "160–200 µm (26%); 125–160 µm (18%)", "1.3 [0.8–3.7]",
+  "Bivalves: Cerastoderma edule (25%); Limecola balthica (21%)",
+  "MuSa (A2.24)",
+
+  "Seine Subtidal", "200–250 µm (19%); 250–315 µm (21%)", "1.2 [0.7–1.7]",
+  "Crustaceans: Haustorius arenarius (18%); Bathyporeia pilosa (13%); Errant polychaete: Microphthalmus spp. (28%)",
+  "SSaVS (A5.22)"
+) |> flextable()
+
+tab_habitat <- set_table_properties(tab_habitat, width = 1, layout = "autofit")  # width = 1 → 100% de la page
+
+tab_habitat
+```
+
+Corresponding reference values can then be found in @:
+
+
 
 
 ### Fish and shrimp densities, and associated salinity
@@ -255,6 +320,8 @@ Recent trends were estimated using the last 15 years of time series data, applyi
 
 
 # Results
+
+
 
 ## PCA on physico-chemical variables by estuary
 

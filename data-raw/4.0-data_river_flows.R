@@ -265,4 +265,5 @@ ggplot_data_flow_autumn <- ggplot(data_flow_autumn) +
   geom_line() +
   facet_grid(cols = vars(estuary), scales = "free_y")
 
-ggsave(plot = ggplot_data_flow_autumn, filename = "inst/mat_meth/ggplot_data_flow_autumn.jpg")
+ggsave(plot = ggplot_data_flow_autumn, filename = "inst/mat_meth/ggplot_data_flow_autumn.jpg",
+       width = 8, height = 4)
