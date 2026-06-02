@@ -75,7 +75,7 @@ An integrated methodology for assessment of estuarine trophic status <https://ww
 
 Physico-chemical, macrobenthic, fish, shrimps, and contamination data were obtained from Ifremer’s Quadrige database, which is freely accessible via [surval.ifremer.fr](surval.ifremer.fr). This database compiles data from various monitoring and research programs at a broad spatial scale. The extracted data correspond to the following Quadrige marine areas: “085 – Gironde Estuary,” “070 – Loire Estuary,” and “011 – Seine Estuary.”
 
-Estuarine surfaces among different tidal levels, with details on the haline sector for intertidal areas were based on the extensive analysis of the literature of @lecuyerThrivingLifeBiodiversity2024a for the Loire and the Seine estuary. The same kind of data was retrieved from the work of @sottolichioEvaluationRecentMorphological2013 for the Gironde estuary.
+Estuarine intertidal surface areas data were obtained from the study of @lecuyerThrivingLifeBiodiversity2024a for the Loire and the Seine estuary, and @sottolichioEvaluationRecentMorphological2013 and @blanchet2018habitats for the Gironde estuary.
 
 River flows datasets were exported from [Hydroportail v3.4.5](https://www.hydro.eaufrance.fr/).
 
@@ -144,11 +144,26 @@ River flow datasets were obtained from Hydroportail (v3.4.5; [https://www.hydro.
 
 Monthly mean river flows were calculated from daily or monthly data for the autumn period (September–October) of each year over 1975–2024.
 
+```{r fig.cap="Physico-chemical sampling points in the Seine estuary.", fig.width=6, fig.height=4}
+knitr::include_graphics(
+  get_shortened_path("mat_meth/ggplot_data_flow_autumn.jpg")
+)
+```
+
+
 ### Intertidal surface area
 
-Long-term intertidal surface area data, including details for each haline sector, were obtained from the study by @lecuyerThrivingLifeBiodiversity2024a for the Loire and Seine estuaries.
+Intertidal surface area is directly related to the space available for the development of benthic communities. Long-term records of intertidal surface area, including estimates for each haline sector, were obtained from the study by @lecuyerThrivingLifeBiodiversity2024a for the Loire (1977–2012) and Seine (1970–2011) estuaries, and from @sottolichioEvaluationRecentMorphological2013 (1962–1994) and @blanchet2018habitats (2011) for the Gironde estuary.
 
-Gironde ? XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+In @lecuyerThrivingLifeBiodiversity2024a, surface areas were calculated from digitizations carried out using various historical cartographic sources. In @sottolichioEvaluationRecentMorphological2013, lateral surface areas were derived from between the 0 isobath and the coastline based on historical bathymetrics. In both studies, estimates of intertidal surface area were obtained independently of habitat type or substrate composition. Consequently, mudflats and sandbanks were aggregated and considered as a single intertidal area metric.
+
+In contrast, @blanchet2018habitats derived intertidal surface area from habitat mapping. Total intertidal area was estimated by summing the surface areas of the two EUNIS intertidal sediment habitat classes present in the Gironde estuary: A2.2 (Intertidal sand and muddy sand) and A2.3 (Intertidal mud).
+
+```{r fig.cap="Estimated intertidal surface areas.", fig.width=6, fig.height=4}
+knitr::include_graphics(
+  get_shortened_path("mat_meth/ggplot_intertidal_areas.jpg")
+)
+```
 
 ### Contamination of biota by legislated compounds
 
