@@ -103,8 +103,8 @@ Based on measurements of the different nitrogen compounds, a nitrification indic
 
 The sampled stations, monitoring programs, and measurement periods are summarized by estuary in Table \@ref(tab:phychemtab):
 
-```{r phychemtab, tab.cap= "Physico-chemical sampled stations, monitoring programs, and measurement periods."}
-ft <- tribble(
+```{r phychemtab}
+phychemtab <- tribble(
   ~Estuary, ~Period, ~Program, ~Location,
   "Gironde", "1987-2004", "RNOHYD", "085-P-014 & 085-P015",
   "Gironde", "2007-2024", "REPHY", "085-P-087",
@@ -114,9 +114,16 @@ ft <- tribble(
   "Seine", "2008-2024", "REPHY & RHLN", "011-P-010",
 ) |> flextable()
 
-ft <- set_table_properties(ft, width = 1, layout = "autofit")  # width = 1 → 100% de la page
-
-ft
+phychemtab <- set_table_properties(phychemtab, width = 1, layout = "autofit")  # width = 1 → 100% de la page
+phychemtab <- set_caption(
+  x = phychemtab,
+  caption = "Physico-chemical sampled stations, monitoring programs, and measurement periods.",
+  autonum = run_autonum(
+    seq_id = "tab",
+    bkm = "phychemtab"
+  )
+)
+phychemtab
 ```
 
 The sampling stations were mapped onto estuary charts in the following figures:
@@ -235,45 +242,33 @@ Observed AMBI was computed from @blanchetMethodologiePourSurveillance methodolog
 $$
 \mathrm{AMBI} = \frac{0\,G_{I} + 1.5\,G_{II} + 3\,G_{III} + 4.5\,G_{IV} + 6\,G_{V}}{100}
 $$
-To define reference values for $S_{\mathrm{ref}}$, $H'_{\mathrm{ref}}$, and $AMBI_{\mathrm{ref}}$ we first need to characterize intertidal and subtidal EUNIS habitats for each estuary from main grain size, organic matter, and main phyla:
+To define reference values for $S_{\mathrm{ref}}$, $H'_{\mathrm{ref}}$, and $AMBI_{\mathrm{ref}}$ from the methodology from @fouetSelectionDunIndicateur2018, we first need to characterize intertidal and subtidal EUNIS habitats for each estuary from main grain size, organic matter percentage, and main phyla found in the sediment. This classification is presented in the Supplementary Information section labelled "Benthic quality index computation details" along with the references values to the EUNIS habitat identified.
 
-```{r eunis, tab.cap="Estuaries sediment and macrobenthos characteristics and corresponding EUNIS habitat."}
-tab_habitat <- tribble(
-  ~"Estuary Level", ~Main_grain_size, ~"Organic matter", ~Main_taxa, ~EUNIS_habitat,
+The scoring of BEQI-FR depends on the type of estuary. The Loire, Gironde and Seine estuaries are typified as large estuaries (type D) and the scoring grid is presented in \@ref(tab:tab_EQR_BEQI). All values above 1 must be fixed to 1 @blanchetMethodologiePourSurveillance2025.
 
-  "Gironde Intertidal", "< 65 µm (96%)", "4.9 [4.2–5.6]",
-  "Gastropod: Peringia ulvae (48%); Bivalve: Scrobicularia plana (11%); Crustacean: Corophium volutator (11%)",
-  "MEst (A2.31)",
+```{r}
+beqi_classes <- tribble(
+  ~`BEQI-FR`, ~High, ~Good, ~Moderate, ~Poor, ~Bad,
+  "EQR boundaries", "]1–0.86]", "]0.86–0.67]", "]0.67–0.40]", "]0.40–0.20]", "]0.20–0]"
+)
 
-  "Gironde Subtidal", "< 65 µm (84%)", "4.6 [2.8–5.8]",
-  "Sedentary polychaete: Heteromastus filiformis (42%); Crustacean: Mesopodopsis slabberi (21%)",
-  "SMuVS (A5.32)",
+tab_EQR_BEQI <- flextable(beqi_classes) |>
+  align(j = 1, align = "left") |>
+  align(j = 2:6, align = "center") |>
+  bold(part = "header") |>
+  autofit()
 
-  "Loire Intertidal", "< 65 µm (72%)", "4.4 [2.2–6.0]",
-  "Sedentary polychaete: Heteromastus filiformis (36%); Bivalve: Scrobicularia plana (16%)",
-  "MEst (A2.31)",
+tab_EQR_BEQI <- set_caption(
+  x = tab_EQR_BEQI,
+  caption = "BEQI-FR EQR thresholds for large estuaries (type D).",
+  autonum = run_autonum(
+    seq_id = "tab",
+    bkm = "tab_EQR_BEQI"
+  )
+)
 
-  "Loire Subtidal", "< 65 µm (42%)", "2.2 [1.5–4.0]",
-  "Sedentary polychaete: Boccardiella ligerica (70%)",
-  "IMuSa (A5.25)",
-
-  "Seine Intertidal", "160–200 µm (26%); 125–160 µm (18%)", "1.3 [0.8–3.7]",
-  "Bivalves: Cerastoderma edule (25%); Limecola balthica (21%)",
-  "MuSa (A2.24)",
-
-  "Seine Subtidal", "200–250 µm (19%); 250–315 µm (21%)", "1.2 [0.7–1.7]",
-  "Crustaceans: Haustorius arenarius (18%); Bathyporeia pilosa (13%); Errant polychaete: Microphthalmus spp. (28%)",
-  "SSaVS (A5.22)"
-) |> flextable()
-
-tab_habitat <- set_table_properties(tab_habitat, width = 1, layout = "autofit")  # width = 1 → 100% de la page
-
-tab_habitat
+tab_EQR_BEQI
 ```
-
-Corresponding reference values can then be found in @:
-
-
 
 
 ### Fish and shrimp densities, and associated salinity
@@ -467,8 +462,3 @@ Les cartes des fonds sédimentaires de la Gironde de 1960 et 1998 montrent que l
 
 ::: {#refs}
 :::
-
-\newpage
-
-
-##### Supplementary material

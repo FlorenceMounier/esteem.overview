@@ -1,0 +1,256 @@
+---
+title: "Supplemntary for Historical Trends and Emerging Environmental Pressures on Nursery Function in French Estuaries: An Integrated Approach Combining Contaminants, Water Quality, Benthic Fauna and Fish Communities"
+documentclass: article
+link-citations: yes
+author:
+  - Florence MOUNIER:
+      email: florence.moounier@inrae.fr
+      institute: [inrae]
+      correspondence: true
+  - Henrique Cabral:
+      institute: [inrae]
+  - Jérémy Lobry:
+      institute: [inrae]
+institute:
+  - inrae: INRAE, UR EABX, 50 avenue de Verdun, 33612 Cestas Cedex, France
+output: 
+  officedown::rdocx_document:
+    reference_docx: template.docx
+    tables:
+      caption:
+        style: "Table Caption"
+    plots:
+      caption:
+        style: "Figure caption"
+    pandoc_args:
+      - '--lua-filter=scholarly-metadata.lua'
+      - '--lua-filter=author-info-blocks.lua'
+bibliography: references.bib
+number-sections: true
+csl: "aquatic-living-resources.csl"
+editor: 
+  markdown: 
+    wrap: 72
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  fig.width = 7,
+  fig.height = 5,
+  out.width = "95%"
+)
+library(esteem.overview)
+library(officer)
+library(tidyverse)
+library(flextable)
+```
+
+# Contamination
+
+## Dioxins and dioxin-like comparison to European threshold
+
+Dioxins and dioxin-like compounds threshold refers to a weighted sum of 7 polychlorinated dibenzo-p-dioxins (PCDDs), 10 polychlorinated dibenzofurans (PCDFs), and 12 dioxin-like polychlorinated biphenyls (PCB-DL), listed in Table \@ref(tab:tab_tef_oms_2005).
+
+The threshold of 0.0065 ng/g TEQ refers to the weighted sum of compounds concentrations expressed in toxic equivalents (TEQ), using a multiplication factor known as the toxic equivalency factor (TEF according to the World Health Organization 2005 for mammals). This factor reflects the toxicity of each compound relative to the reference dioxin (2,3,7,8-T4CDD), which has a TEF of 1. Values are given in Table \@ref(tab:tab_tef_oms_2005).
+
+```{r tab_tef_oms_2005"}
+tef_oms_2005 <- tribble(
+  ~CHEMICAL, ~Type, ~TEF_OMS_2005,
+
+  "2,3,7,8-tetrachlorodibenzo-p-dioxine", "PCDD", 1,
+  "1,2,3,7,8-pentachlorodibenzo-p-dioxine", "PCDD", 1,
+  "1,2,3,4,7,8-hexachlorodibenzo-p-dioxine", "PCDD", 0.1,
+  "1,2,3,6,7,8-hexachlorodibenzo-p-dioxine", "PCDD", 0.1,
+  "1,2,3,7,8,9-hexachlorodibenzo-p-dioxine", "PCDD", 0.1,
+  "1,2,3,4,6,7,8-heptachlorodibenzo-p-dioxine", "PCDD", 0.01,
+  "octachlorodibenzo-p-dioxine", "PCDD", 0.0003,
+
+  "2,3,7,8-tetrachlorodibenzofuran", "PCDF", 0.1,
+  "1,2,3,7,8-pentachlorodibenzofuran", "PCDF", 0.03,
+  "2,3,4,7,8-pentachlorodibenzofuran", "PCDF", 0.3,
+  "1,2,3,4,7,8-hexachlorodibenzofuran", "PCDF", 0.1,
+  "1,2,3,6,7,8-hexachlorodibenzofuran", "PCDF", 0.1,
+  "1,2,3,7,8,9-hexachlorodibenzofuran", "PCDF", 0.1,
+  "2,3,4,6,7,8-hexachlorodibenzofuran", "PCDF", 0.1,
+  "1,2,3,4,6,7,8-heptachlorodibenzofuran", "PCDF", 0.01,
+  "1,2,3,4,7,8,9-heptachlorodibenzofuran", "PCDF", 0.01,
+  "octachlorodibenzofuranne", "PCDF", 0.0003,
+
+  "CB 77",  "DL-PCB", 0.0001,
+  "CB 81",  "DL-PCB", 0.0003,
+  "CB 105", "DL-PCB", 0.00003,
+  "CB 114", "DL-PCB", 0.00003,
+  "CB 118", "DL-PCB", 0.00003,
+  "CB 123", "DL-PCB", 0.00003,
+  "CB 126", "DL-PCB", 0.1,
+  "CB 156", "DL-PCB", 0.00003,
+  "CB 157", "DL-PCB", 0.00003,
+  "CB 167", "DL-PCB", 0.00003,
+  "CB 169", "DL-PCB", 0.03,
+  "CB 189", "DL-PCB", 0.00003
+) |> flextable()
+
+tef_oms_2005 <- set_table_properties(tef_oms_2005, width = 1, layout = "autofit")  # width = 1 → 100% de la page
+tef_oms_2005 <- set_caption(
+  x = tef_oms_2005,
+  caption = "Reference dioxins and dioxin-like compounds along with their toxic equivalents.",
+  autonum = run_autonum(
+    seq_id = "tab",
+    bkm = "tab_tef_oms_2005"
+  )
+)
+tef_oms_2005
+```
+
+# Benthic quality index computation details
+
+The measured main grain size, organic matter percentage, and main phyla found in the sediment of intertidal and subtidal areas in each estuary are presented along with the most proximate EUNIS habitats in Table \@ref(tab:tab_habitat_eunis).
+
+```{r tab_habitat_eunis}
+tab_habitat_eunis <- tribble(
+  ~"Estuary Level", ~"Main\ngrain size", ~"Organic matter", ~"Main phyla", ~"EUNIS habitat",
+
+  "Gironde Intertidal", "< 65 µm (96%)", "4.9\n[4.2–5.6]",
+  "Gastropod: Peringia ulvae (48%)\nBivalve: Scrobicularia plana (11%)\nCrustacean: Corophium volutator (11%)",
+  "MEst (A2.31)",
+
+  "Gironde Subtidal", "< 65 µm (84%)", "4.6\n[2.8–5.8]",
+  "Sedentary polychaete: Heteromastus filiformis (42%)\nCrustacean: Mesopodopsis slabberi (21%)",
+  "SMuVS (A5.32)",
+
+  "Loire Intertidal", "< 65 µm (72%)", "4.4\n[2.2–6.0]",
+  "Sedentary polychaete: Heteromastus filiformis (36%)\nBivalve: Scrobicularia plana (16%)",
+  "MEst (A2.31)",
+
+  "Loire Subtidal", "< 65 µm (42%)", "2.2\n[1.5–4.0]",
+  "Sedentary polychaete: Boccardiella ligerica (70%)",
+  "IMuSa (A5.25)",
+
+  "Seine Intertidal", "160–200 µm (26%); 125–160 µm (18%)", "1.3\n[0.8–3.7]",
+  "Bivalves: Cerastoderma edule (25%)\nLimecola balthica (21%)",
+  "MuSa (A2.24)",
+
+  "Seine Subtidal", "200–250 µm (19%); 250–315 µm (21%)", "1.2\n[0.7–1.7]",
+  "Crustaceans: Haustorius arenarius (18%)\nBathyporeia pilosa (13%)\nErrant polychaete: Microphthalmus spp. (28%)",
+  "SSaVS (A5.22)"
+) |> flextable()
+
+
+tab_habitat_eunis <- compose(
+  tab_habitat_eunis,
+  i = 1,
+  j = "Main phyla",
+  value = as_paragraph(
+    "Gastropod: ", as_i("Peringia ulvae"), " (48%)", "\n",
+    "Bivalve: ", as_i("Scrobicularia plana"), " (11%)", "\n",
+    "Crustacea: ", as_i("Corophium volutator"), " (11%)"
+  )
+)
+
+tab_habitat_eunis <- compose(
+  tab_habitat_eunis,
+  i = 2,
+  j = "Main phyla",
+  value = as_paragraph(
+    "Sed. polychaete: ", as_i("Heteromastus filiformis"), " (42%)", "\n",
+    "Crustacea: ", as_i("Mesopodopsis slabberi"), " (21%)"
+  )
+)
+
+tab_habitat_eunis <- compose(
+  tab_habitat_eunis,
+  i = 3,
+  j = "Main phyla",
+  value = as_paragraph(
+    "Sed. polychaete: ", as_i("Heteromastus filiformis"), " (36%)", "\n",
+    "Bivalve: ", as_i("Scrobicularia plana"), " (16%)"
+  )
+)
+
+tab_habitat_eunis <- compose(
+  tab_habitat_eunis,
+  i = 4,
+  j = "Main phyla",
+  value = as_paragraph(
+    "Sed. polychaete: ", as_i("Boccardiella ligerica"), " (70%)"
+  )
+)
+
+tab_habitat_eunis <- compose(
+  tab_habitat_eunis,
+  i = 5,
+  j = "Main phyla",
+  value = as_paragraph(
+    "Bivalves: ", as_i("Cerastoderma edule"), " (25%), ",
+    as_i("Macoma balthica"), " (21%)"
+  )
+)
+
+tab_habitat_eunis <- compose(
+  tab_habitat_eunis,
+  i = 6,
+  j = "Main phyla",
+  value = as_paragraph(
+    "Crustacea: ", as_i("Haustorius arenarius"), " (18%), ",
+    as_i("Bathyporeia pilosa"), " (13%)", "\n",
+    "Err. polychaete: ", as_i("Microphthalmus"), " (28%)"
+  )
+)
+
+tab_habitat_eunis <- set_table_properties(tab_habitat_eunis, width = 1, layout = "autofit")  # width = 1 → 100% de la page
+
+tab_habitat_eunis <- set_caption(
+  x = tab_habitat_eunis,
+  caption = "Estuaries sediment and macrobenthos characteristics and corresponding EUNIS habitat. Organic matter is expressed as the median percentage and first and third quartiles are presented between brackets.",
+  autonum = run_autonum(
+    seq_id = "tab",
+    bkm = "tab_habitat_eunis"
+  )
+)
+
+tab_habitat_eunis
+```
+
+Reference condition values for $S_{\mathrm{ref}}$, $H'_{\mathrm{ref}}$, and $AMBI_{\mathrm{ref}}$ depending on the EUNIS habitat of each estuary are taken from @fouetSelectionDunIndicateur2018 and presented in Table \@ref(tab:tab_ref_values):
+
+```{r}
+ref_values <- tribble(
+  ~"Level",       ~"EUNIS habitat",          ~"AMBIref", ~"H'ref", ~"Sref",
+  "Intertidal", "MEst (code A2.31)",       2.5,      2.9,   14,
+  "Intertidal", "MuSa (code A2.24)",       1.4,      3.7,   26,
+  "Subtidal",   "SMuVS (code A5.32)",      1.9,      2.5,   10,
+  "Subtidal",   "IMuSa (code A5.25)",      1.0,      3.8,   33,
+  "Subtidal",   "SSaVS (code A5.22)",      0.3,      2.7,    9
+)
+
+tab_ref_values <- flextable(ref_values) |>
+  merge_v(j = "Level") |>
+  valign(j = "Level", valign = "center") |>
+  align(j = "Level", align = "center") |>
+  align(align = "center", j = c("AMBIref", "H'ref", "Sref")) |>
+  autofit()
+
+tab_ref_values <- set_caption(
+  x = tab_ref_values,
+  caption = "Reference conditions of AMBI, H’ and S depending on EUNIS habitats.",
+  autonum = run_autonum(
+    seq_id = "tab",
+    bkm = "tab_ref_values"
+  )
+)
+
+tab_ref_values
+```
+
+\newpage
+
+##### References
+
+::: {#refs}
+:::
