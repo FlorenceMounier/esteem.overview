@@ -167,11 +167,10 @@ img_trim_seine <- image_trim(img_seine) # crop the image
 image_write(img_trim_seine, "inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_seine.jpg")
 
 
+
 # =====================================================
 # 04. Join Gironde, Loire, Seine haline zones from POMET
 # =====================================================
-
-
 
 ggplot_POMET_haline_zones_estuaries <- plot_grid(
   ggdraw() + draw_image("inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_gironde.jpg"),
@@ -180,7 +179,6 @@ ggplot_POMET_haline_zones_estuaries <- plot_grid(
   ncol = 1,
   align = "v"
 )
-
 
 ggsave(
   "inst/mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_estuaries.png",

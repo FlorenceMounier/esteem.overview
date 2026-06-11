@@ -1,4 +1,5 @@
 # =====================================================
+# Import, join and formatting of POMET raw data
 # Datasets:
 #  - data_POMET_ALL_densities.rda
 #  - data_POMET_densities.rda
@@ -9,7 +10,7 @@
 # =====================================================
 
 # =====================================================
-# 00. Packages
+# 00. Packages, functions and raw data
 # =====================================================
 
 library(esteem.overview)
@@ -17,20 +18,49 @@ library(tidyverse, quietly = TRUE)
 
 `%!in%` = Negate(`%in%`)
 
-# =====================================================
-# 01. Import, join and formatting of POMET raw data
-# =====================================================
-
 data(raw_data_POMET_densities)
 data(raw_data_POMET_indiv)
 data(raw_data_POMET_traits)
 
+# =====================================================
+# 01. data_POMET_traits
+# =====================================================
+
 data_POMET_traits <- raw_data_POMET_traits |>
-  select(trait_id, conductivite, duree, maree, oxygene, profondeur,
-         salinite, temperature, pos_deb_lat_dd, pos_deb_long_dd, pos_fin_lat_dd, pos_fin_long_dd)
+
+  # ---- Create GPS central position of traits ----
+mutate(latitude = (pos_deb_lat_dd + pos_fin_lat_dd) / 2) |>
+mutate(longitude = (pos_deb_long_dd + pos_fin_long_dd) / 2) |>
+
+  # ----- Filter unrelevant observations -----
+filter(trait_id != 82) |> # fleuve Gironde
+  filter(trait_id %!in% c(6185, 8494)) |>  # out of Loire
+  filter(trait_id %!in% c(13477, 16087, 14362)) # filandres Seine
+
+# ----- Define estuary and haline_zone from GPS delimitations -----
+data_POMET_traits <- get_info_from_gps_position(data = data_POMET_traits,
+                                                latitude = latitude,
+                                                longitude = longitude)
+
+# ---- Save data_POMET_traits.rda ----
+usethis::use_data(data_POMET_traits, overwrite = TRUE)
 
 # =====================================================
-# 02. Save data_POMET_*.rda
+# 02. data_POMET_physico_chem
+# =====================================================
+
+data_POMET_physico_chem <- data_POMET_traits |>
+  select(c(madate, estuary, latitude, longitude, haline_zone, oxygene, salinite, temperature))
+
+# ----- Define information on year, month, season from date -----
+data_POMET_physico_chem <- get_info_from_dates(data = data_POMET_physico_chem, date_variable = madate)
+
+# ---- Save data_POMET_physico_chem.rda ----
+usethis::use_data(data_POMET_physico_chem, overwrite = TRUE)
+
+
+# =====================================================
+# 03. Save data_POMET_*.rda related to biota
 # =====================================================
 
 # ---- Densities for all species ----

@@ -11,7 +11,9 @@ fct_formatting_raw_data_POMET(
 )
 }
 \arguments{
-\item{species}{}
+\item{data_POMET}{tibble raw dataset from POMET program}
+
+\item{species}{NULL or chr vector of species (default list: "Solea solea", "Solea senegalensis", "Dicentrarchus "Palaemon longirostris", "Crangon crangon")}
 }
 \value{
 tibble

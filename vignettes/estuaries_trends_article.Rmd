@@ -61,70 +61,46 @@ nursery quality, global changes, estuaries
 
 # Introduction
 
-Comparaison de la qualité de la fonctionnalité de nourriceries des trois plus grands estuaires français (Gironde, Loire et Seine) et de leurs tendances d’évolution à long terme et sur les 20 dernières années.
+@elliottEstuarineQualityParadox2007 proposed the concept of the estuarine quality paradox, highlighting that estuaries simultaneously represent highly productive and functionally important ecosystems—particularly as nursery habitats for fish—while being among the most anthropogenically degraded environments. They argue that conventional approaches to ecological quality assessment, often based on deviation from near-pristine reference conditions, are poorly suited to estuaries, which are inherently dynamic and naturally variable systems. Instead, estuarine ecological “quality” should be interpreted in terms of ecosystem functioning, particularly its capacity to support key biological processes such as growth and survival of juvenile fish, rather than solely on physico-chemical status.
 
 Diagnostic basé sur l’étude des paramètres impliqués dans la qualité de la fonctionnalité de nourricerie des estuaires : paramètres physico-chimiques, contamination, diversité et qualité écologique des communautés de faune benthique et de poissons (+ indices de condition poisson ?)
+
+Comparaison de la qualité de la fonctionnalité de nourriceries des trois plus grands estuaires français (Gironde, Loire et Seine) et de leurs tendances d’évolution à long terme et sur les 20 dernières années.
 
 « La fonction de nourricerie est l’une des principales assurées par les estuaires de la Mer du Nord et ceux de l’Atlantique européen [@whitfield2002]( ; Franco et al, 2008). Une fraction importante de l'ichtyofaune estuarienne est originaire du milieu marin et constitue la guilde des espèces migrantes marines, qui naissent en mer et peuvent pénétrer dans les estuaires de façon plus ou moins régulière puis retournent en mer pour leurs stades ultérieurs de développement. Le bar (Dicentrarchus labrax) et la sole (Solea solea), d'origine marine, dépendent plus étroitement au stage juvénile des habitats abrités estuariens, avec des niveaux d’abondance pouvant être très élevés pour les stades juvéniles. Ce sont ces espèces de la guilde des espèces marines migrantes estuariennes-dépendantes (MMD) que nous avons choisies pour représenter les habitats de la fonction de nourricerie de poissons marins. Nous nous sommes particulièrement focalisés sur les groupes d’âge G0 (1ère année de vie) et G1 (2ème année de vie) de ces espèces, correspondants aux stades de vie pour lesquels les estuaires sont des habitats préférentiels (Bacq et al., 2013).
 
 An integrated methodology for assessment of estuarine trophic status <https://www-sciencedirect-com.inrae.idm.oclc.org/science/article/pii/S0304380003001996>
 
+River discharge is a key driver of estuarine nursery habitat functioning, as it regulates salinity gradients, turbidity, and productivity (@baptistaEffectsFreshwaterFlow2010). Thereby, it influences recruitment and settlement (e.g., olfactory cues for fish larvae in the river plumes), and  habitat suitability for juvenile fish (e.g., turbid water protect juveniles from predators). In temperate estuaries, its effects are strongly season-dependent: winter discharge contributes to the physical structuring of the estuary, spring discharge modulates habitat conditions during the main recruitment period of marine juvenile fishes (@arevaloFishLarvaeDynamics2023) such as common sole and European seabass, and summer discharge extremes may induce physiological stress (e.g., increases in salinity and decreases in dissolved oxygen) or reduce juvenile retention within nursery areas. These seasonal dynamics justify a temporally explicit analysis of discharge effects when assessing estuarine nursery quality.
+
 # Materials and Methods
 
 ## Datasets
 
-Physico-chemical, macrobenthic, fish, shrimps, and contamination data were obtained from Ifremer’s Quadrige database, which is freely accessible via [surval.ifremer.fr](surval.ifremer.fr). This database compiles data from various monitoring and research programs at a broad spatial scale. The extracted data correspond to the following Quadrige marine areas: “085 – Gironde Estuary,” “070 – Loire Estuary,” and “011 – Seine Estuary.”
+Physico-chemical, macrobenthic, fish, shrimps, and legacy biota contamination data were obtained from Ifremer’s Quadrige database, which is freely accessible via [surval.ifremer.fr](surval.ifremer.fr). This database compiles data from various monitoring and research programs at a broad spatial scale. The extracted data correspond to the following Quadrige marine areas: “085 – Gironde Estuary,” “070 – Loire Estuary,” and “011 – Seine Estuary.”
 
 Estuarine intertidal surface areas data were obtained from the study of @lecuyerThrivingLifeBiodiversity2024a for the Loire and the Seine estuary, and @sottolichioEvaluationRecentMorphological2013 and @blanchet2018habitats for the Gironde estuary.
 
 River flows datasets were exported from [Hydroportail v3.4.5](https://www.hydro.eaufrance.fr/).
 
+Yearly monitoring design and completion of data for the different biotic and abiotic studied variables is presented for each estuary in Figure \@ref(fig:data_design).
+
+```{r data_design, fig.cap="Yearly monitoring design for the different biotic and abiotic studied variables by estuary.", fig.show='hold'}
+knitr::include_graphics(get_shortened_path("mat_meth/ggplot_data_design.jpg"))
+```
+
 ### Physico-chemical parameters
 
 #### Monitoring programs
 
-The selected physico-chemical data originate from the following monitoring programs:  RNOHYD, REPHY, and RESLOC_44:
+The selected physico-chemical data originate from the following monitoring programs:  RNOHYD before early 2000's, and REPHY and RESLOC_44 after that and util 2024 (see the Supplementary Information section entitled “Monitoring programs” for their quick presentation). All these programs perform only one measurement per month at each sampling site; however, not all months of the year are systematically covered by sampling campaigns.
 
--   RNOHYD (RNO Hydrology) is the oldest program within the French National Monitoring Network for Marine Environment Quality (RNO, established in 1974). Its objective is to assess the levels and trends of coastal marine environmental quality parameters through water measurements (temperature, salinity, nutrients, etc.).
+Thus, the variables and sampling stations were selected to obtain annual data over the longest possible time period across all estuaries, within a restricted spatial extent of each estuary. The selected sampling stations are presented along with their corresponding monitoring programs and measurement periods in the Supplementary Information section entitled “Selected physico-chemical location points”. The selected variables include temperature, salinity, and nitrogen compounds (ammonium NH₄⁺, nitrate NO3-, and nitrite NO2-). The selected study period spans 1987–2024 and focuses exclusively on autumn. Monthly values were averaged over September and October for temperature and salinity, and over September, October, and November for nitrogen compounds.
 
--   REPHY (Phytoplankton and Hydrology Observation and Monitoring Network in coastal waters) has been contributing to long-term time series on ocean health for more than 30 years. RHLN is a complementary local observation and monitoring network for hydrological parameters along the Normandy coast. Established in 2000, the Normandy Coastal Hydrological Network (RHLN) monitors the quality of coastal waters in Normandy within the Seine–Normandy basin. RHLN complements the REPHY monitoring and observation strategy by adding sampling stations and extending the sampling period for nutrients and physico-chemical parameters. Sampling and analytical methods are identical between RHLN and REPHY.
+Temperature sensors at the selected sampling stations were deployed between 0 and 12 m depth. For salinity, _in situ_ conductivity sensors (REPHY; RHLN) were positioned between 10 and 15 m, while samples analyzed using the Knudsen titration method (RNOHYD) were collected between 2 and 12 m. Nitrogen compounds were measured between 0.5 and 1 m depth. Ammonium was measured by spectrometry or fluorimetry, whereas nitrate and nitrite were measured by spectrophotometry, chromatography, or colorimetry.
 
--   RESLOC_44 is a complementary local observation and monitoring network in the Loire-Atlantique area.
+Based on measurements of the different nitrogen compounds, a nitrification indicator was calculated as the ratio of ammonium to total dissolved inorganic nitrogen: $NH₄⁺ / (NH₄⁺ + NO₃⁻ + NO₂⁻)$. This ratio is used to characterize the dominant form of available nitrogen and provides insight into nitrogen cycle processes (regeneration, nitrification, anthropogenic inputs). In estuarine environments, this indicator is particularly relevant, as these systems act as biogeochemical reactors where nitrogen undergoes intense transformations.
 
-All these programs perform only one measurement per month at each sampling site; however, not all months of the year are systematically covered by sampling campaigns.
-
-#### Selected physicochemical parameters and measurement point selection
-
-The variables and sampling stations were selected to obtain annual data over the longest possible time period across all estuaries, within a restricted spatial extent of each estuary. The selected variables include temperature, salinity, and nitrogen compounds (ammonium NH₄⁺, nitrate NO3-, and nitrite NO2-). The study period spans 1987–2024 and focuses exclusively on autumn. Monthly values were averaged over September and October for temperature and salinity, and over September, October, and November for nitrogen compounds.
-
-Temperature sensors at the selected sampling stations were deployed between 0 and 12 m depth. For salinity, in situ conductivity sensors (REPHY; RHLN) were positioned between 10 and 15 m, while samples analyzed using the Knudsen titration method (RNOHYD) were collected between 2 and 12 m. Nitrogen compounds were measured between 0.5 and 1 m depth. Ammonium was measured by spectrometry or fluorimetry, whereas nitrate and nitrite were measured by spectrophotometry, chromatography, or colorimetry.
-
-Based on measurements of the different nitrogen compounds, a nitrification indicator was calculated as the ratio of ammonium to total dissolved inorganic nitrogen: NH₄⁺ / (NH₄⁺ + NO₃⁻ + NO₂⁻). This ratio is used to characterize the dominant form of available nitrogen and provides insight into nitrogen cycle processes (regeneration, nitrification, anthropogenic inputs). In estuarine environments, this indicator is particularly relevant, as these systems act as biogeochemical reactors where nitrogen undergoes intense transformations.
-
-The sampled stations, monitoring programs, and measurement periods are summarized by estuary in Table \@ref(tab:phychemtab):
-
-```{r phychemtab}
-phychemtab <- tribble(
-  ~Estuary, ~Period, ~Program, ~Location,
-  "Gironde", "1987-2004", "RNOHYD", "085-P-014 & 085-P015",
-  "Gironde", "2007-2024", "REPHY", "085-P-087",
-  "Loire", "1987-2007", "RNOHYD", "070-P-034",
-  "Loire", "1992-2024", "REPHY & RESLOC_44", "070-P-21",
-  "Seine", "1987-2006", "RNOHYD", "011-P-016 & 011-P-017",
-  "Seine", "2008-2024", "REPHY & RHLN", "011-P-010",
-) |> flextable()
-
-phychemtab <- set_table_properties(phychemtab, width = 1, layout = "autofit")  # width = 1 → 100% de la page
-phychemtab <- set_caption(
-  x = phychemtab,
-  caption = "Physico-chemical sampled stations, monitoring programs, and measurement periods.",
-  autonum = run_autonum(
-    seq_id = "tab",
-    bkm = "phychemtab"
-  )
-)
-phychemtab
-```
 
 The sampling stations were mapped onto estuary charts in the following figures:
 ```{r fig.cap="Physico-chemical sampling points in the Gironde estuary.", fig.width=6, fig.height=4}
@@ -145,11 +121,23 @@ knitr::include_graphics(
 )
 ```
 
-### River flows
+### River discharge
 
-River flow datasets were obtained from Hydroportail (v3.4.5; [https://www.hydro.eaufrance.fr/](https://www.hydro.eaufrance.fr/)). For the Gironde estuary, the selected discharge was calculated as the sum of flows from the two upstream rivers, using measurements from Pessac-sur-Dordogne (Dordogne River) and Tonneins (Garonne River). For the Loire and Seine estuaries, upstream discharges were derived from measurements at Montjean-sur-Loire and Vernon, respectively.
+River discharge was included as a temporally structured explanatory variable to account for its seasonal influence on estuarine nursery functioning. 
 
-Monthly mean river flows were calculated from daily or monthly data for the autumn period (September–October) of each year over 1975–2024.
+Data were obtained from Hydroportail (v3.4.5; [https://www.hydro.eaufrance.fr/](https://www.hydro.eaufrance.fr/)). For the Gironde estuary, the selected discharge was calculated as the sum of flows from the two upstream rivers, using measurements from Pessac-sur-Dordogne (Dordogne River) and Tonneins (Garonne River). For the Loire and Seine estuaries, upstream discharges were derived from measurements at Montjean-sur-Loire and Vernon, respectively.
+
+Following established conceptual frameworks in estuarine fish ecology, discharge was partitioned into three biologically relevant seasonal windows corresponding to distinct mechanisms of influence on juvenile fish habitats.
+
+Autumn discharge (September-October-November)
+
+Winter discharge (December–January-February) was used as an indicator of estuarine pre-conditioning, influencing large-scale physical structuring processes such as salinity gradient formation, sediment resuspension, and turbidity regimes prior to the recruitment period.
+
+Spring discharge (March-April–May), corresponding to the main recruitment period of common sole and European seabass juveniles in temperate estuaries, was used as the primary indicator of habitat conditions during settlement and early post-settlement phases. This period is critical for determining food availability, growth conditions, and habitat suitability within nursery areas.
+
+Summer discharge (June-July–August) was included to capture potential stress conditions affecting juveniles already established in estuarine habitats. During this period, low-flow conditions may exacerbate hypoxia and thermal stress, while high-flow events may alter salinity regimes and reduce juvenile retention within nursery habitats.
+
+For each year over 1975–2024, mean discharge was calculated for each seasonal window (from daily or monthly data) and used as separate explanatory variables in subsequent analyses of estuarine nursery quality.
 
 ```{r fig.cap="Autumn river flows.", fig.width=7, fig.height=4}
 knitr::include_graphics(
@@ -160,7 +148,7 @@ knitr::include_graphics(
 
 ### Intertidal surface area
 
-Intertidal surface area is directly related to the space available for the development of benthic communities. Long-term records of intertidal surface area, including estimates for each haline sector, were obtained from the study by @lecuyerThrivingLifeBiodiversity2024a for the Loire (1977–2012) and Seine (1970–2011) estuaries, and from @sottolichioEvaluationRecentMorphological2013 (1962–1994) and @blanchet2018habitats (2011) for the Gironde estuary.
+Intertidal surface area is directly related to the space available for the development of benthic communities. Long-term records of intertidal surface area, including estimates for each haline sector, were obtained from the study by @lecuyerThrivingLifeBiodiversity2024a for the Loire (1977–2012) and Seine (1970–2011) estuaries, and from @sottolichioEvaluationRecentMorphological2013 (1970–1994) and @blanchet2018habitats (2011) for the Gironde estuary.
 
 In @lecuyerThrivingLifeBiodiversity2024a, surface areas were calculated from digitizations carried out using various historical cartographic sources. In @sottolichioEvaluationRecentMorphological2013, lateral surface areas were derived from between the 0 isobath and the coastline based on historical bathymetrics. In both studies, estimates of intertidal surface area were obtained independently of habitat type or substrate composition. Consequently, mudflats and sandbanks were aggregated and considered as a single intertidal area metric.
 
@@ -200,7 +188,7 @@ Three legislated heavy metals have been studied (mercury, cadmium, and lead). Co
 knitr::include_graphics(get_shortened_path("mat_meth/contamination/table_rocchmv.jpg"))
 ```
 
-### Contamination of biota and sea water by emerging biocides
+### Recent contamination of biota and sea water by emerging biocides
 
 As part of the revision of the national list of Specific Pollutants of Ecological Status (PSEE), aimed at identifying relevant substances for monitoring in coastal environments, Ifremer investigated 102 emerging organic substances (i.e., not currently regulated for the marine environment), including different types of biocides [@amourouxEmergentSeaRechercheSubstances2025]. These measurements were carried out in 2021 and 2022, alongside ROCCHMV sampling, using integrative matrices—namely, bivalves and passive samplers (POCIS)—to facilitate the detection of these substances. The use of passive samplers is particularly suited for targeting organic compounds with low hydrophobicity, which are expected to exhibit limited bioconcentration and bioaccumulation in marine organisms. In addition, the compounds studied are generally less persistent than those subject to regulation, making them more susceptible to seasonal variation.
 
@@ -209,9 +197,7 @@ Sampling sites and periods were selected to coincide with locations and times of
 To determine whether the estuaries were more contaminated than the French coastline overall, annual mean concentrations were calculated at the national level and compared with the corresponding yearly means observed in each estuary. To assess the potential environmental risk associated with these contamination levels, observed concentrations were also compared to Predicted No Effect Concentration (PNEC) values. Another way to evaluate whether contamination levels exceeding the national average may reflect an environmental risk was to consider the ranking of the compounds in the Emergent’Sea program. This ranking is based on the frequency of quantification of each compound, as well as the extent and frequency of PNEC exceedances.
 
 
-### Macrobenthic densities
-
-#### Data sources
+### Macrobenthic fauna densities
 
 Benthic invertebrate fauna were investigated using data from two monitoring programs. The REBENT benthic network (“Réseau de surveillance benthique”), also implemented within the WFD-Benthos framework under the European Water Framework Directive (WFD), is a French monitoring program dedicated to benthic macrofauna in coastal and transitional waters. This program aims to assess the ecological quality of marine and coastal environments based on benthic community structure, which is sensitive to pressures such as eutrophication, pollution, sediment disturbance, and climate change (@blanchetMethodologiePourSurveillance).
 
@@ -219,11 +205,32 @@ However, only a single sampling year was available for the Loire estuary within 
 
 Both programs used 1-mm square mesh sieves. To maximize temporal consistency among monitoring programs and estuaries, only autumn surveys were retained to generate annual datasets (September–November for the REBENT program and October–November for the EDF program).
 
-Raw data consists of the total number of individual per square meter for each macrobenthic species over time. This data can lead to the study of taxonomic composition evolution in terms of group (e.g., polychaetes, mollusks, and crustaceans). 
+Raw data consist of species-specific macrobenthic densities (number of individuals per square metre) measured over time. These data can be used to investigate temporal changes in community taxonomic composition, particularly among major taxonomic groups such as polychaetes, molluscs, and crustaceans. The dominant macrobenthic species can also be assessed in relation to the preferred prey of the common sole, providing insight into potential changes in food resource availability.
 
-#### BEQI-FR quality index
 
-Each group and species present different probabilities of sole predation and also different sensitivies to pollution and organic enrichment. As a consequence, we also computed a benthic quality index reflecting the capacity of benthic communities to resist anthropic disturbances: the BEQI-FR index (French Benthic Ecosystem Quality Index). This index is an adopted indicator for assessing the quality of estuarine transitional water bodies in mainland France (@fouetSelectionDunIndicateur2018; @fouetIntercalibrationBiologicalElements2020). It combines the AMBI index (@borjaMarineBioticIndex2000a; @borjaGuidelinesUseAMBI2005a), the number of species (S), and the Shannon index (H') whose observed valued are compared to their reference values:
+### Fish and shrimp densities, and associated physico-chemical parameters
+
+Fish data were collected within the Water Framework Directive (WFD; 2000/60/EC) monitoring program established for water quality assessment. The WFD requires Member States to monitor aquatic ecosystems, including estuarine environments. To meet these requirements, a standardized methodology based on estuarine fishing surveys was developed in the early 2000s.
+
+Sampling campaigns have been conducted since 2005 in 32 French estuaries during both spring and autumn to estimate fish and shrimp densities, together with physicochemical parameters such as salinity. According to the monitoring design, surveys are theoretically carried out over three consecutive years within each six-year management cycle (see years of WFD fishing survey campaigns for the Gironde, Loire, and Seine estuaries in \@ref(fig:data-design)).  For each campaign (i.e., one estuary, one year, and one season), fish abundance was estimated using beam trawl surveys following the protocol described in @onemaReseauxControleSurveillance2014.
+
+Briefly, two types of beam trawls were used depending on estuary size: (i) a trawl 2.9 m wide and 0.5 m high with a 20 mm stretched mesh cod-end for large estuaries, and (ii) a trawl 1.5 m wide and 0.5 m high with a 16 mm stretched mesh cod-end for small estuaries, in accordance with the standardized French estuarine protocol (NF T90-701, implemented on 2021-07-01). Trawling was conducted during daytime at speeds ranging from 1.5 to 3 knots for approximately 15 minutes. A minimum of eight samples were collected within each salinity zone (oligohaline, mesohaline, and polyhaline). Salinity, temperature and dioxygen saturation was also measured during trawl surveys.
+
+## Computation of complementary parameters for biotic evolution analysis
+
+#### Haline zones definition
+ 
+To study the time evolution of biotic and abiotic parameters along the salinity gradient of the estuaries, haline zones were defined from WFD fishing surveys datasets from the last 20 years as they gathered the highest frequency and surface covering of salinity measurements. Estuaries were divided into two zones depending to obtain Q1-Q3 distribution of autumn salinity values below 18 g/L for mesohaline zone and > 18 g/L for polyhaline zone (see Figure \@ref(fig:map_haline_zone)).
+
+```{r map_haline_zone, fig.cap="Map of WFD sampling points for fishing surveys (on the left) and autumn salinity distribution depending on the defined haline sectors delimitation (on the right).", fig.show='hold', fig.height=9}
+knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_estuaries.png"))
+```
+
+#### Macrobenthic BEQI-FR quality index
+
+Macrobenthic community composition may influence the nursery quality of habitats for common sole and European seabass through at least two pathways. First, benthic taxa differ in their vulnerability to predation by these species, thereby affecting food availability. Second, taxa exhibit contrasting sensitivities to pollution and organic enrichment, making community composition a useful indicator of environmental quality. To integrate this ecological dimension, we calculated the French Benthic Ecosystem Quality Index (BEQI-FR), which assesses the capacity of benthic communities to resist anthropogenic disturbance. BEQI-FR is the indicator currently used to evaluate the ecological status of estuarine transitional waters in mainland France (@fouetSelectionDunIndicateur2018; @fouetIntercalibrationBiologicalElements2020).
+
+The index combines the AZTI Marine Biotic Index (AMBI; @borjaMarineBioticIndex2000a; @borjaGuidelinesUseAMBI2005a), species richness ((S)), and the Shannon diversity index ((H')). Observed values are standardized against habitat-specific reference values according to:
 
 $$
 \mathrm{BEQI\mbox{-}FR}
@@ -236,15 +243,14 @@ $$
 \dfrac{\mathrm{AMBI}_{\mathrm{obs}} - 7}{\mathrm{AMBI}_{\mathrm{ref}} - 7}
 }{3}
 $$
-
-Observed AMBI was computed from @blanchetMethodologiePourSurveillance methodology. First, it needs to assign species to 5 ecological groups from sensitive to opportunistic, reflecting their tolerance to organic enrichment and pollution (GI: sensitive species; GII: indifferent species; GIII: tolerant species; GIV: second-order opportunistic species; GV: first-order opportunistic species). Than compute AMBI value following the equation using the function *ambi* from the package {benthos} :
+Observed AMBI values were calculated following the methodology described by @blanchetMethodologiePourSurveillance. Species are first assigned to one of five ecological groups reflecting their sensitivity to organic enrichment and pollution: GI (sensitive species), GII (indifferent species), GIII (tolerant species), GIV (second-order opportunistic species), and GV (first-order opportunistic species). AMBI is then calculated using the ambi() function from the {benthos} package according to:
 
 $$
 \mathrm{AMBI} = \frac{0\,G_{I} + 1.5\,G_{II} + 3\,G_{III} + 4.5\,G_{IV} + 6\,G_{V}}{100}
 $$
-To define reference values for $S_{\mathrm{ref}}$, $H'_{\mathrm{ref}}$, and $AMBI_{\mathrm{ref}}$ from the methodology from @fouetSelectionDunIndicateur2018, we first need to characterize intertidal and subtidal EUNIS habitats for each estuary from main grain size, organic matter percentage, and main phyla found in the sediment. This classification is presented in the Supplementary Information section labelled "Benthic quality index computation details" along with the references values to the EUNIS habitat identified.
+To determine the reference values $S_{\mathrm{ref}}$, $H'{\mathrm{ref}}$, and $\mathrm{AMBI}{\mathrm{ref}}$ following @fouetSelectionDunIndicateur2018, intertidal and subtidal habitats were first classified according to the EUNIS habitat typology. Habitat classification was based on dominant sediment grain size, sediment organic matter content, and the dominant benthic taxa present. The resulting habitat classifications, together with the corresponding reference values, are provided in the Supplementary Information section entitled “Benthic quality index computation details”.
 
-The scoring of BEQI-FR depends on the type of estuary. The Loire, Gironde and Seine estuaries are typified as large estuaries (type D) and the scoring grid is presented in \@ref(tab:tab_EQR_BEQI). All values above 1 must be fixed to 1 @blanchetMethodologiePourSurveillance2025.
+The Loire, Gironde, and Seine estuaries are classified as large estuaries (Type D) under the French assessment framework. Consequently, BEQI-FR ecological quality ratios (EQRs) were interpreted using the classification thresholds shown in Table \@ref(tab:tab_EQR_BEQI). Following @blanchetMethodologiePourSurveillance2025, EQR values exceeding 1 were truncated to 1.
 
 ```{r}
 beqi_classes <- tribble(
@@ -270,53 +276,53 @@ tab_EQR_BEQI <- set_caption(
 tab_EQR_BEQI
 ```
 
-
-### Fish and shrimp densities, and associated salinity
-
-Fish data were collected within the Water Framework Directive (WFD; 2000/60/EC) monitoring program established for water quality assessment. The WFD requires Member States to monitor aquatic ecosystems, including estuarine environments. To meet these requirements, a standardized methodology based on estuarine fishing surveys was developed in the early 2000s.
-
-Sampling campaigns have been conducted since 2005 in 32 French estuaries during both spring and autumn to estimate fish and shrimp densities, together with physicochemical parameters such as salinity. According to the monitoring design, surveys are theoretically carried out over three consecutive years within each six-year management cycle (see years of WFD fishing survey campaigns for the Gironde, Loire, and Seine estuaries in \@ref(fig:biota-exp-plan)).  For each campaign (i.e., one estuary, one year, and one season), fish abundance was estimated using beam trawl surveys following the protocol described in @onemaReseauxControleSurveillance2014.
-
-Briefly, two types of beam trawls were used depending on estuary size: (i) a trawl 2.9 m wide and 0.5 m high with a 20 mm stretched mesh cod-end for large estuaries, and (ii) a trawl 1.5 m wide and 0.5 m high with a 16 mm stretched mesh cod-end for small estuaries, in accordance with the standardized French estuarine protocol (NF T90-701, implemented on 2021-07-01). Trawling was conducted during daytime at speeds ranging from 1.5 to 3 knots for approximately 15 minutes. A minimum of eight samples were collected within each salinity zone (oligohaline, mesohaline, and polyhaline). Salinity was also measured during trawl surveys.
-
-```{r biota-exp-plan, fig.cap="Experimental design for REBENT and DCE programs by estuary.", fig.show='hold'}
-knitr::include_graphics(get_shortened_path("mat_meth/ggplot_exp_design_rebent_dce.jpg"))
-```
-
-## Data analysis
-
-### Haline zones definition
- 
-Haline zones were defined from WFD fishing surveys datasets as they gathered the highest frequency and surface covering of salinity measurements. Estuaries were divided into two zones depending to obtain Q1-Q3 distribution of autumn salinity values below 18 g/L for mesohaline zone and > 18 g/L for polyhaline zone (see Figure \@ref(fig:map_haline_zone)).
+#### Fish size class
 
 
-```{r map_haline_zone, fig.cap="Map of WFD sampling points for fishing surveys (on the left) and autumn salinity distribution depending on the defined haline sectors delimitation (on the right).", fig.show='hold', fig.height=9}
-knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_estuaries.png"))
-```
+## Time-series analysis
 
-### Long term trends analysis
+### Abiotic long term trends analysis
 
-Log-term studies have been carried out on physico-chemical parameters followed over the period 1987-2024, river flows over the period 1975-2024, legislated compounds followed at least from 1995 until 2023 or 2024 (see Table \@ref(tab:tab_contam_rocchmv)), and intertidal surface areas followed from the period 1970-2020 for the Seine estuary.
+Long-term analyses were conducted on physicochemical parameters monitored over the period 1987–2024, river discharge data available from 1975–2024, legislated contaminants monitored from at least 1995 to 2023 or 2024, and intertidal surface areas documented from as early as 1841 in the Seine estuary until 2011 or 2012, depending on the estuary.
 
-#### Statistical analysis
+#### Individual parameter analyses
 
-Long-term trends were assessed using the Kruskal-Wallis rank sum test (kruskal.test, {stats} package), based on contamination data from the first and last five-year periods, for compounds with more than 20 years of monitoring data. To compare contamination levels between compounds and estuaries, median values were calculated for both periods. For compounds monitored for fewer than 20 years, long-term trends were not estimated. Instead, contamination levels were compared using median values calculated over the entire monitoring period.
-When a decreasing trend was observed, the time required for concentrations to fall below the EQS was estimated by comparing values from the first and last years of the monitoring period. Assuming a linear rate of decline, this approach allowed for projection of the time needed to reach compliance with the EQS.
+For each time series, temporal dynamics were visualized using a LOESS (locally estimated scatterplot smoothing) curve fitted with the geom_smooth() function from the {ggplot2} package in R. This non-parametric smoothing approach was used to highlight long-term patterns while reducing short-term variability.
 
-Contaminant : regression non monotonique + moyenne début vs fin
-physico-chimie, débit, surface : regression non monotonique + breakpoints
+For time series displaying an apparent monotonic trend, the significance of the trend was assessed using the modified Mann–Kendall test for autocorrelated data, implemented with the mmkh() function from the {modifiedmk} package. Depending on whether the trend was identified as monotonic or non-monotonic, different analytical approaches were applied.
 
-PCA (physico-chimie, débit) : classification ascendante hiérarchique avec contrainte de contiguité temporelle pour définir les périodes par estuaire
+For significantly monotonic trends, trend magnitude was estimated using the Theil–Sen slope estimator, computed with the sens.slope() function from the {trend} package. In addition, differences between the beginning and the end of the study period were evaluated by comparing observations from the first and last ten years of each time series using a Mann–Whitney U test (Wilcoxon rank-sum test), implemented with the wilcox.test() function in R.
 
-### Recent trends analysis
+For legislated contaminants exhibiting a significant decreasing trend, the time required for concentrations to fall below the Environmental Quality Standard (EQS) was estimated assuming a constant linear rate of decline derived from the Theil–Sen slope estimate. This approach provided an approximate projection of the time required to achieve compliance with the EQS.
 
-Recent trends were estimated using the last 15 years of time series data, applying Spearman’s rank correlation coefficient (ρ). Statistical significance of the correlations was tested using the cor.test function from the {stats} package in R. For each estuary and each compound, the correlation coefficient and its associated p-value were used to evaluate the presence and direction of recent trends.
+For time series displaying either a visually non-monotonic pattern or a non-significant Mann–Kendall trend, structural changes were investigated using change-point analysis. Breakpoints associated with changes in both mean and variance were identified using the cpt.meanvar() function from the {changepoint} package.
+
+#### Relationships among parameters
+
+Relationships among abiotic parameters were explored using Principal Component Analysis (PCA) performed on the common monitoring period (1987–2024), during which all variables were available. PCA was conducted using the {FactoMineR} package.
+
+Occasional missing values were handled using the {missMDA} package, which performs iterative imputation based on PCA. Briefly, missing values were initially replaced by variable means and subsequently updated through successive PCA iterations until convergence, thereby minimizing the distance between observations and their projections in the multivariate space.
+
+Intertidal surface area data contained too few observations to allow reliable PCA-based imputation. To retain these variables in the analysis, missing values occurring between observations were interpolated using a monotonic cubic spline (splinefun(method = "monoH.FC")). For years beyond the last observation, values were extrapolated assuming continuation of the long-term monotonic trend, using a linear projection based on the Theil–Sen slope estimator (sens.slope() function from the {trend} package).
+
+### Biotic and abiotic recent trends analysis
+
+Recent trends were studied from the year of the first and the last biotic data from the WDF monitoring programs (i.e., 2025). A PCA was performed
+
+
+<!-- Recent trends were estimated using the last 15 years of time series data, applying Spearman’s rank correlation coefficient (ρ). Statistical significance of the correlations was tested using the cor.test function from the {stats} package in R. For each estuary and each compound, the correlation coefficient and its associated p-value were used to evaluate the presence and direction of recent trends. -->
 
 
 
 # Results
 
+## Haline zones
 
+```{r}
+knitr::include_graphics(
+get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_estuaries.png")
+)
+```
 
 ## PCA on physico-chemical variables by estuary
 

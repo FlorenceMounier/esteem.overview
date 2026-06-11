@@ -2,8 +2,8 @@
 
 #' Formatting POMET raw datasets
 #'
-#' @param data_POMET
-#' @param species
+#' @param data_POMET tibble raw dataset from POMET program
+#' @param species NULL or chr vector of species (default list: "Solea solea", "Solea senegalensis", "Dicentrarchus "Palaemon longirostris", "Crangon crangon")
 #'
 #' @import dplyr
 #' @import stringr
@@ -49,62 +49,7 @@ fct_formatting_raw_data_POMET <- function(data_POMET,
   ) |>
     
     # ---- Join with traits information ----
-  left_join(data_POMET_traits, by = "trait_id") |>
-    
-    # ---- Create GPS central position of traits ----
-  mutate(latitude = (pos_deb_lat_dd + pos_fin_lat_dd) / 2) |>
-    mutate(longitude = (pos_deb_long_dd + pos_fin_long_dd) / 2) |>
-    
-    # ----- Create estuary variable -----
-  mutate(
-    estuary = case_when(
-      masse_eau |> str_starts("Gironde") ~ "Gironde",
-      masse_eau |> str_starts("Loire") ~ "Loire",
-      masse_eau |> str_starts("Seine") ~ "Seine",
-      TRUE ~ NA
-    )
-  ) |>
-    select(-masse_eau) |>
-    
-    # ----- Filter estuaries GPS delimitations -----
-  mutate(
-    estuary = case_when(
-      estuary == "Gironde" &
-        latitude >= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lat_min &
-        latitude <= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lat_max & 
-        longitude >= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lon_min & 
-        longitude <= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lon_max ~ "Gironde",
-      estuary == "Loire" &
-        latitude >= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lat_min &
-        latitude <= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lat_max & 
-        longitude >= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lon_min & 
-        longitude <= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lon_max ~ "Loire",
-      estuary == "Seine" &
-        latitude >= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lat_min &
-        latitude <= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lat_max & 
-        longitude >= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lon_min & 
-        longitude <= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lon_max ~ "Seine",
-      TRUE ~ NA
-    )
-  )  |>
-    
-    # ----- Create haline_zone variable -----
-  mutate(
-    haline_zone = case_when(
-      estuary == "Gironde" & latitude >= halin_table[which(halin_table$estuary == "Gironde"),]$halin_limit_lat ~ "polyhalin",
-      estuary == "Gironde" & latitude >= halin_table[which(halin_table$estuary == "Gironde"),]$estuary_limit_lat_min ~ "mesohalin",
-      estuary == "Loire" & longitude <= halin_table[which(halin_table$estuary == "Loire"),]$halin_limit_lon ~ "polyhalin",
-      estuary == "Loire" & longitude <= halin_table[which(halin_table$estuary == "Loire"),]$estuary_limit_lon_max ~ "mesohalin",
-      estuary == "Seine" & longitude <= halin_table[which(halin_table$estuary == "Seine"),]$halin_limit_lon ~ "polyhalin",
-      estuary == "Seine" & longitude <= halin_table[which(halin_table$estuary == "Seine"),]$estuary_limit_lon_max ~ "mesohalin",
-      TRUE ~ NA
-    )
-  ) |>
-    
-    # ----- Filter unrelevant observations -----
-  filter(trait_id != 82) |> # fleuve Gironde
-    filter(trait_id %!in% c(6185, 8494)) |>  # out of Loire
-    filter(trait_id %!in% c(13477, 16087, 14362)) # filandres Seine
+  left_join(data_POMET_traits, by = "trait_id")
   
   return(formatted_data_POMET)
 }

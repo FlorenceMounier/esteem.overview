@@ -1,0 +1,69 @@
+---
+title: "flat_phychem.Rmd"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+
+# fct_points_lieu_mnemonique
+    
+```{r function-fct_points_lieu_mnemonique}
+#' Identify PROGRAMME and LIEU_MNEMONIQUE in GPS box for physico-chemical parameters
+#' 
+#' @param estuary_name character
+#' @param GPS_box .rda from {esteem.overview}
+#'
+#' @return
+#' 
+#' @export
+fct_points_lieu_mnemonique <- function(estuary_name, GPS_box){
+
+  points_polyhalin <- data_physico_chem |>
+    filter(estuary == estuary_name) |>
+    filter(longitude >= GPS_box$min_lon[1] & longitude <= GPS_box$max_lon[1] &
+             latitude >= GPS_box$min_lat[1] & latitude <= GPS_box$max_lat[1]) |>
+    distinct(haline_zone, LIEU_MNEMONIQUE, year, PROGRAMME) |>
+    arrange(haline_zone, LIEU_MNEMONIQUE, year, PROGRAMME)
+
+  points_mesohalin <- data_physico_chem |>
+    filter(estuary == estuary_name) |>
+    filter(longitude >= GPS_box$min_lon[2] & longitude <= GPS_box$max_lon[2] &
+             latitude >= GPS_box$min_lat[2] & latitude <= GPS_box$max_lat[2]) |>
+    distinct(haline_zone, LIEU_MNEMONIQUE, year, PROGRAMME) |>
+    arrange(haline_zone, LIEU_MNEMONIQUE, year, PROGRAMME)
+
+  points <- full_join(points_polyhalin, points_mesohalin)
+
+  points_lieu_mnemonique <- points |> distinct(haline_zone, year, LIEU_MNEMONIQUE, PROGRAMME)
+
+  return(points_lieu_mnemonique)
+}
+```
+  
+```{r example-fct_points_lieu_mnemonique}
+fct_points_lieu_mnemonique()
+```
+  
+```{r tests-fct_points_lieu_mnemonique}
+test_that("fct_points_lieu_mnemonique works", {
+  expect_true(inherits(fct_points_lieu_mnemonique, "function")) 
+})
+```
+  
+
+
+```{r development-inflate, eval=FALSE}
+fusen::inflate(flat_file = "dev/flat_phychem.Rmd", 
+               vignette_name = NULL, overwrite = TRUE)
+```
+

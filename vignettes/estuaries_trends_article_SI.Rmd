@@ -51,6 +51,55 @@ library(tidyverse)
 library(flextable)
 ```
 
+# Monitoring programs
+
+## RNOHYD
+
+RNO Hydrology is the oldest program within the French National Monitoring Network for Marine Environment Quality (RNO, established in 1974). Its objective is to assess the levels and trends of coastal marine environmental quality parameters through water measurements (temperature, salinity, nutrients, etc.).
+
+## REPHY 
+
+REPHY (Phytoplankton and Hydrology Observation and Monitoring Network in coastal waters) has been contributing to long-term time series on ocean health for more than 30 years. RHLN is a complementary local observation and monitoring network for hydrological parameters along the Normandy coast. Established in 2000, the Normandy Coastal Hydrological Network (RHLN) monitors the quality of coastal waters in Normandy within the Seine–Normandy basin. RHLN complements the REPHY monitoring and observation strategy by adding sampling stations and extending the sampling period for nutrients and physico-chemical parameters. Sampling and analytical methods are identical between RHLN and REPHY.
+
+## RESLOC_44
+
+RESLOC_44 is a complementary local observation and monitoring network in the Loire-Atlantique area.
+
+# Selected physico-chemical location points
+
+The samplingstations, monitoring programs, and measurement periods selected for this study are summarized by estuary in Table \@ref(tab:phychemtab):
+
+```{r phychemtab}
+phychemtab <- tribble(
+  ~Estuary, ~Period, ~Program, ~Location,
+  "Gironde", "1987-2004", "RNOHYD", "085-P-013, 014 & 015",
+  "Gironde", "2007-2024", "REPHY", "085-P-087 & 088",
+  "Loire", "1987-2007", "RNOHYD", "070-P-032, 034 & 035",
+  "Loire", "1992-2024", "REPHY & RESLOC_44", "070-P-20 & 21",
+  "Seine", "1987-2006", "RNOHYD", "011-P-016 & 011-P-017",
+  "Seine", "2008-2024", "REPHY & RHLN", "011-P-010",
+) 
+
+phychemtab <- flextable(phychemtab) |>
+  merge_v(j = "Estuary") |>
+  valign(j = "Estuary", valign = "center") |>
+  align(j = "Estuary", align = "center") |>
+  autofit()
+
+phychemtab <- set_table_properties(phychemtab, width = 1, layout = "autofit")  # width = 1 → 100% de la page
+
+phychemtab <- set_caption(
+  x = phychemtab,
+  caption = "Physico-chemical sampled stations, monitoring programs, and measurement periods.",
+  autonum = run_autonum(
+    seq_id = "tab",
+    bkm = "phychemtab"
+  )
+)
+
+phychemtab
+```
+
 # Contamination
 
 ## Dioxins and dioxin-like comparison to European threshold

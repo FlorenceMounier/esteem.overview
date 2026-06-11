@@ -15,7 +15,7 @@ library(tidyverse)
 # 01. Halin limits by estuary
 # =====================================================
 
-halin_table <- tibble::tibble(
+GPS_limits_table <- tibble::tibble(
   estuary = c("Gironde", "Loire", "Seine"),
   halin_limit_lat = c(45.45, NA, NA),
   halin_limit_lon = c(NA, -2.1, 0.3),
@@ -24,8 +24,7 @@ halin_table <- tibble::tibble(
   estuary_limit_lon_min = c(-1.1, -2.3, 0.0),
   estuary_limit_lon_max = c(-0.6, -1.8, 0.5)
 )
-usethis::use_data(halin_table, overwrite = TRUE)
-
+usethis::use_data(GPS_limits_table, overwrite = TRUE)
 
 # =====================================================
 # 02. Base OpenStreetMaps by estuary
