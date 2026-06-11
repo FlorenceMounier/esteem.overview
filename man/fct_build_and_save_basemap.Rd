@@ -26,10 +26,3 @@ A list with map components (also saved on disk)
 \description{
 Create and save OpenStreetMap base map for an estuary
 }
-\examples{
-# fct_build_and_save_basemap(
-#   data = esteem.overview::data_POMET_ALL_densities |> filter(estuary == "Gironde"),
-#   estuary_name = "Gironde",
-#   villes_selection = c("Royan", "Pauillac", "Saint-Estèphe", "Blaye", "Saint-Christoly-Médoc")
-# )
-}

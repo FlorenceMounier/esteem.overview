@@ -9,8 +9,6 @@
 #' @return a cropped map to be used in cowplot::plot_grid()
 #' 
 #' @export
-#' @examples
-#' fct_img_crop()
 fct_img_crop <- function(path) {
   ggdraw() +
     draw_image(path) +

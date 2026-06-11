@@ -15,6 +15,3 @@ a cropped map to be used in cowplot::plot_grid()
 \description{
 Delete empty space around map ggplots
 }
-\examples{
-fct_img_crop()
-}

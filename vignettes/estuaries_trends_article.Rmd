@@ -220,7 +220,10 @@ Briefly, two types of beam trawls were used depending on estuary size: (i) a tra
 
 #### Haline zones definition
  
-To study the time evolution of biotic and abiotic parameters along the salinity gradient of the estuaries, haline zones were defined from WFD fishing surveys datasets from the last 20 years as they gathered the highest frequency and surface covering of salinity measurements. Estuaries were divided into two zones depending to obtain Q1-Q3 distribution of autumn salinity values below 18 g/L for mesohaline zone and > 18 g/L for polyhaline zone (see Figure \@ref(fig:map_haline_zone)).
+To investigate long-term changes in biotic and abiotic parameters along estuarine salinity gradients, two haline zones were defined in each estuary using salinity data collected during autumn WFD fish surveys over the last 20 years. Regression trees were fitted with salinity as the response variable and geographic coordinates as predictors (`rpart()` function, {rpart} package). The first split of each tree, corresponding to the geographic threshold maximizing salinity differences between groups, was retained as the boundary between upstream and downstream salinity zones.
+
+
+Estuaries were divided into two zones depending to obtain Q1-Q3 distribution of autumn salinity values below 18 g/L for mesohaline zone and > 18 g/L for polyhaline zone (see Figure \@ref(fig:map_haline_zone)).
 
 ```{r map_haline_zone, fig.cap="Map of WFD sampling points for fishing surveys (on the left) and autumn salinity distribution depending on the defined haline sectors delimitation (on the right).", fig.show='hold', fig.height=9}
 knitr::include_graphics(get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_estuaries.png"))

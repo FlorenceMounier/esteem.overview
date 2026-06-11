@@ -17,7 +17,6 @@
 #' @importFrom ggspatial annotation_north_arrow
 #' @importFrom ggspatial north_arrow_orienteering
 #' @importFrom ggrepel geom_text_repel
-#' @importFrom tidyterra geom_spatraster_rgb
 #' @importFrom rlang ensym
 #' @importFrom rlang sym
 #' @importFrom sf st_as_sf
@@ -26,12 +25,6 @@
 #' 
 #' @return ggplot object
 #' @export
-#' @examples
-#' # plot_estuary_map(
-#' #   data = esteem.overview::data_POMET_ALL_densities |> filter(estuary == "Gironde"),
-#' #   estuary_name = "Gironde",
-#' #   colour_var = salinite,
-#' # )
 plot_estuary_map <- function(data,
                              estuary_name,
                              colour_var,
@@ -43,57 +36,99 @@ plot_estuary_map <- function(data,
   # -------------------------
   # 1. Load basemap
   # -------------------------
-  basemap <- load_estuary_basemap(estuary_name,
-                                  package = package)
+  basemap <- load_estuary_basemap(
+    estuary_name,
+    package = package
+  )
 
   # -------------------------
   # 2. Convert data to sf
   # -------------------------
   points_sf <- make_points_sf(data)
 
+  # IMPORTANT :
+  # rester en WGS84 pour cohérence avec raster OSM
+  points_sf <- sf::st_transform(points_sf, 4326)
+
+  points_coords <- cbind(
+  sf::st_drop_geometry(points_sf),
+  sf::st_coordinates(points_sf)
+)
+  
+  if (!is.null(basemap$villes) &&
+      nrow(basemap$villes) > 0) {
+
+    basemap$villes <- sf::st_transform(
+      basemap$villes,
+      4326
+    )
+  }
+
   # -------------------------
-  # 3. Base plot
+  # 3. Convert raster to dataframe
+  #    pour éviter coord_sf()
+  # -------------------------
+  raster_df <- terra::as.data.frame(
+    basemap$osm_raster,
+    xy = TRUE,
+    na.rm = FALSE
+  )
+
+  rgb_cols <- setdiff(
+    names(raster_df),
+    c("x", "y")
+  )[1:3]
+
+  raster_df$rgb <- grDevices::rgb(
+    raster_df[[rgb_cols[1]]],
+    raster_df[[rgb_cols[2]]],
+    raster_df[[rgb_cols[3]]],
+    maxColorValue = 255
+  )
+
+  # -------------------------
+  # 4. Base plot
   # -------------------------
   p <- ggplot2::ggplot() +
-    tidyterra::geom_spatraster_rgb(data = basemap$osm_raster)
+
+    ggplot2::geom_raster(
+      data = raster_df,
+      ggplot2::aes(
+        x = x,
+        y = y,
+        fill = rgb
+      )
+    ) +
+
+    ggplot2::scale_fill_identity()
 
   # -------------------------
-  # 4. Dynamic aesthetic mapping
+  # 5. Dynamic aesthetic mapping
   # -------------------------
-  
-  # Capture arguments
-  colour_var <- rlang::enquo(colour_var)
-  fill_var   <- rlang::enquo(fill_var)
-  size_var   <- rlang::enquo(size_var)
-  shape_var  <- rlang::enquo(shape_var)
-  
-mapping <- list()
+  mapping <- list()
 
-if (!missing(colour_var)) {
-  colour_var <- rlang::enquo(colour_var)
-  mapping$colour <- colour_var
-}
+  if (!missing(colour_var)) {
+    mapping$colour <- rlang::enquo(colour_var)
+  }
 
-if (!missing(fill_var)) {
-  fill_var <- rlang::enquo(fill_var)
-  mapping$fill <- fill_var
-}
+  if (!missing(fill_var)) {
+    mapping$fill <- rlang::enquo(fill_var)
+  }
 
-if (!missing(size_var)) {
-  size_var <- rlang::enquo(size_var)
-  mapping$size <- size_var
-}
+  if (!missing(size_var)) {
+    mapping$size <- rlang::enquo(size_var)
+  }
 
-if (!missing(shape_var)) {
-  shape_var <- rlang::enquo(shape_var)
-  mapping$shape <- shape_var
-}
-  
-if (length(mapping) > 0) {
+  if (!missing(shape_var)) {
+    mapping$shape <- rlang::enquo(shape_var)
+  }
 
-  # Shape automatique si pas fourni
+  if (length(mapping) > 0) {
+
   geom_shape <- NULL
+
   if (!"shape" %in% names(mapping)) {
+
     if ("fill" %in% names(mapping)) {
       geom_shape <- 21
     } else {
@@ -101,107 +136,198 @@ if (length(mapping) > 0) {
     }
   }
 
+  point_mapping <- c(
+    list(
+      x = quote(X),
+      y = quote(Y)
+    ),
+    mapping
+  )
+
   if (is.null(geom_shape)) {
 
-    # PAS de shape dans geom_sf
-    p <- p + ggplot2::geom_sf(
-      data = points_sf,
-      mapping = do.call(ggplot2::aes, mapping),
-      alpha = 0.8
-    )
+    p <- p +
+      ggplot2::geom_point(
+        data = points_coords,
+        mapping = do.call(
+          ggplot2::aes,
+          point_mapping
+        ),
+        alpha = 0.8
+      )
 
   } else {
 
-    # shape explicite
-    p <- p + ggplot2::geom_sf(
-      data = points_sf,
-      mapping = do.call(ggplot2::aes, mapping),
-      shape = geom_shape,
-      alpha = 0.8
-    )
+    p <- p +
+      ggplot2::geom_point(
+        data = points_coords,
+        mapping = do.call(
+          ggplot2::aes,
+          point_mapping
+        ),
+        shape = geom_shape,
+        alpha = 0.8
+      )
   }
 
 } else {
 
-  p <- p + ggplot2::geom_sf(
-    data = points_sf,
-    size = 2,
-    alpha = 0.8
-  )
+  p <- p +
+    ggplot2::geom_point(
+      data = points_coords,
+      ggplot2::aes(
+        x = X,
+        y = Y
+      ),
+      size = 1,
+      alpha = 0.8
+    )
 }
   
   # -------------------------
-  # 5. Cities + labels
+  # 6. Cities + labels
   # -------------------------
-  if (!is.null(basemap$villes) && nrow(basemap$villes) > 0) {
-    # Points des villes
-    p <- p + ggplot2::geom_sf(
-      data = basemap$villes,
-      shape = 21,
-      fill = "black",
-      color = "black",
-      size = 2
+  if (!is.null(basemap$villes) &&
+      nrow(basemap$villes) > 0) {
+
+    villes_coords <- cbind(
+      sf::st_drop_geometry(basemap$villes),
+      sf::st_coordinates(basemap$villes)
     )
-    
-     # Convertir coordonnées pour labels
-  villes_coords <- cbind(
-    basemap$villes,
-    sf::st_coordinates(basemap$villes)
-  )
-  
-    # Labels des villes
-  p <- p + ggrepel::geom_text_repel(
-    data = villes_coords,
-    aes(x = X, y = Y, label = name),
-    min.segment.length = 0,
-    nudge_y = 0.01,            # décale légèrement le texte
-    size = 3,
-    color = "black",
-    family = "sans"
-  )
+
+    p <- p +
+      ggplot2::geom_point(
+        data = villes_coords,
+        ggplot2::aes(
+          x = X,
+          y = Y
+        ),
+        shape = 21,
+        fill = "black",
+        color = "black",
+        size = 1.5
+      ) +
+      ggrepel::geom_text_repel(
+        data = villes_coords,
+        ggplot2::aes(
+          x = X,
+          y = Y,
+          label = name
+        ),
+        min.segment.length = 0,
+        nudge_y = 0.01,
+        size = 2.3,
+        color = "black",
+        family = "sans"
+      )
   }
 
-  # -------------------------
-  # 6. Ajouter lignes horizontales/verticales si définies
+ # -------------------------
+  # 7. Limite haline
   # -------------------------
 
-# Ligne horizontale
-if (!is.null(basemap$halin_limit_lat) && !is.na(basemap$halin_limit_lat)) {
-  p <- p + ggplot2::geom_segment(
-    data = data.frame(
-      x = basemap$xlim[1],
-      xend = basemap$xlim[2],
-      y = basemap$halin_limit_lat,
+  line_frac <- 0.45
+
+  x_mid  <- mean(basemap$xlim)
+  y_mid  <- mean(basemap$ylim)
+
+  x_half <- diff(basemap$xlim) *
+    line_frac / 2
+
+  y_half <- diff(basemap$ylim) *
+    line_frac / 2
+
+  # ---- Ligne horizontale
+  if (!is.null(basemap$halin_limit_lat) &&
+      !is.na(basemap$halin_limit_lat)) {
+
+    line_data <- data.frame(
+      x    = x_mid - x_half,
+      xend = x_mid + x_half,
+      y    = basemap$halin_limit_lat,
       yend = basemap$halin_limit_lat
-    ),
-    ggplot2::aes(x = x, xend = xend, y = y, yend = yend),
-    color = "black",
-    linewidth = 1.2
-  )
-}
+    )
 
-# Ligne verticale
-if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
-  p <- p + ggplot2::geom_segment(
-    data = data.frame(
-      x = basemap$halin_limit_lon,
+    # halo blanc
+    p <- p +
+      ggplot2::geom_segment(
+        data = line_data,
+        ggplot2::aes(
+          x = x,
+          xend = xend,
+          y = y,
+          yend = yend
+        ),
+        color = "white",
+        linewidth = 2
+      )
+
+    # ligne noire
+    p <- p +
+      ggplot2::geom_segment(
+        data = line_data,
+        ggplot2::aes(
+          x = x,
+          xend = xend,
+          y = y,
+          yend = yend
+        ),
+        color = "black",
+        linewidth = 0.8
+      )
+  }
+
+  # ---- Ligne verticale
+  if (!is.null(basemap$halin_limit_lon) &&
+      !is.na(basemap$halin_limit_lon)) {
+
+    line_data <- data.frame(
+      x    = basemap$halin_limit_lon,
       xend = basemap$halin_limit_lon,
-      y = basemap$ylim[1],
-      yend = basemap$ylim[2]
-    ),
-    ggplot2::aes(x = x, xend = xend, y = y, yend = yend),
-    color = "black",
-    linewidth = 1.2
-  )
-}
+      y    = y_mid - y_half,
+      yend = y_mid + y_half
+    )
 
+    # halo blanc
+    p <- p +
+      ggplot2::geom_segment(
+        data = line_data,
+        ggplot2::aes(
+          x = x,
+          xend = xend,
+          y = y,
+          yend = yend
+        ),
+        color = "white",
+        linewidth = 2
+      )
+
+    # ligne noire
+    p <- p +
+      ggplot2::geom_segment(
+        data = line_data,
+        ggplot2::aes(
+          x = x,
+          xend = xend,
+          y = y,
+          yend = yend
+        ),
+        color = "black",
+        linewidth = 1
+      )
+  }
+  
   # -------------------------
-  # 7. Coordinates + theme
+  # 8. Coordinates
   # -------------------------
+
+  raster_xlim <- range(raster_df$x, na.rm = TRUE)
+  raster_ylim <- range(raster_df$y, na.rm = TRUE)
+
   p <- p +
-    ggplot2::coord_sf(
-      xlim = basemap$xlim,
-      ylim = basemap$ylim,
+    ggplot2::coord_cartesian(
+      xlim = raster_xlim,
+      ylim = raster_ylim,
       expand = FALSE
     ) +
     theme_esteem() +
@@ -210,25 +336,30 @@ if (!is.null(basemap$halin_limit_lon) && !is.na(basemap$halin_limit_lon)) {
     )
 
   # -------------------------
-  # 8. Scale bar + north arrow + title
+  # 9. Scale bar + north arrow + title
   # -------------------------
   p <- p +
-  ggspatial::annotation_scale(
-    location = "bl",      # bas gauche
-    width_hint = 0.2,     # proportion de la carte
-    text_cex = 1,         # taille du texte
-    text_family = "sans"
-  ) +
-  ggspatial::annotation_north_arrow(
-    pad_x = unit(0.5, "cm"), # décale horizontalement
-    pad_y = unit(0.7, "cm"), # décale verticalement
-    which_north = "true",
-    style = ggspatial::north_arrow_orienteering(text_family = "sansv"),
-    height = grid::unit(0.5, "cm"),   # hauteur totale de la flèche
-    width  = grid::unit(0.5, "cm")  # largeur
-  ) +
-  ggplot2::labs(title = paste0(estuary_name, " estuary"))
     
+    ggspatial::annotation_scale(
+      location = "bl",
+      width_hint = 0.10,
+      text_cex = 0.6,
+      text_family = "sans",
+      pad_x = grid::unit(0.15, "cm"),
+      pad_y = grid::unit(0.15, "cm")
+    ) +
     
+    ggspatial::annotation_north_arrow(
+      location = "bl",
+      pad_x = grid::unit(0.15, "cm"),
+      pad_y = grid::unit(0.45, "cm"),
+      which_north = "grid",
+      style = ggspatial::north_arrow_minimal(),
+      height = grid::unit(0.30, "cm"),
+      width  = grid::unit(0.30, "cm")
+    ) +
+    
+    ggplot2::labs(title = paste0(estuary_name, " estuary"))
+
   return(p)
 }

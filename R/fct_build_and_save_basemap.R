@@ -16,12 +16,6 @@
 #' @importFrom maptiles get_tiles
 #' @importFrom terra writeRaster
 #' @export
-#' @examples
-#' # fct_build_and_save_basemap(
-#' #   data = esteem.overview::data_POMET_ALL_densities |> filter(estuary == "Gironde"),
-#' #   estuary_name = "Gironde",
-#' #   villes_selection = c("Royan", "Pauillac", "Saint-Estèphe", "Blaye", "Saint-Christoly-Médoc")
-#' # )
 fct_build_and_save_basemap <- function(data,
                                        estuary_name,
                                        villes_selection = NULL,
@@ -30,11 +24,11 @@ fct_build_and_save_basemap <- function(data,
   # -------------------------
   # 0. Charger halin_table du package
   # -------------------------
-  if (!exists("halin_table")) {
-    stop("halin_table not found in the package")
+  if (!exists("GPS_limits_haline")) {
+    stop("GPS_limits_haline not found in the package")
   }
 
-  halin_values <- halin_table[halin_table$estuary == estuary_name, ]
+  halin_values <- GPS_limits_haline[GPS_limits_haline$estuary == estuary_name, ]
   halin_limit_lat <- halin_values$halin_limit_lat
   halin_limit_lon <- halin_values$halin_limit_lon
   
@@ -60,6 +54,15 @@ fct_build_and_save_basemap <- function(data,
 
   ylim <- c(bbox["ymin"] - buffer_deg,
             bbox["ymax"] + buffer_deg)
+  
+  fixed_bbox <- fix_bbox_aspect(
+  xlim = xlim,
+  ylim = ylim,
+  target_ratio = 1 # carte carrée
+)
+
+xlim <- fixed_bbox$xlim
+ylim <- fixed_bbox$ylim
 
   coords <- matrix(
     c(

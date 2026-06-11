@@ -61,13 +61,8 @@ make_points_sf <- function(data) {
     )
 }
 ```
-  
-```{r example-make_points_sf}
-```
-  
-```{r tests-make_points_sf}
-```
-  
+
+
 # theme_esteem
 
 ```{r function-theme_esteem}
@@ -83,11 +78,6 @@ theme_esteem <- function(base_size = 11, base_family = "sans") {
 }
 ```
   
-```{r example-theme_esteem}
-```
-  
-```{r tests-theme_esteem}
-```
 
 # get_shortened_path
 
@@ -109,6 +99,7 @@ get_shortened_path <- function(complete_path){
   return(short_path)
 }
 ```
+
 
 # get_info_from_dates
     
@@ -153,60 +144,104 @@ get_info_from_dates <- function(data, date_variable){
 ```
   
   
-# get_info_from_gps_position
+# get_estuary_from_gps_position
     
-```{r function-get_info_from_gps_position}
-#' Get estuary and haline_zone variables from GPS positions
+```{r function-get_estuary_from_gps_position}
+#' Get estuary variable from GPS positions
 #' 
 #' @param data tibble containing columns with GPS position through latitude and longitude columns
 #' @param latitude name of latitude column
 #' @param longitude name of longitude column
 #'
-#' @return the tibble + variables estuary and haline_zone
+#' @return the tibble + variable estuary
 #' 
 #' @export
 
-get_info_from_gps_position <- function(data, latitude, longitude){
+get_estuary_from_gps_position <- function(data, latitude, longitude){
   
   completed_data <- data |>
     
     # ---- Add estuary variable ----
   mutate(
     estuary = case_when(
-      {{latitude}} >= GPS_limits_table[which(GPS_limits_table$estuary == "Gironde"), ]$estuary_limit_lat_min &
-        {{latitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Gironde"), ]$estuary_limit_lat_max &
-        {{longitude}} >= GPS_limits_table[which(GPS_limits_table$estuary == "Gironde"), ]$estuary_limit_lon_min &
-        {{longitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Gironde"), ]$estuary_limit_lon_max ~ "Gironde",
+      {{latitude}} >= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Gironde"), ]$estuary_limit_lat_min &
+        {{latitude}} <= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Gironde"), ]$estuary_limit_lat_max &
+        {{longitude}} >= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Gironde"), ]$estuary_limit_lon_min &
+        {{longitude}} <= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Gironde"), ]$estuary_limit_lon_max ~ "Gironde",
       
-      {{latitude}} >= GPS_limits_table[which(GPS_limits_table$estuary == "Loire"), ]$estuary_limit_lat_min &
-        {{latitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Loire"), ]$estuary_limit_lat_max &
-        {{longitude}} >= GPS_limits_table[which(GPS_limits_table$estuary == "Loire"), ]$estuary_limit_lon_min &
-        {{longitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Loire"), ]$estuary_limit_lon_max ~ "Loire",
+      {{latitude}} >= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Loire"), ]$estuary_limit_lat_min &
+        {{latitude}} <= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Loire"), ]$estuary_limit_lat_max &
+        {{longitude}} >= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Loire"), ]$estuary_limit_lon_min &
+        {{longitude}} <= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Loire"), ]$estuary_limit_lon_max ~ "Loire",
       
-      {{latitude}} >= GPS_limits_table[which(GPS_limits_table$estuary == "Seine"), ]$estuary_limit_lat_min &
-        {{latitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Seine"), ]$estuary_limit_lat_max &
-        {{longitude}} >= GPS_limits_table[which(GPS_limits_table$estuary == "Seine"), ]$estuary_limit_lon_min &
-        {{longitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Seine"), ]$estuary_limit_lon_max ~ "Seine",
+      {{latitude}} >= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Seine"), ]$estuary_limit_lat_min &
+        {{latitude}} <= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Seine"), ]$estuary_limit_lat_max &
+        {{longitude}} >= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Seine"), ]$estuary_limit_lon_min &
+        {{longitude}} <= GPS_limits_estuary[which(GPS_limits_estuary$estuary == "Seine"), ]$estuary_limit_lon_max ~ "Seine",
       TRUE ~ NA
     )
   )  |>
-    filter(!is.na(estuary)) |>
+    filter(!is.na(estuary))
+  
+  return(completed_data)
+      
+}
+```
+  
+```{r example-get_estuary_from_gps_position}
+toy_data_gps <- data.frame(
+  station = c(
+    "GIR_01", "GIR_02", "GIR_03",
+    "LOI_01", "LOI_02", "LOI_03",
+    "SEI_01", "SEI_02", "SEI_03"
+  ),
+  lat = c(
+    45.58, 45.52, 45.45,
+    47.28, 47.30, 47.25,
+    49.47, 49.45, 49.42
+  ),
+  lon = c(
+    -0.95, -1.05, -1.15,
+    -2.05, -2.20, -2.35,
+    0.18, 0.30, 0.42
+  )
+)
+
+get_estuary_from_gps_position(data = toy_data_gps, latitude = lat, longitude = lon)
+```
+
+# get_haline_zone_from_gps_position
+    
+```{r function-get_haline_zone_from_gps_position}
+#' Get haline_zone variable from GPS positions
+#' 
+#' @param data tibble containing columns with GPS position through latitude and longitude columns
+#' @param latitude name of latitude column
+#' @param longitude name of longitude column
+#'
+#' @return the tibble + variable haline_zone
+#' 
+#' @export
+
+get_haline_zone_from_gps_position <- function(data, latitude, longitude){
+  
+  completed_data <- data |>
     
     # ---- Add haline_zone variable ----
   mutate(
     haline_zone = case_when(
       estuary == "Gironde" &
-        {{latitude}} >= GPS_limits_table[which(GPS_limits_table$estuary == "Gironde"), ]$halin_limit_lat ~ "polyhalin",
+        {{latitude}} >= GPS_limits_haline[which(GPS_limits_haline$estuary == "Gironde"), ]$halin_limit_lat ~ "outer",
       estuary == "Gironde" &
-        {{latitude}} >= GPS_limits_table[which(GPS_limits_table$estuary == "Gironde"), ]$estuary_limit_lat_min ~ "mesohalin",
+        {{latitude}} < GPS_limits_haline[which(GPS_limits_haline$estuary == "Gironde"), ]$halin_limit_lat ~ "inner",
       estuary == "Loire" &
-        {{longitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Loire"), ]$halin_limit_lon ~ "polyhalin",
+        {{longitude}} <= GPS_limits_haline[which(GPS_limits_haline$estuary == "Loire"), ]$halin_limit_lon ~ "outer",
       estuary == "Loire" &
-        {{longitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Loire"), ]$estuary_limit_lon_max ~ "mesohalin",
+        {{longitude}} > GPS_limits_haline[which(GPS_limits_haline$estuary == "Loire"), ]$halin_limit_lon ~ "inner",
       estuary == "Seine" &
-        {{longitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Seine"), ]$halin_limit_lon ~ "polyhalin",
+        {{longitude}} <= GPS_limits_haline[which(GPS_limits_haline$estuary == "Seine"), ]$halin_limit_lon ~ "outer",
       estuary == "Seine" &
-        {{longitude}} <= GPS_limits_table[which(GPS_limits_table$estuary == "Seine"), ]$estuary_limit_lon_max ~ "mesohalin",
+        {{longitude}} > GPS_limits_haline[which(GPS_limits_haline$estuary == "Seine"), ]$halin_limit_lon ~ "inner",
       TRUE ~ NA
     )
   )
@@ -216,26 +251,26 @@ get_info_from_gps_position <- function(data, latitude, longitude){
 }
 ```
   
-```{r example-get_info_from_gps_position}
-# toy_data_gps <- data.frame(
-#   station = c(
-#     "GIR_01", "GIR_02", "GIR_03",
-#     "LOI_01", "LOI_02", "LOI_03",
-#     "SEI_01", "SEI_02", "SEI_03"
-#   ),
-#   lat = c(
-#     45.58, 45.52, 45.45,
-#     47.28, 47.30, 47.25,
-#     49.47, 49.45, 49.42
-#   ),
-#   lon = c(
-#     -0.95, -1.05, -1.15,
-#     -2.05, -2.20, -2.35,
-#     0.18, 0.30, 0.42
-#   )
-# )
-# 
-# get_info_from_gps_position(data = toy_data_gps, latitude = lat, longitude = lon)
+```{r example-get_haline_zone_from_gps_position}
+toy_data_gps <- data.frame(
+  estuary = c(
+    "Gironde", "Gironde", "Gironde",
+    "Loire", "Loire", "Loire",
+    "Seine", "Seine", "Seine"
+  ),
+  lat = c(
+    45.58, 45.52, 45.45,
+    47.28, 47.30, 47.25,
+    49.47, 49.45, 49.42
+  ),
+  lon = c(
+    -0.95, -1.05, -1.15,
+    -2.05, -2.20, -2.35,
+    0.18, 0.30, 0.42
+  )
+)
+
+get_haline_zone_from_gps_position(data = toy_data_gps, latitude = lat, longitude = lon)
 ```
 
 

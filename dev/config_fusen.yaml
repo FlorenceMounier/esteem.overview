@@ -57,11 +57,13 @@ flat_maps.Rmd:
   path: dev/flat_maps.Rmd
   state: active
   R:
+  - R/fix_bbox_aspect.R
   - R/fct_build_and_save_basemap.R
-  - R/fct_img_crop.R
   - R/load_estuary_basemap.R
+  - R/rotate_sf.R
   - R/plot_estuary_map.R
-  tests: tests/testthat/test-fct_img_crop.R
+  - R/fct_img_crop.R
+  tests: []
   vignettes: []
   inflate:
     flat_file: dev/flat_maps.Rmd
@@ -75,9 +77,7 @@ flat_maps.Rmd:
 flat_POMET.Rmd:
   path: dev/flat_POMET.Rmd
   state: active
-  R:
-  - R/fct_formatting_raw_data_pomet.R
-  - R/fct_size_class.R
+  R: R/fct_size_class.R
   tests: []
   vignettes: []
   inflate:
@@ -93,8 +93,9 @@ flat_utils.Rmd:
   path: dev/flat_utils.Rmd
   state: active
   R:
+  - R/get_estuary_from_gps_position.R
+  - R/get_haline_zone_from_gps_position.R
   - R/get_info_from_dates.R
-  - R/get_info_from_gps_position.R
   - R/get_shortened_path.R
   - R/ggplot2_colors.R
   - R/make_points_sf.R

@@ -17,13 +17,3 @@ List containing osm_raster, villes, xlim, ylim
 \description{
 Load estuary basemap (OpenStreetMap)
 }
-\examples{
-basemap <- load_estuary_basemap(estuary_name = "Loire" )
-# 
-# ggplot() +
-#   tidyterra::geom_spatraster_rgb(data = basemap$osm_raster) +
-#   geom_sf(data = basemap$villes) +
-#   coord_sf(xlim = basemap$xlim,
-#            ylim = basemap$ylim,
-#            expand = FALSE)
-}

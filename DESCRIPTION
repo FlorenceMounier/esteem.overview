@@ -16,6 +16,7 @@ Imports:
     ggplot2,
     ggrepel,
     ggspatial,
+    grDevices,
     grid,
     lubridate,
     maptiles,
@@ -24,10 +25,8 @@ Imports:
     rlang,
     sf,
     stats,
-    stringr,
     terra,
     tidyr,
-    tidyterra,
     writexl
 Suggests: 
     DT,

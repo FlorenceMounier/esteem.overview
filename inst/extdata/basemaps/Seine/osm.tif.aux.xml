@@ -13,7 +13,7 @@
     <Metadata>
       <MDI key="STATISTICS_MAXIMUM">250</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">24</MDI>
+      <MDI key="STATISTICS_MINIMUM">35</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>
@@ -22,7 +22,7 @@
     <Metadata>
       <MDI key="STATISTICS_MAXIMUM">249</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">15</MDI>
+      <MDI key="STATISTICS_MINIMUM">33</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>
