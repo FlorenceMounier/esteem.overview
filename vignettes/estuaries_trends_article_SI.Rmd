@@ -51,6 +51,14 @@ library(tidyverse)
 library(flextable)
 ```
 
+# Haline zones definition
+
+Map representations and salinity distributions of the different haline zones defined are presented in Figure \@ref(fig:map_haline_zone)).
+
+```{r map_haline_zone, fig.cap="Map of WFD autumn sampling points for fishing surveys (on the left) and autumn salinity distribution depending on the defined haline sectors delimitation (on the right).", fig.show='hold', fig.height=9}
+knitr::include_graphics(get_shortened_path("mat_meth/haline_zones/ggplot_haline_zones.png"))
+```
+
 # Monitoring programs
 
 ## RNOHYD

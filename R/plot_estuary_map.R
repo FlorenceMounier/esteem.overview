@@ -13,9 +13,6 @@
 #'
 #' @import dplyr
 #' @import ggplot2
-#' @importFrom ggspatial annotation_scale
-#' @importFrom ggspatial annotation_north_arrow
-#' @importFrom ggspatial north_arrow_orienteering
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom rlang ensym
 #' @importFrom rlang sym
@@ -102,9 +99,11 @@ plot_estuary_map <- function(data,
 
     ggplot2::scale_fill_identity()
 
+  
   # -------------------------
   # 5. Dynamic aesthetic mapping
   # -------------------------
+  
   mapping <- list()
 
   if (!missing(colour_var)) {
@@ -153,7 +152,8 @@ plot_estuary_map <- function(data,
           ggplot2::aes,
           point_mapping
         ),
-        alpha = 0.8
+        alpha = 0.8,
+        size = 0.6
       )
 
   } else {
@@ -166,7 +166,8 @@ plot_estuary_map <- function(data,
           point_mapping
         ),
         shape = geom_shape,
-        alpha = 0.8
+        alpha = 0.8,
+        size = 0.6,
       )
   }
 
@@ -179,7 +180,7 @@ plot_estuary_map <- function(data,
         x = X,
         y = Y
       ),
-      size = 1,
+      size = 0.6,
       alpha = 0.8
     )
 }
@@ -187,6 +188,7 @@ plot_estuary_map <- function(data,
   # -------------------------
   # 6. Cities + labels
   # -------------------------
+  
   if (!is.null(basemap$villes) &&
       nrow(basemap$villes) > 0) {
 
@@ -248,21 +250,6 @@ plot_estuary_map <- function(data,
       yend = basemap$halin_limit_lat
     )
 
-    # halo blanc
-    p <- p +
-      ggplot2::geom_segment(
-        data = line_data,
-        ggplot2::aes(
-          x = x,
-          xend = xend,
-          y = y,
-          yend = yend
-        ),
-        color = "white",
-        linewidth = 2
-      )
-
-    # ligne noire
     p <- p +
       ggplot2::geom_segment(
         data = line_data,
@@ -278,6 +265,7 @@ plot_estuary_map <- function(data,
   }
 
   # ---- Ligne verticale
+  
   if (!is.null(basemap$halin_limit_lon) &&
       !is.na(basemap$halin_limit_lon)) {
 
@@ -288,21 +276,6 @@ plot_estuary_map <- function(data,
       yend = y_mid + y_half
     )
 
-    # halo blanc
-    p <- p +
-      ggplot2::geom_segment(
-        data = line_data,
-        ggplot2::aes(
-          x = x,
-          xend = xend,
-          y = y,
-          yend = yend
-        ),
-        color = "white",
-        linewidth = 2
-      )
-
-    # ligne noire
     p <- p +
       ggplot2::geom_segment(
         data = line_data,
@@ -313,7 +286,7 @@ plot_estuary_map <- function(data,
           yend = yend
         ),
         color = "black",
-        linewidth = 1
+        linewidth = 0.8
       )
   }
   
@@ -332,34 +305,24 @@ plot_estuary_map <- function(data,
     ) +
     theme_esteem() +
     ggplot2::theme(
-      axis.title = ggplot2::element_blank()
-    )
+      plot.title = ggplot2::element_text(size = 9),
+  axis.title = ggplot2::element_blank(),
+  axis.text = ggplot2::element_text(size = 6)
+    ) +
+  # 2 decimals for GPS values
+    ggplot2::scale_x_continuous(labels = scales::label_number(accuracy = 0.01)) +
+    ggplot2::scale_y_continuous(labels = scales::label_number(accuracy = 0.01))
 
   # -------------------------
-  # 9. Scale bar + north arrow + title
+  # 9. Title
   # -------------------------
+  
   p <- p +
-    
-    ggspatial::annotation_scale(
-      location = "bl",
-      width_hint = 0.10,
-      text_cex = 0.6,
-      text_family = "sans",
-      pad_x = grid::unit(0.15, "cm"),
-      pad_y = grid::unit(0.15, "cm")
-    ) +
-    
-    ggspatial::annotation_north_arrow(
-      location = "bl",
-      pad_x = grid::unit(0.15, "cm"),
-      pad_y = grid::unit(0.45, "cm"),
-      which_north = "grid",
-      style = ggspatial::north_arrow_minimal(),
-      height = grid::unit(0.30, "cm"),
-      width  = grid::unit(0.30, "cm")
-    ) +
-    
     ggplot2::labs(title = paste0(estuary_name, " estuary"))
-
+  
+  # -------------------------
+  # 10. Final map
+  # -------------------------
+  
   return(p)
 }

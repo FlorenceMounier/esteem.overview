@@ -127,52 +127,21 @@ map_gironde <- plot_estuary_map(data = data_Gironde,
                                 estuary_name = "Gironde",
                                 colour_var = haline_zone) +
   theme(legend.position = "none")
-ggsave(
-  filename = "gironde_map.png",
-  plot = map_gironde,
-  width = 7,
-  height = 5,
-  units = "cm",
-  dpi = 300
-)
 
 salinity_zones_gironde <- ggplot(data = data_Gironde) +
   aes(x = haline_zone, y = salinite, fill = haline_zone) +
   geom_boxplot() +
-  # geom_vline(yintercept = halin_limit_lat_salin_gironde, linewidth = 1.5) +
-  theme(legend.position = "none", axis.title.x = element_blank()) +
-  ggplot2::labs(y = "Salinity (g/L)") +
-  stat_compare_means(method = "wilcox.test", label = "p.format")
-
-ggplot_haline_zone_gironde <- plot_grid(map_gironde,salinity_zones_gironde, ncol=2)
-ggplot_haline_zone_gironde
+  geom_hline(yintercept = halin_limit_lat_salin_gironde, linewidth = 0.8) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 6)) +
+  ggplot2::labs(y = "Salinity (g/L)")
 
 
 # ---- Loire ----
 
 data_Loire <- data_POMET_salinity |> filter(saison == "automne")
-
-map_loire <- plot_estuary_map(data = data_Loire,
-                 estuary_name = "Loire",
-                 colour_var = haline_zone) +
-  theme(legend.position = "none")
-ggsave(
-  filename = "loire_map.png",
-  plot = map_loire,
-  width = 10,
-  height = 6,
-  units = "cm",
-  dpi = 300
-)
-
-cowplot::plot_grid(
-  map_gironde,
-  map_loire,
-  ncol = 1,
-  align = "v",
-  axis = "lr",
-  rel_heights = c(1, 1)
-)
 
 map_loire <- plot_estuary_map(data = data_Loire, estuary_name = "Loire", colour_var = haline_zone) +
   theme(legend.position = "none")
@@ -180,13 +149,37 @@ map_loire <- plot_estuary_map(data = data_Loire, estuary_name = "Loire", colour_
 salinity_zones_loire <- ggplot(data = data_Loire) +
   aes(x = haline_zone, y = salinite, fill = haline_zone) +
   geom_boxplot() +
-  # geom_vline(yintercept = halin_limit_lat_salin_loire, linewidth = 1.5) +
-  theme(legend.position = "none", axis.title.x = element_blank()) +
-  ggplot2::labs(y = "Salinity (g/L)") +
-  stat_compare_means(method = "wilcox.test", label = "p.format")
+  geom_hline(yintercept = halin_limit_lon_salin_loire, linewidth = 0.8) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 6)) +
+  ggplot2::labs(y = "Salinity (g/L)")
 
-ggplot_haline_zone_loire <- plot_grid(map_loire,salinity_zones_loire, nrow=2)
-ggplot_haline_zone_loire
+# ---- Seine ----
+
+data_Seine <- data_POMET_salinity |> filter(saison == "automne")
+
+map_seine <- plot_estuary_map(data = data_Seine, estuary_name = "Seine", colour_var = haline_zone) +
+  theme(legend.position = "none")
+
+salinity_zones_seine <- ggplot(data = data_Seine) +
+  aes(x = haline_zone, y = salinite, fill = haline_zone) +
+  geom_boxplot() +
+  geom_hline(yintercept = halin_limit_lon_salin_seine, linewidth = 0.8) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 6)) +
+  ggplot2::labs(y = "Salinity (g/L)")
 
 
-ggplot_haline_zone_gironde <- plot_grid(map_gironde,map_loire, nrow=2)
+# ---- Cowplot ----
+
+ggplot_haline_zone <- plot_grid(map_gironde, salinity_zones_gironde,
+                                map_loire, salinity_zones_loire,
+                                map_seine, salinity_zones_seine,
+                                nrow = 3, ncol = 2, rel_widths = c(2,1))
+
+ggsave(plot = ggplot_haline_zone, filename = "inst/mat_meth/haline_zones/ggplot_haline_zones.jpg")
+

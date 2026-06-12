@@ -53,6 +53,21 @@ flat_data_contamination.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
+flat_fish_size_class.Rmd:
+  path: dev/flat_fish_size_class.Rmd
+  state: active
+  R: R/fct_size_class.R
+  tests: []
+  vignettes: []
+  inflate:
+    flat_file: dev/flat_fish_size_class.Rmd
+    vignette_name: ~
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: ask
+    clean: ask
+    codecov: false
 flat_maps.Rmd:
   path: dev/flat_maps.Rmd
   state: active
@@ -60,7 +75,6 @@ flat_maps.Rmd:
   - R/fix_bbox_aspect.R
   - R/fct_build_and_save_basemap.R
   - R/load_estuary_basemap.R
-  - R/rotate_sf.R
   - R/plot_estuary_map.R
   - R/fct_img_crop.R
   tests: []
