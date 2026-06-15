@@ -32,6 +32,8 @@
 
 get_estuary_from_gps_position <- function(data, latitude, longitude){
   
+  data(GPS_limits_estuary)
+  
   completed_data <- data |>
     
     # ---- Add estuary variable ----

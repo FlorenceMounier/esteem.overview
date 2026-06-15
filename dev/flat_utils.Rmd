@@ -46,7 +46,6 @@ test_that("ggplot2_colors works", {
   
 # make_points_sf
 
-  
 ```{r function-make_points_sf}
 #' Make points_sf from "longitude" & "latitude" in a dataset
 #' 
@@ -159,6 +158,8 @@ get_info_from_dates <- function(data, date_variable){
 
 get_estuary_from_gps_position <- function(data, latitude, longitude){
   
+  data(GPS_limits_estuary)
+  
   completed_data <- data |>
     
     # ---- Add estuary variable ----
@@ -225,6 +226,8 @@ get_estuary_from_gps_position(data = toy_data_gps, latitude = lat, longitude = l
 
 get_haline_zone_from_gps_position <- function(data, latitude, longitude){
   
+  data(GPS_limits_haline)
+  
   completed_data <- data |>
     
     # ---- Add haline_zone variable ----
@@ -273,6 +276,60 @@ toy_data_gps <- data.frame(
 get_haline_zone_from_gps_position(data = toy_data_gps, latitude = lat, longitude = lon)
 ```
 
+# get_interpolation_splin
+  
+```{r function-get_interpolation_splin}
+#' Interpolation using splinefun(method = "monoH.FC") from
+#' 
+#' @param data tibble, data with x, y, grouping variable
+#' @param x character, x variable
+#' @param y character, y variable
+#' @param group character, grouping variable
+#'
+#' @return tibble with interpolated data by group
+#' 
+#' @noRd
+get_interpolation_spline <- function(data, x, y, group) {
+  
+  x_var <- rlang::ensym(x)
+  y_var <- rlang::ensym(y)
+  
+  data_interpolated <- data |> 
+    dplyr::group_by({{ group }}) |> 
+    dplyr::arrange(!!x_var, .by_group = TRUE) |>
+    dplyr::group_modify(~{
+      
+      x_vals <- dplyr::pull(.x, !!x_var)
+      y_vals <- dplyr::pull(.x, !!y_var)
+      
+      ok <- !is.na(x_vals) & !is.na(y_vals)
+      x_vals <- x_vals[ok]
+      y_vals <- y_vals[ok]
+      
+      spline_mod <- splinefun(
+        x = x_vals,
+        y = y_vals,
+        method = "monoH.FC"
+      )
+      
+      x_new <- seq(
+        min(x_vals),
+        max(x_vals),
+        by = 1
+      )
+      
+      tibble::tibble(
+        !!x_var := x_new,
+        !!y_var := spline_mod(x_new)
+      )
+    }) |> 
+    dplyr::ungroup()
+  
+  return(data_interpolated)
+}
+```
+
+  
 
 ```{r development-inflate, eval=FALSE}
 # Run but keep eval=FALSE to avoid infinite loop

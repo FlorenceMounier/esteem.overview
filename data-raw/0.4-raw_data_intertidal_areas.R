@@ -1,25 +1,19 @@
 # =====================================================
-# Data:
-# - raw_data_intertidal_surface_seine_loire
-# - data_intertidal_surface_area_seine_loire
-# - raw_data_intertidal_surface_gironde_sottolichio
-# - data_intertidal_surface_gironde_sottolichio
-# - raw_data_intertidal_surface_gironde_blanchet
-# - data_intertidal_surface_gironde_blanchet
-# - data_intertidal_surface
-# Plots:
-#  - ggplot_intertidal_areas
-# Preparation script
+# Preparation script from external intertidal areas raw data
+# Datasets:
+#  - data_intertidal_surface.rda
 # Author: FM
-# Date: 2026-06-02
+# Date: 2026-06-15
 # =====================================================
 
+
 # =====================================================
-# 0. Packages
+# 00. Packages, functions and raw data
 # =====================================================
 
 library(tidyverse)
 library(readxl)
+
 
 # =====================================================
 # 1. Datasets for intertidal surface area
@@ -29,11 +23,10 @@ library(readxl)
 # Read raw data from Lecuyer et al. 2024 ("Thriving life beneath...") Loire, Seine ----
 # expressed in hectares
 
-raw_data_intertidal_surface_seine_loire <- readxl::read_xlsx("~/ESTEEM/Phase 1/DATABASES/Intertidal areas/lecuyer2024_loire_seine.xlsx") |>
+raw_data_intertidal_surface_seine_loire <- readxl::read_xlsx("../Intertidal areas/lecuyer2024_loire_seine.xlsx") |>
   filter(secteur %in% c("limnique", "oligohalin", "mesohalin", "polyhalin", "euhalin"))
-usethis::use_data(raw_data_intertidal_surface_seine_loire, overwrite = TRUE)
 
-data_intertidal_surface_area_seine_loire <- raw_data_surface_area_seine_loire |>
+data_intertidal_surface_area_seine_loire <- raw_data_intertidal_surface_seine_loire |>
   group_by(estuaire, annee) |>
   summarise(
     across(
@@ -42,7 +35,6 @@ data_intertidal_surface_area_seine_loire <- raw_data_surface_area_seine_loire |>
     ), .groups = "drop"
   ) |>
   mutate(annee = as.numeric(annee))
-usethis::use_data(data_intertidal_surface_area_seine_loire, overwrite = TRUE)
 
 
 # E-mail from R. Lecuyer 04/07/2026
@@ -70,8 +62,7 @@ usethis::use_data(data_intertidal_surface_area_seine_loire, overwrite = TRUE)
 # Read raw data from Sottolichio et al. 2013 Gironde estuary ----
 
 # expressed in km2
-raw_data_intertidal_surface_gironde_sottolichio <- readr::read_csv2("~/ESTEEM/Phase 1/DATABASES/Intertidal areas/sottolichio2013_gironde.csv")
-usethis::use_data(raw_data_intertidal_surface_gironde_sottolichio, overwrite = TRUE)
+raw_data_intertidal_surface_gironde_sottolichio <- readr::read_csv2("../Intertidal areas/sottolichio2013_gironde.csv")
 
 data_intertidal_surface_gironde_sottolichio <- raw_data_intertidal_surface_gironde_sottolichio  |>
   summarise(
@@ -83,7 +74,6 @@ data_intertidal_surface_gironde_sottolichio <- raw_data_intertidal_surface_giron
   mutate(estuaire = "gironde") |>
   pivot_longer(cols = -estuaire, names_to = "annee", values_to = "surface_ha") |>
   mutate(annee = as.numeric(annee))
-usethis::use_data(data_intertidal_surface_gironde_sottolichio, overwrite = TRUE)
 
 
 # ---------------------------------------------------------------------------
@@ -102,8 +92,7 @@ usethis::use_data(data_intertidal_surface_gironde_sottolichio, overwrite = TRUE)
 # - A2.5 ("Coastal salt marshes and saline reedbeds") => uppermost level of sheltered shores that are predominantly closed and only periodically inundated, above the shoreline limit
 
 # expressed in hectares
-raw_data_intertidal_surface_gironde_blanchet <- readxl::read_xlsx("~/ESTEEM/Phase 1/DATABASES/Intertidal areas/blanchet2018_gironde.xlsx")
-usethis::use_data(raw_data_intertidal_surface_gironde_blanchet, overwrite = TRUE)
+raw_data_intertidal_surface_gironde_blanchet <- readxl::read_xlsx("../Intertidal areas/blanchet2018_gironde.xlsx")
 
 
 data_intertidal_surface_gironde_blanchet <- raw_data_intertidal_surface_gironde_blanchet |>
@@ -116,25 +105,24 @@ data_intertidal_surface_gironde_blanchet <- raw_data_intertidal_surface_gironde_
   mutate(estuaire = "gironde") |>
   pivot_longer(cols = -estuaire, names_to = "annee", values_to = "surface_ha") |>
   mutate(annee = as.numeric(annee))
-usethis::use_data(data_intertidal_surface_gironde_blanchet, overwrite = TRUE)
+
 
 # ---------------------------------------------------------------------------
-# Compile data from all estuaries ----
+# Compile data from all estuaries and renames variables and values ----
 
 # expressed in hectares
 data_intertidal_surface <- full_join(
   data_intertidal_surface_area_seine_loire,
   data_intertidal_surface_gironde_sottolichio
 ) |>
-  full_join(data_intertidal_surface_gironde_blanchet)
+  full_join(data_intertidal_surface_gironde_blanchet) |>
+  rename(estuary = estuaire,
+         year = annee) |>
+  mutate(estuary = case_when(
+    estuary == "gironde" ~ "Gironde",
+    estuary == "loire" ~ "Loire",
+    estuary == "seine" ~ "Seine"
+  ))
+
+
 usethis::use_data(data_intertidal_surface, overwrite = TRUE)
-
-# =====================================================
-# 2. Graphs
-# =====================================================
-
-ggplot_intertidal_areas <- ggplot(data = data_intertidal_surface) +
-  aes(x = annee, y = surface_ha, colour = estuaire) +
-  geom_point()
-
-ggsave(plot = ggplot_intertidal_areas, filename = "inst/mat_meth/ggplot_intertidal_areas.jpg")

@@ -26,6 +26,7 @@ Imports:
     sf,
     stats,
     terra,
+    tibble,
     tidyr,
     writexl
 Suggests: 

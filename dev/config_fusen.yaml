@@ -110,6 +110,7 @@ flat_utils.Rmd:
   - R/get_estuary_from_gps_position.R
   - R/get_haline_zone_from_gps_position.R
   - R/get_info_from_dates.R
+  - R/get_interpolation_spline.R
   - R/get_shortened_path.R
   - R/ggplot2_colors.R
   - R/make_points_sf.R

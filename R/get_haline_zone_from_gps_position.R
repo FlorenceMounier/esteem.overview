@@ -11,10 +11,10 @@
 #' @export
 #' @examples
 #' toy_data_gps <- data.frame(
-#'   station = c(
-#'     "GIR_01", "GIR_02", "GIR_03",
-#'     "LOI_01", "LOI_02", "LOI_03",
-#'     "SEI_01", "SEI_02", "SEI_03"
+#'   estuary = c(
+#'     "Gironde", "Gironde", "Gironde",
+#'     "Loire", "Loire", "Loire",
+#'     "Seine", "Seine", "Seine"
 #'   ),
 #'   lat = c(
 #'     45.58, 45.52, 45.45,
@@ -31,6 +31,8 @@
 #' get_haline_zone_from_gps_position(data = toy_data_gps, latitude = lat, longitude = lon)
 
 get_haline_zone_from_gps_position <- function(data, latitude, longitude){
+  
+  data(GPS_limits_haline)
   
   completed_data <- data |>
     

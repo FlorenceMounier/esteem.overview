@@ -190,7 +190,7 @@ usethis::use_data(raw_data_contamination, overwrite = TRUE)
 
 
 #------------------------------------------------------------------------------
-# Filter & Save "data_phyto.rda"
+# Filter & Save "data_physico_chem.rda"
 
 raw_data_physico_chem <- sextant_outputs |>
   filter(
@@ -217,7 +217,15 @@ raw_data_physico_chem <- sextant_outputs |>
       "Oxygène dissous", "pH", "Salinité"
     )
   ) |>
-  select(-THEME)
+
+  # ---- Delete unnecessary variables ----
+dplyr::select(-c(THEME, GROUPE_TAXON_LIBELLE, TAXON_LIBELLE, NUMERO_INDIVIDU_OBSERVATION,
+                 PASSAGE_COORDONNEES, PRELEVEMENT_COORDONNEES,
+                 NIVEAU_QUALITE, QUALITE_DESCRIPTION)) |>
+
+  # ----- Delete REPOMO program -----
+filter(PROGRAMME != "REPOMO")
+
 
 usethis::use_data(raw_data_physico_chem, overwrite = TRUE)
 

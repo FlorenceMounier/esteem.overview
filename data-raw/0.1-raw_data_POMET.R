@@ -52,13 +52,24 @@ data_POMET_traits <- data_POMET_traits |>
   select(trait_id, DATE, latitude, longitude,
          maree, O2sat, salinity, temperature)
 
-# ----- Define estuary and haline_zone from GPS delimitations -----
-data_POMET_traits <- get_info_from_gps_position(data = data_POMET_traits,
+# ----- Define estuary from GPS delimitations -----
+data_POMET_traits <- get_estuary_from_gps_position(data = data_POMET_traits,
+                                                   latitude = latitude,
+                                                   longitude = longitude)
+
+# ----- Define haline_zone from GPS delimitations -----
+data_POMET_traits <- get_haline_zone_from_gps_position(data = data_POMET_traits,
                                                 latitude = latitude,
                                                 longitude = longitude)
 
 # ----- Define information on year, month, season from date -----
 data_POMET_traits <- get_info_from_dates(data = data_POMET_traits, date_variable = DATE)
+
+# ---- Pivot longer ----
+data_POMET_traits <- data_POMET_traits |>
+  pivot_longer(cols = c(maree, O2sat, salinity, temperature),
+               names_to = "PARAMETRE_LIBELLE",
+               values_to = "RESULTAT")
 
 # ---- Save data_POMET_traits.rda ----
 usethis::use_data(data_POMET_traits, overwrite = TRUE)
@@ -109,7 +120,7 @@ usethis::use_data(data_POMET_ALLspecies_densities, overwrite = TRUE)
 
 
 # =====================================================
-# 05. data_POMET_indiv_biom for ALL species
+# 05. data_POMET_indiv_biom for Solea solea & Dicentrarchus labrax
 # =====================================================
 
 # ---- Individual biometrics ----

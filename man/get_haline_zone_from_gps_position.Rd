@@ -21,10 +21,10 @@ Get haline_zone variable from GPS positions
 }
 \examples{
 toy_data_gps <- data.frame(
-  station = c(
-    "GIR_01", "GIR_02", "GIR_03",
-    "LOI_01", "LOI_02", "LOI_03",
-    "SEI_01", "SEI_02", "SEI_03"
+  estuary = c(
+    "Gironde", "Gironde", "Gironde",
+    "Loire", "Loire", "Loire",
+    "Seine", "Seine", "Seine"
   ),
   lat = c(
     45.58, 45.52, 45.45,

@@ -1,4 +1,6 @@
 
+data_POMET_traits
+
 
 ggplot_data_N_indicator <- ggplot(data_nitrogen_cycle) +
   aes(x = year, y = RESULTAT, colour = estuary) +
