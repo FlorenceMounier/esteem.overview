@@ -1,17 +1,24 @@
 # =====================================================
 # Preparation script
 # Datasets:
-#  - data_physchem.rda
-#  - id_colors.rda
+#  - data_physico_chem_joined.rda
+#  - data_physico_chem_filtered.rda
+#  - data_physico_chem_complete.rda
 # Plots:
-#  - ggplot_Temperature_Gironde_map.jpg
-#  - ggplot_Temperature_Gironce_trend.jpg
-#  - ggplot_Temperature_Loire_map.jpg
-#  - ggplot_Temperature_Loire_trend.jpg
-#  - ggplot_Temperature_Seine_map.jpg
-#  - ggplot_Temperature_Seine_trend.jpg
+#  - ggplot_gantt_data.jpg in /int/mat_meth/phychem
+#  - ggplot_n_data_physicochem.jpg in /int/mat_meth/phychem
+#  - ggplot_temperature.jpg in /int/mat_meth/phychem
+#  - ggplot_temperature_map.jpg in /int/mat_meth/phychem
+#  - ggplot_salinity.jpg in /int/mat_meth/phychem
+#  - ggplot_salinity_map.jpg in /int/mat_meth/phychem
+#  - ggplot_O2sat.jpg in /int/mat_meth/phychem
+#  - ggplot_O2sat_map.jpg in /int/mat_meth/phychem
+#  - ggplot_ammonium.jpg in /int/mat_meth/phychem
+#  - ggplot_ammonium_map.jpg in /int/mat_meth/phychem
+#  - ggplot_ammonia_risk_synergy.jpg in /int/mat_meth/phychem
+#  - ggplot_ammonia_risk_tile.jpg in /int/mat_meth/phychem
 # Author: FM
-# Date: 2026-06-15
+# Date: 2026-06-16
 # =====================================================
 
 # =====================================================
@@ -33,14 +40,30 @@ data(data_POMET_traits)
 # 01. Filter GPS analysis boxes & Summarise by month
 # =====================================================
 
-# ---- Data Surval ----
+# ---- Data Surval/Sextant ----
 
-data_physico_chem_filtered <- raw_data_physico_chem |>
+data_physico_chem_filtered <- raw_data_physico_chem  |>
+  mutate(year_month = lubridate::make_date(year, month, 1)) |>
   mutate(PARAMETRE_LIBELLE = case_when(
     PARAMETRE_LIBELLE == "Température de l'eau" ~ "Temperature",
     PARAMETRE_LIBELLE == "Salinité" ~ "Salinity",
     TRUE ~ PARAMETRE_LIBELLE
   )) |>
+
+  # Transformation of µmol/l to mg/L => mg/L NH4+ = µmol/L × 0.01804
+  mutate(
+    RESULTAT = case_when(
+      PARAMETRE_LIBELLE == "Ammonium" &
+        UNITE == "µmol.l-1" ~ RESULTAT * 0.01804,
+      TRUE ~ RESULTAT
+    ),
+    UNITE = case_when(
+      PARAMETRE_LIBELLE == "Ammonium" &
+        UNITE == "µmol.l-1" ~ "mg.l-1",
+      TRUE ~ UNITE
+    )
+  ) |>
+
   # Transformation of ml/l to mg/L => O2_mgL <- O2_mLL * 1.429
   mutate(
     RESULTAT = case_when(
@@ -54,13 +77,16 @@ data_physico_chem_filtered <- raw_data_physico_chem |>
       TRUE ~ UNITE
     )
   ) |>
+
+  group_by(estuary, PROGRAMME, PARAMETRE_LIBELLE, longitude, latitude, haline_zone, year, month, year_month, season) |>
+  summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop") |>
+
+
   # Transformation of mg/L to %saturation => %sat = 02obs/ 02sat * 100 with:
   # O2obs = observed concentration (mg/L)
   # 02sat = maximum theoretical concentration at equilibrium with the atmosphere (mg/L),
   #         which depends on temperature and salinity
   #         computed using gas_O2sat() function from {marelac} package
-  group_by(estuary, PROGRAMME, DATE, PARAMETRE_LIBELLE, RESULTAT, longitude, latitude, haline_zone, year, month) |>
-  summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT, values_fn = ~ mean(.x, na.rm = TRUE)) |>
   mutate(
     O2sat = NA_real_
@@ -69,7 +95,7 @@ data_physico_chem_filtered <- raw_data_physico_chem |>
     O2sat = replace(
       O2sat,
       !is.na(`Oxygène dissous`) & !is.na(Salinity) & !is.na(Temperature),
-      100 * as.numeric(`Oxygène dissous`[
+      as.numeric(`Oxygène dissous`[
         !is.na(`Oxygène dissous`) & !is.na(Salinity) & !is.na(Temperature)
       ]) /
         marelac::gas_O2sat(
@@ -79,7 +105,7 @@ data_physico_chem_filtered <- raw_data_physico_chem |>
           t = as.numeric(Temperature[
             !is.na(`Oxygène dissous`) & !is.na(Salinity) & !is.na(Temperature)
           ])
-        )
+        ) * 100
     )
   ) |>
   select(- `Oxygène dissous`) |>
@@ -102,15 +128,14 @@ data_physico_chem_filtered <- raw_data_physico_chem |>
         latitude >= 49.42 & latitude < 49.49 & longitude > 0 & longitude < 0.2 ~ TRUE,
       TRUE ~ FALSE
     )
-  ) |>
-  group_by(estuary, PROGRAMME, DATE, PARAMETRE_LIBELLE, longitude, latitude, haline_zone, year, month) |>
-  summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop")
+  )
 
 
 # ---- Data POMET ----
 
 data_POMET_traits_filtered <- data_POMET_traits |>
   mutate(PROGRAMME = "POMET") |>
+  mutate(year_month = lubridate::make_date(year, month, 1)) |>
   mutate(PARAMETRE_LIBELLE = case_when(
     PARAMETRE_LIBELLE == "temperature" ~ "Temperature",
     PARAMETRE_LIBELLE == "salinity" ~ "Salinity",
@@ -133,21 +158,21 @@ data_POMET_traits_filtered <- data_POMET_traits |>
     )
   ) |>
   # Summarise by month
-  group_by(estuary, PROGRAMME, DATE, PARAMETRE_LIBELLE, longitude, latitude, haline_zone, year, month) |>
+  group_by(estuary, PROGRAMME, PARAMETRE_LIBELLE, longitude, latitude, haline_zone, year, month, year_month, season) |>
   summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop")
+
 
 # ---- Join datasets ----
 data_physico_chem_joined <- rbind(data_physico_chem_filtered, data_POMET_traits_filtered)
 
 
 # =====================================================
-# 02. Identify parameters of interest from SEXTANT
+# 02. Identify parameters of interest
 # =====================================================
 
 gantt_data <- data_physico_chem_joined |>
   filter(!is.na(RESULTAT)) |>
   filter(!is.na(year)) |>
-  arrange(estuary, haline_zone, PARAMETRE_LIBELLE, year) |>
   group_by(estuary, haline_zone, PARAMETRE_LIBELLE) |>
   mutate(
     grp = cumsum(c(TRUE, diff(year) > 1))
@@ -187,61 +212,245 @@ gantt_data
 
 
 ggsave(plot = gantt_data, height = 10, width = 17, units = "cm",
-       filename = "inst/mat_meth/phychem/ggplot_gantt_data_sextant.jpg")
+       filename = "inst/mat_meth/phychem/ggplot_gantt_data.jpg")
+
+# ---- Filtered  datasets ----
+
+data_physico_chem_filtered <- data_physico_chem_joined |>
+  filter(PARAMETRE_LIBELLE %in% c("Temperature", "Salinity",
+                                  "Azote nitreux (nitrite)",
+                                  "Azote nitrique (nitrate)",
+                                  "Nitrate + nitrite",
+                                  "Ammonium",
+                                  "O2sat"))
+
 
 # =====================================================
 # 03. Temperature data completion and localisation
 # =====================================================
 
-data_physico_chem_joined |>
+# Optimum seabass & common sole: 24°C
+
+# ---- Trend ----
+
+ggplot_temperature <- data_physico_chem_filtered |>
   filter(PARAMETRE_LIBELLE %in% c("Temperature")) |>
   ggplot() +
-  aes(x = DATE, y = RESULTAT) +
+  aes(x = year_month, y = RESULTAT, colour = season) +
   geom_line() +
+  geom_hline(yintercept = 24) +
+  labs(y = "Temperature (°C)") +
+  theme(axis.title.x = element_blank()) +
   facet_grid(rows = vars(estuary), cols = vars(haline_zone))
+
+ggplot_temperature
+
+ggsave(ggplot_temperature,
+       filename = "inst/mat_meth/phychem/ggplot_temperature.jpg")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_filtered,
+  parameter = "Temperature",
+  filename = "inst/mat_meth/phychem/ggplot_temperature_map.jpg"
+)
 
 # =====================================================
 # 04. Salinity data completion and localisation
 # =====================================================
 
-data_physico_chem_joined |>
+
+# ---- Trend ----
+
+ggplot_salinity <- data_physico_chem_filtered |>
   filter(PARAMETRE_LIBELLE %in% c("Salinity")) |>
   ggplot() +
-  aes(x = DATE, y = RESULTAT) +
+  aes(x = year_month, y = RESULTAT, colour = season) +
+  geom_line() +
+  # Optimum seabass
+  geom_hline(yintercept = 10, color = "blue") +
+  geom_hline(yintercept = 25, color = "blue") +
+  # Optimum common sole
+  geom_hline(yintercept = 20, color = "red") +
+  geom_hline(yintercept = 35, color = "red") +
+  facet_grid(rows = vars(estuary), cols = vars(haline_zone))
+
+ggplot_salinity
+
+ggsave(ggplot_salinity,
+       filename = "inst/mat_meth/phychem/ggplot_salinity.jpg")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_filtered,
+  parameter = "Salinity",
+  filename = "inst/mat_meth/phychem/ggplot_salinity_map.jpg"
+)
+
+# =====================================================
+# 05. O2sat data completion and localisation
+# =====================================================
+
+# ---- Trend ----
+
+ggplot_O2sat <- data_physico_chem_filtered |>
+  filter(PARAMETRE_LIBELLE == "O2sat") |>
+  ggplot() +
+  aes(x = year_month, y = RESULTAT, colour = season) +
   geom_line() +
   facet_grid(rows = vars(estuary), cols = vars(haline_zone))
 
+ggplot_O2sat
+
+ggsave(ggplot_O2sat,
+       filename = "inst/mat_meth/phychem/ggplot_O2sat.jpg")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_filtered,
+  parameter = "O2sat",
+  filename = "inst/mat_meth/phychem/ggplot_O2sat_map.jpg"
+)
 
 # =====================================================
-# 03. Nitrogen cycle indicator variable
+# 06. Nitrogen cycle variables
 # =====================================================
 
-# Compute the sum of nitrite + nitrate
-
-data_physico_chem_joined |>
+# ---- All nitrogen forms ----
+# Shift in Seine due to only one point from 2008 that is offshore
+data_physico_chem_filtered |>
   filter(PARAMETRE_LIBELLE %in% c("Azote nitreux (nitrite)", "Azote nitrique (nitrate)", "Nitrate + nitrite")) |>
   ggplot() +
-  aes(x = DATE, y = RESULTAT, colour = PARAMETRE_LIBELLE) +
+  aes(x = year_month, y = RESULTAT, colour = PARAMETRE_LIBELLE) +
   geom_line() +
   facet_grid(rows = vars(estuary))
 
-data_physico_chem_joined |>
+
+# ---- Trend ----
+
+ggplot_ammonium <- data_physico_chem_filtered |>
   filter(PARAMETRE_LIBELLE %in% c("Ammonium")) |>
   ggplot() +
-  aes(x = DATE, y = RESULTAT) +
+  aes(x = year_month, y = RESULTAT, colour = season) +
   geom_line() +
+  geom_hline(yintercept = 0.2) +
+  geom_hline(yintercept = 0.5) +
+  geom_hline(yintercept = 1) +
   facet_grid(rows = vars(estuary), cols = vars(haline_zone), scale = "free_y")
 
+ggplot_ammonium
 
-# ----- Save dataset -----
-usethis::use_data(data_physico_chem, overwrite = TRUE)
+ggsave(ggplot_ammonium,
+       filename = "inst/mat_meth/phychem/ggplot_ammonium.jpg")
 
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_filtered,
+  parameter = "Ammonium",
+  filename = "inst/mat_meth/phychem/ggplot_ammonium_map.jpg"
+  )
+
+# ---- Ammonia formation risk from ammonium x temperature ----
+risk_summary <- data_physico_chem_filtered |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
+mutate(
+  risque_NH4_temp = case_when(
+    Ammonium >= 1 & Temperature >= 20 ~ 3,
+    Ammonium >= 0.5 & Temperature >= 20 ~ 2,
+    Ammonium >= 0.5 ~ 1,
+    TRUE ~ 0
+  )
+)
+
+ggplot_ammonia_risk_tile <- ggplot(risk_summary |> mutate(risque_NH4_temp = as.factor(risque_NH4_temp)),
+       aes(year_month, estuary, fill = risque_NH4_temp)) +
+  geom_tile() +
+  scale_fill_manual(values = c(
+    "0" = "lightblue",
+    "1" = "orange",
+    "2" = "red",
+    "3" = "darkred"
+  )) +
+  theme_esteem()
+
+ggplot_ammonia_risk_tile
+
+ggsave(ggplot_ammonia_risk_tile,
+       filename = "inst/mat_meth/phychem/ggplot_ammonia_risk_tile.jpg")
+
+
+ggplot_ammonia_risk_synergy <- ggplot(risk_summary |> mutate(risque_NH4_temp = as.factor(risque_NH4_temp)),
+       aes(Temperature, Ammonium,
+           color = risque_NH4_temp)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ estuary) +
+  theme_esteem()
+
+ggplot_ammonia_risk_synergy
+
+ggsave(ggplot_ammonia_risk_synergy,
+       filename = "inst/mat_meth/phychem/ggplot_ammonia_risk_synergy.jpg")
 
 # =====================================================
-# 08. Identify time series completion by estuary, haline zone, season and parameter
+# 07. Filter selected parameters
 # =====================================================
 
-n_data_physico_chem <- data_physico_chem |>
+data_physico_chem_complete <- risk_summary |>
+  select(-c("Azote nitreux (nitrite)", "Azote nitrique (nitrate)","Nitrate + nitrite")) |>
+  pivot_longer(cols = c("Temperature", "Salinity", "O2sat", "Ammonium", "risque_NH4_temp"),
+               names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT")
+
+# =====================================================
+# 08. Synthetic indicator
+# =====================================================
+
+# ---- Compute the indicator -----
+data_physico_chem_complete_full <- data_physico_chem_complete |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
+  mutate(
+    z_temp = scale(Temperature)[,1],
+    z_amm  = scale(Ammonium)[,1],
+    z_o2   = scale(O2sat)[,1],
+    hydro_stress = z_temp + z_amm - z_o2) |>
+  select(-c("z_temp", "z_amm","z_o2")) |>
+  pivot_longer(cols = c("Temperature", "Salinity", "O2sat", "Ammonium", "risque_NH4_temp", "hydro_stress"),
+               names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT")
+
+usethis::use_data(data_physico_chem_complete_full, overwrite = TRUE)
+
+# ---- Trend ----
+
+ggplot_hydro_stress <- data_physico_chem_complete_full |>
+  filter(PARAMETRE_LIBELLE == "hydro_stress") |>
+  drop_na(RESULTAT) |>
+  ggplot() +
+  aes(x = year_month, y = RESULTAT, colour = season) +
+  geom_line() +
+  geom_hline(yintercept = 0) +
+  facet_grid(rows = vars(estuary), cols = vars(haline_zone), scale = "free_y")
+
+ggplot_hydro_stress
+
+ggsave(ggplot_hydro_stress,
+       filename = "inst/mat_meth/phychem/ggplot_hydro_stress.jpg")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_complete_full,
+  parameter = "hydro_stress",
+  filename = "inst/mat_meth/phychem/ggplot_hydro_stress_map.jpg"
+)
+
+# =====================================================
+# 09. Identify time series completion by estuary, haline zone, season and parameter
+# =====================================================
+
+n_data_physico_chem <- data_physico_chem_complete_full |>
   group_by(PARAMETRE_LIBELLE, estuary, year, season, haline_zone) |>
   summarise(n = n(), .groups = "drop")
 
@@ -260,7 +469,7 @@ ggplot_n_data_physico_chem <- function(n_data_physico_chem, title_plot){
       color = haline_zone
 
     ) +
-    geom_point(size = 0.8) +
+    geom_point(size = 0.8, alpha = 0.3) +
     facet_grid(
       PARAMETRE_LIBELLE ~ estuary, scales = "free_y"
     ) +

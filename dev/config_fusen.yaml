@@ -76,7 +76,8 @@ flat_maps.Rmd:
   - R/fct_build_and_save_basemap.R
   - R/load_estuary_basemap.R
   - R/plot_estuary_map.R
-  - R/fct_img_crop.R
+  - R/get_mean_gps_position.R
+  - R/plot_maps_parameter_years.R
   tests: []
   vignettes: []
   inflate:

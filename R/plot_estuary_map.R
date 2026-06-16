@@ -27,6 +27,7 @@ plot_estuary_map <- function(data,
                              colour_var,
                              fill_var,
                              size_var,
+                             size_points = 0.6,
                              shape_var,
                              package = "esteem.overview") {
 
@@ -153,7 +154,7 @@ plot_estuary_map <- function(data,
           point_mapping
         ),
         alpha = 0.8,
-        size = 0.6
+        size = size_points
       )
 
   } else {
@@ -167,7 +168,7 @@ plot_estuary_map <- function(data,
         ),
         shape = geom_shape,
         alpha = 0.8,
-        size = 0.6,
+        size = size_points,
       )
   }
 
@@ -180,7 +181,7 @@ plot_estuary_map <- function(data,
         x = X,
         y = Y
       ),
-      size = 0.6,
+      size = size_points,
       alpha = 0.8
     )
 }

@@ -95,31 +95,13 @@ knitr::include_graphics(get_shortened_path("mat_meth/ggplot_data_design.jpg"))
 
 The selected physico-chemical data originate from the following monitoring programs:  RNOHYD before early 2000's, and REPHY and RESLOC_44 after that and util 2024 (see the Supplementary Information section entitled “Monitoring programs” for their quick presentation). All these programs perform only one measurement per month at each sampling site; however, not all months of the year are systematically covered by sampling campaigns.
 
-Thus, the variables and sampling stations were selected to obtain annual data over the longest possible time period across all estuaries, within a restricted spatial extent of each estuary. The selected sampling stations are presented along with their corresponding monitoring programs and measurement periods in the Supplementary Information section entitled “Selected physico-chemical location points”. The selected variables include temperature, salinity, and nitrogen compounds (ammonium NH₄⁺, nitrate NO3-, and nitrite NO2-). The selected study period spans 1987–2024 and focuses exclusively on autumn. Monthly values were averaged over September and October for temperature and salinity, and over September, October, and November for nitrogen compounds.
+Thus, the variables and sampling stations were selected to obtain annual data over the longest possible time period across all estuaries, within a restricted spatial extent of each estuary. The selected sampling stations are presented along with their corresponding monitoring programs and measurement periods in the Supplementary Information section entitled “Selected physico-chemical location points”. The selected variables include temperature, salinity, dioxygen saturation and ammonium (NH₄⁺). The selected study period spans 1987–2024. Values were averaged monthly.
 
 Temperature sensors at the selected sampling stations were deployed between 0 and 12 m depth. For salinity, _in situ_ conductivity sensors (REPHY; RHLN) were positioned between 10 and 15 m, while samples analyzed using the Knudsen titration method (RNOHYD) were collected between 2 and 12 m. Nitrogen compounds were measured between 0.5 and 1 m depth. Ammonium was measured by spectrometry or fluorimetry, whereas nitrate and nitrite were measured by spectrophotometry, chromatography, or colorimetry.
 
-Based on measurements of the different nitrogen compounds, a nitrification indicator was calculated as the ratio of ammonium to total dissolved inorganic nitrogen: $NH₄⁺ / (NH₄⁺ + NO₃⁻ + NO₂⁻)$. This ratio is used to characterize the dominant form of available nitrogen and provides insight into nitrogen cycle processes (regeneration, nitrification, anthropogenic inputs). In estuarine environments, this indicator is particularly relevant, as these systems act as biogeochemical reactors where nitrogen undergoes intense transformations.
+Based on measurements of ammonium and temperature, an ammonia risk indicator was computed: 'no risk' when temperature is below 20°C and ammonium below 0.5 mg.l-1; 'level 1 risk' when only ammonium exceeded 0.5 mg.l-1; 'level 2 risk' when temperature exceeded 20°C and ammonium exceeded 0.5 mg.l-1; 'level 3 risk' when temperature exceeded 20°C and ammonium exceeded 1 mg.l-1.
 
 
-The sampling stations were mapped onto estuary charts in the following figures:
-```{r fig.cap="Physico-chemical sampling points in the Gironde estuary.", fig.width=6, fig.height=4}
-knitr::include_graphics(
-  get_shortened_path("mat_meth/maps/PHY_CHEM/Temperature/ggplot_Temperature_Gironde_map.jpg")
-)
-```
-
-```{r fig.cap="Physico-chemical sampling points in the Loire estuary.", tafig.width=6, fig.height=4}
-knitr::include_graphics(
-  get_shortened_path("mat_meth/maps/PHY_CHEM/Temperature/ggplot_Temperature_Loire_map.jpg")
-)
-```
-
-```{r fig.cap="Physico-chemical sampling points in the Seine estuary.", fig.width=6, fig.height=4}
-knitr::include_graphics(
-  get_shortened_path("mat_meth/maps/PHY_CHEM/Temperature/ggplot_Temperature_Seine_map.jpg")
-)
-```
 
 ### River discharge
 
@@ -279,7 +261,7 @@ tab_EQR_BEQI
 
 ### Abiotic long term trends analysis
 
-Long-term analyses were conducted on physicochemical parameters monitored over the period 1987–2024, river discharge data available from 1975–2024, legislated contaminants monitored from at least 1995 to 2023 or 2024, and intertidal surface areas documented from as early as 1841 in the Seine estuary until 2011 or 2012, depending on the estuary.
+Long-term analyses were conducted on physico-chemical parameters monitored over the period 1987–2024, river discharge data available from 1975–2024, legislated contaminants monitored from at least 1995 to 2023 or 2024, and intertidal surface areas documented from as early as 1841 in the Seine estuary until 2011 or 2012, depending on the estuary.
 
 #### Individual parameter analyses
 
@@ -452,6 +434,16 @@ Overall, the Seine estuary showed the highest number of compounds exceeding PNEC
 
 
 # Discussion
+
+## Physico-chemical parameters
+
+Selected physico-chemical parameters are physiological stressors that are influencing each other.
+
+Temperature rise increase animals metabolism, decrease oxygen solubility, increase potential toxicity of amonia, increase algae blooms and bacterian respiration.
+
+Dissolved oxygen decrease may come from a lower hydrodynamism, an increase of temperature. It is an indicator of eutrophication and thus impared animal respiration.
+
+Ammonium is a marker of organic matter accumulation. Its toxicity depends on the rate at which it is transformed into its toxic form: ammonia. This rate increase with temperature and pH. Unfortunately, pH data completion was not sufficient to use it but the indicator based on the impact of temperature alone at least helps estimating the toxic impact of organic matter accumulation.
 
 ## Surfaces de vasières
 

@@ -10,6 +10,7 @@ plot_estuary_map(
   colour_var,
   fill_var,
   size_var,
+  size_points = 0.6,
   shape_var,
   package = "esteem.overview"
 )
