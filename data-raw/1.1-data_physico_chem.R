@@ -1,9 +1,7 @@
 # =====================================================
 # Preparation script
 # Datasets:
-#  - data_physico_chem_joined.rda
-#  - data_physico_chem_filtered.rda
-#  - data_physico_chem_complete.rda
+#  - data_physico_chem_complete_full.rda
 # Plots:
 #  - ggplot_gantt_data.jpg in /int/mat_meth/phychem
 #  - ggplot_n_data_physicochem.jpg in /int/mat_meth/phychem
@@ -42,7 +40,7 @@ data(data_POMET_traits)
 
 # ---- Data Surval/Sextant ----
 
-data_physico_chem_filtered <- raw_data_physico_chem  |>
+data_physico_chem <- raw_data_physico_chem  |>
   mutate(year_month = lubridate::make_date(year, month, 1)) |>
   mutate(PARAMETRE_LIBELLE = case_when(
     PARAMETRE_LIBELLE == "Température de l'eau" ~ "Temperature",
@@ -153,7 +151,9 @@ data_POMET_traits_filtered <- data_POMET_traits |>
       estuary == "Loire" & haline_zone == "inner" &
         latitude >= 47.27 & latitude < 47.29 & longitude > -2.0 & longitude < -1.8 ~ TRUE,
       estuary == "Seine" & haline_zone == "outer" &
-        latitude >= 49.42 & latitude < 49.49 & longitude > 0 & longitude < 0.2 ~ TRUE,
+        latitude >= 49.42 & latitude < 49.47 & longitude > 0 & longitude < 0.2 ~ TRUE,
+      estuary == "Seine" & haline_zone == "inner" &
+        latitude >= 49.42 & latitude < 49.49 & longitude > 0.2 ~ TRUE,
       TRUE ~ FALSE
     )
   ) |>
@@ -163,7 +163,7 @@ data_POMET_traits_filtered <- data_POMET_traits |>
 
 
 # ---- Join datasets ----
-data_physico_chem_joined <- rbind(data_physico_chem_filtered, data_POMET_traits_filtered)
+data_physico_chem_joined <- rbind(data_physico_chem, data_POMET_traits_filtered)
 
 
 # =====================================================
@@ -231,17 +231,31 @@ data_physico_chem_filtered <- data_physico_chem_joined |>
 
 # Optimum seabass & common sole: 24°C
 
+
+plot_physicochem_parameter <- function(data, parameter, threshold, ylab){
+
+  plot <- data |>
+    filter(PARAMETRE_LIBELLE == {{parameter}}) |>
+    ggplot() +
+    aes(x = year_month, y = RESULTAT, colour = season) +
+    geom_line() +
+    geom_hline(yintercept = threshold) +
+    geom_smooth() +
+    labs(y = ylab) +
+    theme(axis.title.x = element_blank()) +
+    facet_grid(rows = vars(estuary), cols = vars(haline_zone))
+
+  return(plot)
+}
+
 # ---- Trend ----
 
-ggplot_temperature <- data_physico_chem_filtered |>
-  filter(PARAMETRE_LIBELLE %in% c("Temperature")) |>
-  ggplot() +
-  aes(x = year_month, y = RESULTAT, colour = season) +
-  geom_line() +
-  geom_hline(yintercept = 24) +
-  labs(y = "Temperature (°C)") +
-  theme(axis.title.x = element_blank()) +
-  facet_grid(rows = vars(estuary), cols = vars(haline_zone))
+ggplot_temperature <- plot_physicochem_parameter(
+  data = data_physico_chem_complete_full,
+  parameter = "Temperature",
+  threshold = 24,
+  ylab = "Temperature (°C)"
+)
 
 ggplot_temperature
 
@@ -263,18 +277,12 @@ plot_maps_parameter_years(
 
 # ---- Trend ----
 
-ggplot_salinity <- data_physico_chem_filtered |>
-  filter(PARAMETRE_LIBELLE %in% c("Salinity")) |>
-  ggplot() +
-  aes(x = year_month, y = RESULTAT, colour = season) +
-  geom_line() +
-  # Optimum seabass
-  geom_hline(yintercept = 10, color = "blue") +
-  geom_hline(yintercept = 25, color = "blue") +
-  # Optimum common sole
-  geom_hline(yintercept = 20, color = "red") +
-  geom_hline(yintercept = 35, color = "red") +
-  facet_grid(rows = vars(estuary), cols = vars(haline_zone))
+ggplot_salinity <- plot_physicochem_parameter(
+  data = data_physico_chem_complete_full,
+  parameter = "Salinity",
+  threshold = NULL,
+  ylab = "Salinity"
+)
 
 ggplot_salinity
 
@@ -295,12 +303,12 @@ plot_maps_parameter_years(
 
 # ---- Trend ----
 
-ggplot_O2sat <- data_physico_chem_filtered |>
-  filter(PARAMETRE_LIBELLE == "O2sat") |>
-  ggplot() +
-  aes(x = year_month, y = RESULTAT, colour = season) +
-  geom_line() +
-  facet_grid(rows = vars(estuary), cols = vars(haline_zone))
+ggplot_02sat <- plot_physicochem_parameter(
+  data = data_physico_chem_complete_full,
+  parameter = "O2sat",
+  threshold = 40,
+  ylab = "Dissolved oxygen saturation (%)"
+)
 
 ggplot_O2sat
 
@@ -320,6 +328,7 @@ plot_maps_parameter_years(
 # =====================================================
 
 # ---- All nitrogen forms ----
+
 # Shift in Seine due to only one point from 2008 that is offshore
 data_physico_chem_filtered |>
   filter(PARAMETRE_LIBELLE %in% c("Azote nitreux (nitrite)", "Azote nitrique (nitrate)", "Nitrate + nitrite")) |>
@@ -331,15 +340,12 @@ data_physico_chem_filtered |>
 
 # ---- Trend ----
 
-ggplot_ammonium <- data_physico_chem_filtered |>
-  filter(PARAMETRE_LIBELLE %in% c("Ammonium")) |>
-  ggplot() +
-  aes(x = year_month, y = RESULTAT, colour = season) +
-  geom_line() +
-  geom_hline(yintercept = 0.2) +
-  geom_hline(yintercept = 0.5) +
-  geom_hline(yintercept = 1) +
-  facet_grid(rows = vars(estuary), cols = vars(haline_zone), scale = "free_y")
+ggplot_ammonium <- plot_physicochem_parameter(
+  data = data_physico_chem_complete_full,
+  parameter = "Ammonium",
+  threshold = 1,
+  ylab = "Dissolved oxygen saturation (%)"
+)
 
 ggplot_ammonium
 
@@ -424,14 +430,12 @@ usethis::use_data(data_physico_chem_complete_full, overwrite = TRUE)
 
 # ---- Trend ----
 
-ggplot_hydro_stress <- data_physico_chem_complete_full |>
-  filter(PARAMETRE_LIBELLE == "hydro_stress") |>
-  drop_na(RESULTAT) |>
-  ggplot() +
-  aes(x = year_month, y = RESULTAT, colour = season) +
-  geom_line() +
-  geom_hline(yintercept = 0) +
-  facet_grid(rows = vars(estuary), cols = vars(haline_zone), scale = "free_y")
+ggplot_hydro_stress <- plot_physicochem_parameter(
+  data = data_physico_chem_complete_full,
+  parameter = "hydro_stress",
+  threshold = 0,
+  ylab = "Stress indicator"
+)
 
 ggplot_hydro_stress
 

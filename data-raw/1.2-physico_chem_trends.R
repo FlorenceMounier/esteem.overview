@@ -28,46 +28,6 @@ usethis::use_data(id_colors, overwrite = TRUE)
 # 07. Filter the sampling point from the GPS boxes of the study areas
 # =====================================================
 
-data_physico_chem
-
-
-# ---- Identify PROGRAMME and LIEU_MNEMONIQUE ----
-
-# ----  Map of measurement points ----
-
-fct_ggplot_phychem_map <- function(data, phychem_var, estuary_name, GPS_box){
-
-  plot_estuary_map(data = data,
-                   estuary_name = estuary_name,
-                   colour_var = LIEU_MNEMONIQUE) +
-    scale_color_manual(values = id_colors) +
-    geom_rect(
-      data = GPS_box[GPS_box$haline_zone == "polyhalin",],
-      aes(
-        xmin = min_lon,
-        xmax = max_lon,
-        ymin = min_lat,
-        ymax = max_lat
-      ),
-      fill = NA,
-      color = "black",
-      linewidth = 0.8
-    ) +
-    geom_rect(
-      data = GPS_box[GPS_box$haline_zone == "mesohalin",],
-      aes(
-        xmin = min_lon,
-        xmax = max_lon,
-        ymin = min_lat,
-        ymax = max_lat
-      ),
-      fill = NA,
-      color = "black",
-      linewidth = 0.8
-    ) +
-    labs(title = paste0(estuary_name, " - ", phychem_var, " sampling points"))
-}
-
 ## ---- Filtered data per variable  ----
 
 fct_cleaned_data_phychemvar <- function(estuary_name,
