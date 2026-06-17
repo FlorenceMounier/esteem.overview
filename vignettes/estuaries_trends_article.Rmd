@@ -261,7 +261,7 @@ tab_EQR_BEQI
 
 ### Abiotic long term trends analysis
 
-Long-term analyses were conducted on physico-chemical parameters monitored over the period 1987–2024, river discharge data available from 1975–2024, legislated contaminants monitored from at least 1995 to 2023 or 2024, and intertidal surface areas documented from as early as 1841 in the Seine estuary until 2011 or 2012, depending on the estuary.
+Long-term analyses were conducted on physico-chemical parameters monitored over the period 1985–2024, river discharge data available from 1975–2024, legislated contaminants monitored from at least 1995 to 2023 or 2024, and intertidal surface areas documented from as early as 1841 in the Seine estuary until 2011 or 2012, depending on the estuary.
 
 #### Individual parameter analyses
 

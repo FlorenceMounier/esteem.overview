@@ -1,0 +1,109 @@
+---
+title: "flat_long_term_trends.Rmd"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r development, include=FALSE}
+library(testthat)
+```
+
+```{r development-load}
+# Load already included functions if relevant
+pkgload::load_all(export_all = FALSE)
+```
+
+
+# safe_mmkh
+ 
+```{r function-safe_mmkh}
+#' Mann-Kendall test p-value
+#' 
+#' @param x vector
+#' 
+#' @importFrom modifiedmk mmkh
+#'
+#' @return function
+#' 
+#' @noRd
+safe_mmkh <- function(x) {
+  x <- as.numeric(x)
+  x <- x[!is.na(x)]
+
+  if (length(x) < 4) return(NA_real_)
+
+  modifiedmk::mmkh(x)[["new P-value"]]
+}
+```
+  
+# safe_sen
+ 
+```{r function-safe_sen}
+#' Sen's slope with NAs
+#' 
+#' @param x vector
+#' 
+#' @importFrom trend sens.slope
+#'
+#' @return Sen's slope
+#' 
+#' @noRd
+safe_sen <- function(x) {
+  x <- na.omit(x)
+
+  if(length(x) < 2) return(NA_real_)
+
+  as.numeric(trend::sens.slope(x)$estimates)
+}
+```
+
+# test_monotonic_trend
+
+```{r function-test_monotonic_trend}
+#' Get Mann-Kendall test p-value and Sen's slope values by estuary, haline_zone and season
+#' 
+#' @param data tibble with estuary, haline_zone, season, parameter, RESULTAT variables
+#' @param parameter character, variable which trend is to be studied
+#'
+#' @return tibble with estuary, haline_zone, season, mk_parameter_p, sen_parameter_slope 
+#' 
+#' @noRd
+test_monotonic_trend <- function(data, parameter){
+    
+  filtered_data <- data |>
+    filter(PARAMETRE_LIBELLE == {{parameter}}) |> 
+    group_by(estuary, haline_zone, year, season) |> 
+    summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop") |> 
+    tidyr::complete(estuary, haline_zone, season, year)
+  
+  # Mann-Kendall non-monotonic trend test with autocorrelation correction
+  mk_parameter_p <- filtered_data |> 
+    arrange(estuary, haline_zone, season, year) |>
+    group_by(estuary, haline_zone, season) |> 
+    summarise(mk_parameter = safe_mmkh(RESULTAT), .groups = "drop")
+  
+  # Theil–Sen estimator
+  sen_parameter_slope <- filtered_data |> 
+    arrange(estuary, haline_zone, season, year) |>
+    group_by(estuary, haline_zone, season) |> 
+    summarise(sen_slope_parameter = safe_sen(RESULTAT), .groups = "drop")
+  
+  # Join
+  monotonic_stats <- full_join(
+  mk_parameter_p,
+  sen_parameter_slope,
+  by = c("estuary", "haline_zone", "season")
+)
+  
+  return(monotonic_stats)
+}
+```
+
+```{r development-inflate, eval=FALSE}
+# Run but keep eval=FALSE to avoid infinite loop
+# Execute in the console directly
+fusen::inflate(flat_file = "dev/flat_long_term_trends.Rmd", 
+               vignette_name = NULL, overwrite = TRUE, check = FALSE)
+```
+

@@ -68,6 +68,24 @@ flat_fish_size_class.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
+flat_long_term_trends.Rmd:
+  path: dev/flat_long_term_trends.Rmd
+  state: active
+  R:
+  - R/safe_mmkh.R
+  - R/safe_sen.R
+  - R/test_monotonic_trend.R
+  tests: []
+  vignettes: []
+  inflate:
+    flat_file: dev/flat_long_term_trends.Rmd
+    vignette_name: ~
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: 'yes'
+    clean: ask
+    codecov: false
 flat_maps.Rmd:
   path: dev/flat_maps.Rmd
   state: active
@@ -77,6 +95,7 @@ flat_maps.Rmd:
   - R/load_estuary_basemap.R
   - R/plot_estuary_map.R
   - R/get_mean_gps_position.R
+  - R/filter_studied_gps_boxes.R
   - R/plot_maps_parameter_years.R
   tests: []
   vignettes: []
@@ -89,19 +108,19 @@ flat_maps.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
-flat_POMET.Rmd:
-  path: dev/flat_POMET.Rmd
+flat_phychem.Rmd:
+  path: dev/flat_phychem.Rmd
   state: active
-  R: R/fct_size_class.R
+  R: R/plot_physicochem_parameter_trend.R
   tests: []
   vignettes: []
   inflate:
-    flat_file: dev/flat_POMET.Rmd
+    flat_file: dev/flat_phychem.Rmd
     vignette_name: ~
     open_vignette: true
     check: false
     document: true
-    overwrite: ask
+    overwrite: 'yes'
     clean: ask
     codecov: false
 flat_utils.Rmd:

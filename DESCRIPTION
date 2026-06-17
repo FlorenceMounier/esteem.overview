@@ -20,6 +20,7 @@ Imports:
     lubridate,
     maptiles,
     mixtools,
+    modifiedmk,
     osmdata,
     rlang,
     scales,
@@ -28,6 +29,7 @@ Imports:
     terra,
     tibble,
     tidyr,
+    trend,
     writexl
 Suggests: 
     DT,

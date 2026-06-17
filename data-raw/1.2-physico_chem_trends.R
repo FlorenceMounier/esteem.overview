@@ -1,19 +1,206 @@
+# =====================================================
+# Preparation script
+# Datasets:
+#  -
+# Plots:
+#  - ggplot_temperature.jpg in /int/mat_meth/phychem
+#  - ggplot_temperature_map.jpg in /int/mat_meth/phychem
+#  - ggplot_salinity.jpg in /int/mat_meth/phychem
+#  - ggplot_salinity_map.jpg in /int/mat_meth/phychem
+#  - ggplot_O2sat.jpg in /int/mat_meth/phychem
+#  - ggplot_O2sat_map.jpg in /int/mat_meth/phychem
+#  - ggplot_ammonium.jpg in /int/mat_meth/phychem
+#  - ggplot_ammonium_map.jpg in /int/mat_meth/phychem
+#  - ggplot_risk_NH4_temp.jpg in /int/mat_meth/phychem
+#  - ggplot_risk_NH4_temp_map.jpg in /int/mat_meth/phychem
+#  - ggplot_hydro_stress.jpg in /int/mat_meth/phychem
+#  - ggplot_hydro_stress_map.jpg in /int/mat_meth/phychem
+# Author: FM
+# Date: 2026-06-17
+# =====================================================
 
-data_POMET_traits
+# =====================================================
+# 00. Packages and data
+# =====================================================
+
+library(esteem.overview)
+library(tidyverse, quietly = TRUE)
+`%!in%` = Negate(`%in%`)
+
+# data from Quadrige/Sextant & POMET
+data(data_physico_chem_complete_full)
 
 
-ggplot_data_N_indicator <- ggplot(data_nitrogen_cycle) +
-  aes(x = year, y = RESULTAT, colour = estuary) +
-  geom_point() +
+# =====================================================
+# 01. Temperature trend
+# =====================================================
+
+# Optimum seabass & common sole: 24°C
+
+# ---- Trend ----
+
+ggplot_temperature <- plot_physicochem_parameter_trend(
+  data = data_physico_chem_complete_full,
+  parameter = "Temperature",
+  threshold = 24,
+  ylab = "Temperature (°C)"
+)
+ggplot_temperature
+
+ggsave(ggplot_temperature,
+       filename = "inst/mat_meth/phychem/ggplot_temperature.jpg")
+
+test_monotonic_trend(data = data_physico_chem_complete_full,
+                     parameter = "Temperature")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_filtered,
+  parameter = "Temperature",
+  filename = "inst/mat_meth/phychem/ggplot_temperature_map.jpg"
+)
+
+
+# =====================================================
+# 02. Salinity trend
+# =====================================================
+
+# ---- Trend ----
+
+ggplot_salinity <- plot_physicochem_parameter_trend(
+  data = data_physico_chem_complete_full,
+  parameter = "Salinity",
+  threshold = NULL,
+  ylab = "Salinity"
+)
+
+ggplot_salinity
+
+ggsave(ggplot_salinity,
+       filename = "inst/mat_meth/phychem/ggplot_salinity.jpg")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_filtered,
+  parameter = "Salinity",
+  filename = "inst/mat_meth/phychem/ggplot_salinity_map.jpg"
+)
+
+
+# =====================================================
+# 03. O2sat trend
+# =====================================================
+
+# ---- Trend ----
+
+ggplot_O2sat <- plot_physicochem_parameter_trend(
+  data = data_physico_chem_complete_full,
+  parameter = "O2sat",
+  threshold = 40,
+  ylab = "Dissolved oxygen saturation (%)"
+)
+
+ggplot_O2sat
+
+ggsave(plot = ggplot_O2sat,
+       filename = "inst/mat_meth/phychem/ggplot_O2sat.jpg")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_filtered,
+  parameter = "O2sat",
+  filename = "inst/mat_meth/phychem/ggplot_O2sat_map.jpg"
+)
+
+
+# =====================================================
+# 04. Ammonium trend
+# =====================================================
+
+# ---- Trend ----
+
+ggplot_ammonium <- plot_physicochem_parameter_trend(
+  data = data_physico_chem_complete_full,
+  parameter = "Ammonium",
+  threshold = 1,
+  ylab = "Dissolved oxygen saturation (%)"
+)
+
+ggplot_ammonium
+
+ggsave(ggplot_ammonium,
+       filename = "inst/mat_meth/phychem/ggplot_ammonium.jpg")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_filtered,
+  parameter = "Ammonium",
+  filename = "inst/mat_meth/phychem/ggplot_ammonium_map.jpg"
+)
+
+# =====================================================
+# 05. Ammonia formation toxicity indicator trend
+# =====================================================
+
+# ---- Trend ----
+
+ggplot_risk_NH4_temp <- plot_physicochem_parameter_trend(
+  data = data_physico_chem_complete_full,
+  parameter = "risk_NH4_temp",
+  threshold = NULL,
+  ylab = "Ammonia formation toxicity indicator"
+)
+
+ggplot_risk_NH4_temp
+
+ggsave(ggplot_risk_NH4_temp,
+       filename = "inst/mat_meth/phychem/ggplot_risk_NH4_temp.jpg")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_complete_full,
+  parameter = "risk_NH4_temp",
+  filename = "inst/mat_meth/phychem/ggplot_risk_NH4_temp_map.jpg"
+)
+
+# =====================================================
+# 06. Hydrological stress indicator trend
+# =====================================================
+
+# ---- Trend ----
+
+ggplot_hydro_stress <- plot_physicochem_parameter_trend(
+  data = data_physico_chem_complete_full,
+  parameter = "hydro_stress",
+  threshold = 0,
+  ylab = "Stress indicator"
+)
+
+ggplot_hydro_stress
+
+ggsave(ggplot_hydro_stress,
+       filename = "inst/mat_meth/phychem/ggplot_hydro_stress.jpg")
+
+# ---- Map ----
+
+plot_maps_parameter_years(
+  data = data_physico_chem_complete_full,
+  parameter = "hydro_stress",
+  filename = "inst/mat_meth/phychem/ggplot_hydro_stress_map.jpg"
+)
+
+############################################################
+
+
+
   geom_hline(yintercept = 0.2, colour = "yellow") +
   geom_hline(yintercept = 0.4, colour = "orange") +
   geom_hline(yintercept = 0.7, colour = "red") +
-  facet_grid(vars(estuary), scales = "free_y") +
-  theme_esteem()
-# ggplot_data_N_indicator
-
-ggsave(plot = ggplot_data_N_indicator,
-       filename = "inst/results/data_phychem/Nitrogen_indicator/ggplot_nitrogen_cycle_indicator.jpg",width = 15, height = 10, units = "cm")
 
 # =====================================================
 # 05. Define the colors of the measurement points
@@ -35,12 +222,7 @@ fct_cleaned_data_phychemvar <- function(estuary_name,
                                         points_lieu_mnemonique,
                                         months){
 
-  data_var <- data_physico_chem |>
-    filter(PARAMETRE_LIBELLE == phychemvar) |>
-    filter(estuary == estuary_name) |>
-    filter(LIEU_MNEMONIQUE %in% points_lieu_mnemonique$LIEU_MNEMONIQUE) |>
-    filter(month %in% months) |>
-    filter(year >= 1987)
+
 
   # ---- Filter outliers ----
 
