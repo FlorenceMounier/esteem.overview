@@ -251,10 +251,8 @@ data_physico_chem_filtered <- data_physico_chem_joined |>
                                   "Ammonium",
                                   "O2sat"))
 
-
-
 # =====================================================
-# 06. Nitrogen cycle variables
+# 03. Nitrogen cycle variables
 # =====================================================
 
 # ---- All nitrogen forms ----
@@ -309,7 +307,7 @@ ggsave(ggplot_ammonia_risk_synergy,
        filename = "inst/mat_meth/phychem/ggplot_ammonia_risk_synergy.jpg")
 
 # =====================================================
-# 07. Filter selected parameters
+# 04. Filter selected parameters
 # =====================================================
 
 data_physico_chem_complete <- risk_summary |>
@@ -318,11 +316,11 @@ data_physico_chem_complete <- risk_summary |>
                names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT")
 
 # =====================================================
-# 08. Synthetic indicator
+# 05. Synthetic indicator
 # =====================================================
 
 # ---- Compute the indicator -----
-data_physico_chem_complete_full <- data_physico_chem_complete |>
+data_physico_chem_complete_full <- data_physico_chem_complete_temp |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
   mutate(
     z_temp = scale(Temperature)[,1],
@@ -332,6 +330,13 @@ data_physico_chem_complete_full <- data_physico_chem_complete |>
   select(-c("z_temp", "z_amm","z_o2")) |>
   pivot_longer(cols = c("Temperature", "Salinity", "O2sat", "Ammonium", "risk_NH4_temp", "hydro_stress"),
                names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT")
+
+# =====================================================
+# 06. Join with river flows
+# =====================================================
+
+data_abiotic <- full_join(data_physico_chem_complete_full, data_flow,
+                          by = c("estuary", "year", "month", "year_month"))
 
 usethis::use_data(data_physico_chem_complete_full, overwrite = TRUE)
 
