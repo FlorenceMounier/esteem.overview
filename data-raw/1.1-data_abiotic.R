@@ -72,7 +72,8 @@ data_physico_chem <- raw_data_physico_chem  |>
     )
   ) |>
 
-  group_by(estuary, PROGRAMME, PARAMETRE_LIBELLE, longitude, latitude, haline_zone, year, month, year_month, season) |>
+  group_by(estuary, PROGRAMME, PARAMETRE_LIBELLE, longitude, latitude, haline_zone,
+           year, month, year_month, season, year_season) |>
   summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop") |>
 
 
@@ -81,7 +82,9 @@ data_physico_chem <- raw_data_physico_chem  |>
   # 02sat = maximum theoretical concentration at equilibrium with the atmosphere (mg/L),
   #         which depends on temperature and salinity
   #         computed using gas_O2sat() function from {marelac} package
-  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT, values_fn = ~ mean(.x, na.rm = TRUE)) |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE,
+              values_from = RESULTAT,
+              values_fn = ~ mean(.x, na.rm = TRUE)) |>
   mutate(
     O2sat = NA_real_
   ) |>
@@ -107,7 +110,7 @@ data_physico_chem <- raw_data_physico_chem  |>
                         "pH", "Ammonium", "Azote nitreux (nitrite)", "Azote nitrique (nitrate)",
                         "Phosphate", "Silicate", "Nitrate + nitrite", "Matière en suspension",
                         "Phéopigments", "Chlorophylle a"),
-               names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT") |>
+               names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT") |> View()
   filter_studied_gps_boxes()
 
 
@@ -123,7 +126,8 @@ data_POMET_traits_filtered <- data_POMET_traits |>
   )) |>
   filter_studied_gps_boxes() |>
   # Summarise by month
-  group_by(estuary, PROGRAMME, PARAMETRE_LIBELLE, longitude, latitude, haline_zone, year, month, year_month, season) |>
+  group_by(estuary, PROGRAMME, PARAMETRE_LIBELLE, longitude, latitude, haline_zone,
+           year, month, year_month, season, year_season) |>
   summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop")
 
 
@@ -145,6 +149,8 @@ plot_data_physico_chem_completion <- ggplot(table_data_physico_chem_completion) 
   geom_point() +
   facet_grid(vars(estuary)) +
   theme(axis.title.x = element_blank())
+
+plot_data_physico_chem_completion
 
 ggsave(plot_data_physico_chem_completion,
        filename = "inst/mat_meth/phychem/plot_data_physico_chem_completion.jpg")
@@ -310,7 +316,7 @@ ggsave(ggplot_ammonia_risk_synergy,
 # 04. Filter selected parameters
 # =====================================================
 
-data_physico_chem_complete <- risk_summary |>
+data_physico_chem_complete_temp <- risk_summary |>
   select(-c("Azote nitreux (nitrite)", "Azote nitrique (nitrate)","Nitrate + nitrite")) |>
   pivot_longer(cols = c("Temperature", "Salinity", "O2sat", "Ammonium", "risk_NH4_temp"),
                names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT")
@@ -331,12 +337,16 @@ data_physico_chem_complete_full <- data_physico_chem_complete_temp |>
   pivot_longer(cols = c("Temperature", "Salinity", "O2sat", "Ammonium", "risk_NH4_temp", "hydro_stress"),
                names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT")
 
+usethis::use_data(data_physico_chem_complete_full, overwrite = TRUE)
+
 # =====================================================
 # 06. Join with river flows
 # =====================================================
 
 data_abiotic <- full_join(data_physico_chem_complete_full, data_flow,
-                          by = c("estuary", "year", "month", "year_month"))
+                          by = c("estuary", "year", "month", "haline_zone",
+                                 "year_month", "season", "year_season",
+                                 "PARAMETRE_LIBELLE", "RESULTAT"))
 
-usethis::use_data(data_physico_chem_complete_full, overwrite = TRUE)
+usethis::use_data(data_abiotic, overwrite = TRUE)
 

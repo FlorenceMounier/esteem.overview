@@ -205,4 +205,14 @@ data_flow <- data_flow_gironde |>
   mutate(year_month = lubridate::ym(year_month)) |>
   mutate(PARAMETRE_LIBELLE = "Flow")
 
+
+# Add haline zone
+data_flow_outer <- data_flow |>
+  mutate(haline_zone = "outer")
+
+data_flow_inner <- data_flow |>
+  mutate(haline_zone = "inner")
+
+data_flow <- rbind(data_flow_outer, data_flow_inner)
+
 usethis::use_data(data_flow, overwrite = TRUE)
