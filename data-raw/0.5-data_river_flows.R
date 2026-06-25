@@ -44,7 +44,8 @@ data_flow_seine_daily_means <- data_flow_seine_daily_data |>
   group_by(year, month, year_month, season, year_season) |>
   summarise(RESULTAT = mean(`Valeur (en m³/s)`), .groups = "drop") |>
   drop_na() |>
-  mutate(estuary = "Seine")
+  mutate(estuary = "Seine") |>
+  mutate(source = "daily data")
 
 
 # ---- MONTHLY DATASET ----
@@ -57,13 +58,42 @@ data_flow_seine_monthly_means <- data_flow_seine_monthly_data |>
   group_by(year, month, year_month, season, year_season) |>
   summarise(RESULTAT = mean(`Valeur (en m³/s)`), .groups = "drop") |>
   drop_na() |>
-  mutate(estuary = "Seine")
+  mutate(estuary = "Seine") |>
+  mutate(source = "monthly data")
 
 
 # ---- FULL DATASET ----
 
-data_flow_seine <- data_flow_seine_daily_means |>
+# Join monthly means from daily and monthly means data
+data_flow_seine_raw <- data_flow_seine_daily_means |>
   full_join(data_flow_seine_monthly_means)
+
+# Compare months with monthly means computed from daily and monthly data
+data_flow_seine_raw  |>
+  group_by(year_month)  |>
+  filter(n() > 1)  |>
+  ungroup() |>
+  pivot_wider(names_from = source, values_from = RESULTAT) |>
+  mutate(mean_RESULTAT = (`daily data` + `monthly data`) / 2) |>
+  mutate(DIFF = abs(`daily data` - `monthly data`) / mean_RESULTAT * 100) |>
+  summarise(
+    stat_DIFF_5 = stats::quantile(DIFF, probs = 0.05) |>  round(digits = 2),
+    stat_DIFF_25 = stats::quantile(DIFF, probs = 0.25) |>  round(digits = 2),
+    stat_DIFF_50 = stats::quantile(DIFF, probs = 0.50) |>  round(digits = 2),
+    stat_DIFF_75 = stats::quantile(DIFF, probs = 0.75) |>  round(digits = 2),
+    stat_DIFF_95 = stats::quantile(DIFF, probs = 0.95) |>  round(digits = 2),
+  )
+
+# Compute final data using mean(RESULTAT) from `daily data` and `monthly data`
+data_flow_seine <- data_flow_seine_raw |>
+  group_by(year, month, year_month, season, year_season, estuary) |>
+  summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop")
+
+# Check the absence of duplicates
+data_flow_seine  |>
+  group_by(year_month)  |>
+  filter(n() > 1)  |>
+  ungroup()
 
 
 # =====================================================
@@ -163,6 +193,8 @@ data_flow_gironde_monthly_means <- data_flow_gironde_monthly_data |>
   mutate(source = "monthly data") |>
   select(-future_date)
 
+### FULL DATASET ###
+
 # Join monthly means from daily and monthly means data
 data_flow_gironde_raw <- full_join(data_flow_gironde_daily_means,
                                data_flow_gironde_monthly_means)
@@ -203,16 +235,11 @@ data_flow <- data_flow_gironde |>
   full_join(data_flow_loire) |>
   full_join(data_flow_seine) |>
   mutate(year_month = lubridate::ym(year_month)) |>
-  mutate(PARAMETRE_LIBELLE = "Flow")
-
-
-# Add haline zone
-data_flow_outer <- data_flow |>
-  mutate(haline_zone = "outer")
-
-data_flow_inner <- data_flow |>
-  mutate(haline_zone = "inner")
-
-data_flow <- rbind(data_flow_outer, data_flow_inner)
+  mutate(PARAMETRE_LIBELLE = "Flow") |>
+  mutate(PROGRAMME = "Hydroportail")
 
 usethis::use_data(data_flow, overwrite = TRUE)
+
+ggplot(data_flow) +
+  aes(x = year_month, y = RESULTAT, colour = estuary) +
+  geom_point()

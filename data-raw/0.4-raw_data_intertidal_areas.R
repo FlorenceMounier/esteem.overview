@@ -1,9 +1,10 @@
 # =====================================================
-# Preparation script from external intertidal areas raw data
+# Preparation script from external intertidal areas data
 # Datasets:
-#  - data_intertidal_surface.rda
+#  - data_raw_intertidal_surface_interp.rda
+#  - data_intertidal_surface_interp.rda
 # Author: FM
-# Date: 2026-06-15
+# Date: 2026-06-25
 # =====================================================
 
 
@@ -16,11 +17,12 @@ library(readxl)
 
 
 # =====================================================
-# 1. Datasets for intertidal surface area
+# 1. Read raw datasets from litterature
 # =====================================================
 
-# ---------------------------------------------------------------------------
-# Read raw data from Lecuyer et al. 2024 ("Thriving life beneath...") Loire, Seine ----
+# ---- Loire & Seine ----
+
+# Read raw data from Lecuyer et al. 2024 ("Thriving life beneath...") Loire, Seine
 # expressed in hectares
 
 raw_data_intertidal_surface_seine_loire <- readxl::read_xlsx("../Intertidal areas/lecuyer2024_loire_seine.xlsx") |>
@@ -34,7 +36,8 @@ data_intertidal_surface_area_seine_loire <- raw_data_intertidal_surface_seine_lo
       .fns = ~ sum(.x, na.rm = TRUE)
     ), .groups = "drop"
   ) |>
-  mutate(annee = as.numeric(annee))
+  mutate(annee = as.numeric(annee)) |>
+  mutate(PROGRAMME = "Lecuyer et al. 2024")
 
 
 # E-mail from R. Lecuyer 04/07/2026
@@ -58,7 +61,8 @@ data_intertidal_surface_area_seine_loire <- raw_data_intertidal_surface_seine_lo
 #   These surface areas were calculated from digitizations that I carried out using various historical cartographic sources.
 
 
-# ---------------------------------------------------------------------------
+# ---- Gironde ----
+
 # Read raw data from Sottolichio et al. 2013 Gironde estuary ----
 
 # expressed in km2
@@ -73,10 +77,10 @@ data_intertidal_surface_gironde_sottolichio <- raw_data_intertidal_surface_giron
   ) |>
   mutate(estuaire = "gironde") |>
   pivot_longer(cols = -estuaire, names_to = "annee", values_to = "surface_ha") |>
-  mutate(annee = as.numeric(annee))
+  mutate(annee = as.numeric(annee)) |>
+  mutate(PROGRAMME = "Sottolichio et al. 2013")
 
 
-# ---------------------------------------------------------------------------
 # Read raw data from Blanchet et al. 2018 Gironde estuary ----
 
 # EUNIS classes selection
@@ -104,11 +108,14 @@ data_intertidal_surface_gironde_blanchet <- raw_data_intertidal_surface_gironde_
   ) |>
   mutate(estuaire = "gironde") |>
   pivot_longer(cols = -estuaire, names_to = "annee", values_to = "surface_ha") |>
-  mutate(annee = as.numeric(annee))
+  mutate(annee = as.numeric(annee)) |>
+  mutate(PROGRAMME = "Blanchet et al. 2018")
 
 
-# ---------------------------------------------------------------------------
-# Compile data from all estuaries and renames variables and values ----
+
+# ---- Compile datasets ----
+
+# Compile data from all estuaries and renames variables and values
 
 # expressed in hectares
 data_intertidal_surface <- full_join(
@@ -125,4 +132,39 @@ data_intertidal_surface <- full_join(
   ))
 
 
-usethis::use_data(data_intertidal_surface, overwrite = TRUE)
+# =====================================================
+# 2. Interpolation
+# =====================================================
+
+# Get interpolated data ----
+
+data_raw_intertidal_surface_interp <- get_interpolation_spline(
+  data = data_intertidal_surface,
+  x = year,
+  y = surface_ha,
+  group = estuary) |>
+  left_join(data_intertidal_surface)
+
+ggplot_raw_intertidal_areas <- ggplot(
+  data = data_raw_intertidal_surface_interp) +
+  aes(x = year, y = surface_ha, colour = estuary) +
+  geom_line() +
+  geom_point(data = data_raw_intertidal_surface_interp |> drop_na(),
+             aes(x = year, y = surface_ha, colour = estuary))
+
+ggplot_raw_intertidal_areas
+
+ggsave(plot = ggplot_raw_intertidal_areas,
+       filename = "inst/mat_meth/ggplot_raw_intertidal_areas.jpg")
+
+# Complete variables
+
+data_intertidal_surface_interp <- data_raw_intertidal_surface_interp |>
+  mutate(PARAMETRE_LIBELLE = "Surface area") |>
+  rename(RESULTAT = surface_ha)
+
+
+# Save .rda
+
+usethis::use_data(data_intertidal_surface_interp, overwrite = TRUE)
+

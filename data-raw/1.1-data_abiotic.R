@@ -1,8 +1,9 @@
 # =====================================================
 # Preparation script
 # Datasets:
-#  - data_physico_chem_joined.rda
 #  - data_physico_chem_complete_full.rda
+#  - data_physico_chem_summarised.rda
+#  - data_abiotic.rda
 # Plots:
 #  - plot_data_physico_chem_completion.jpg in /int/mat_meth/phychem
 #  - ggplot_gantt_data.jpg in /int/mat_meth/phychem
@@ -11,7 +12,7 @@
 
 #  - map_gironde_physico_chem.jpg in /int/mat_meth/phychem
 # Author: FM
-# Date: 2026-06-17
+# Date: 2026-06-25
 # =====================================================
 
 # =====================================================
@@ -110,7 +111,7 @@ data_physico_chem <- raw_data_physico_chem  |>
                         "pH", "Ammonium", "Azote nitreux (nitrite)", "Azote nitrique (nitrate)",
                         "Phosphate", "Silicate", "Nitrate + nitrite", "Matière en suspension",
                         "Phéopigments", "Chlorophylle a"),
-               names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT") |> View()
+               names_to = "PARAMETRE_LIBELLE", values_to = "RESULTAT") |>
   filter_studied_gps_boxes()
 
 
@@ -339,14 +340,75 @@ data_physico_chem_complete_full <- data_physico_chem_complete_temp |>
 
 usethis::use_data(data_physico_chem_complete_full, overwrite = TRUE)
 
+
 # =====================================================
-# 06. Join with river flows
+# 06. Summarise monthly
 # =====================================================
 
-data_abiotic <- full_join(data_physico_chem_complete_full, data_flow,
-                          by = c("estuary", "year", "month", "haline_zone",
-                                 "year_month", "season", "year_season",
-                                 "PARAMETRE_LIBELLE", "RESULTAT"))
+data_physico_chem_summarised <- data_physico_chem_complete_full |>
+  group_by(estuary, year, month, season, year_month, year_season, haline_zone, PARAMETRE_LIBELLE) |>
+  summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE),
+            PROGRAMME = stringr::str_c(sort(unique(PROGRAMME)), collapse = " + "),
+            .groups = "drop")
+
+usethis::use_data(data_physico_chem_summarised, overwrite = TRUE)
+
+
+# =====================================================
+# 06. Join with river flows & surface area
+# =====================================================
+
+
+# ---- Variables combinations ----
+
+variables_combinations <- data_physico_chem_summarised |>
+  distinct(
+    estuary, year, month, season,
+    year_month, year_season, haline_zone
+  )
+
+
+# ---- Flow data completion ----
+
+data_flow_completed <- variables_combinations |>
+  left_join(
+    data_flow |>
+      group_by(estuary, year, month, year_month, season, year_season) |>
+      summarise(
+        RESULTAT = mean(RESULTAT, na.rm = TRUE),
+        PROGRAMME = paste(sort(unique(na.omit(PROGRAMME))), collapse = " + "),
+        PARAMETRE_LIBELLE = "Flow",
+        .groups = "drop"
+      ),
+    by = join_by(estuary, year, month, year_month, season, year_season)
+  )
+
+
+# ---- Intertidal surface area completion ----
+
+data_surface_area_completed <- variables_combinations |>
+  left_join(
+    data_intertidal_surface_interp |>
+      select(estuary, year, PROGRAMME, PARAMETRE_LIBELLE, RESULTAT),
+    by = join_by(estuary, year)
+  ) |>
+  arrange(estuary, year) |>
+  group_by(estuary, haline_zone) |>
+  tidyr::fill(PROGRAMME, PARAMETRE_LIBELLE, RESULTAT, .direction = "down") |>
+  ungroup()
+
+
+# ---- Join all datasets ----
+
+data_abiotic <- bind_rows(
+  data_physico_chem_summarised,
+  data_flow_completed,
+  data_surface_area_completed
+)
+
+data_abiotic |>
+  count(PARAMETRE_LIBELLE)
 
 usethis::use_data(data_abiotic, overwrite = TRUE)
 
+write_csv(data_abiotic, file = "../data_abiotic.csv")
