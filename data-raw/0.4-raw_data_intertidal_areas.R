@@ -28,8 +28,12 @@ library(readxl)
 raw_data_intertidal_surface_seine_loire <- readxl::read_xlsx("../Intertidal areas/lecuyer2024_loire_seine.xlsx") |>
   filter(secteur %in% c("limnique", "oligohalin", "mesohalin", "polyhalin", "euhalin"))
 
-data_intertidal_surface_area_seine_loire <- raw_data_intertidal_surface_seine_loire |>
-  group_by(estuaire, annee) |>
+data_intertidal_surface_area_seine_loire <- raw_data_intertidal_surface_seine_loire  |>
+  mutate(haline_zone = case_when(
+    secteur %in% c("limnique", "oligohalin", "mesohalin") ~ "inner",
+    secteur %in% c("polyhalin", "euhalin") ~ "outer"
+  )) |>
+  group_by(estuaire, annee, haline_zone) |>
   summarise(
     across(
       .cols = surface_ha,
@@ -69,6 +73,11 @@ data_intertidal_surface_area_seine_loire <- raw_data_intertidal_surface_seine_lo
 raw_data_intertidal_surface_gironde_sottolichio <- readr::read_csv2("../Intertidal areas/sottolichio2013_gironde.csv")
 
 data_intertidal_surface_gironde_sottolichio <- raw_data_intertidal_surface_gironde_sottolichio  |>
+  mutate(haline_zone = case_when(
+    section %in% c("0-10", "10-20", "20-30", "30-40", "40-50", "50-60", "60-70") ~ "inner",
+    section %in% c("70-80", "80-90", "90-100") ~ "outer"
+  )) |>
+  group_by(haline_zone) |>
   summarise(
     across(
       .cols = -section,
@@ -76,43 +85,48 @@ data_intertidal_surface_gironde_sottolichio <- raw_data_intertidal_surface_giron
     )
   ) |>
   mutate(estuaire = "gironde") |>
-  pivot_longer(cols = -estuaire, names_to = "annee", values_to = "surface_ha") |>
+  pivot_longer(cols = -c(estuaire, haline_zone), names_to = "annee", values_to = "surface_ha") |>
   mutate(annee = as.numeric(annee)) |>
   mutate(PROGRAMME = "Sottolichio et al. 2013")
 
-
-# Read raw data from Blanchet et al. 2018 Gironde estuary ----
-
-# EUNIS classes selection
-# selected from A2 "Intertidal sediment" (A = Marine habitats):
-# - A2.2 ("Intertidal sand and muddy sand")
-# - A2.3 ("Intertidal mud")
-# not selected
-# - A1 ("Rock and other hard intertidal substrates") => mouth
-# - A3 ("Infralittoral rock and other hard substrates") => mouth
-# - A5 ("Subtidal sediment") => subtidal
-# - A2.1 ("Intertidal coarse sediments") => not present in the estuary
-# - A2.4 ("Intertidal mixed sediments") => not present in the estuary
-# - A2.5 ("Coastal salt marshes and saline reedbeds") => uppermost level of sheltered shores that are predominantly closed and only periodically inundated, above the shoreline limit
-
-# expressed in hectares
-raw_data_intertidal_surface_gironde_blanchet <- readxl::read_xlsx("../Intertidal areas/blanchet2018_gironde.xlsx")
+data_intertidal_surface_gironde_sottolichio |>
+  ggplot() +
+  aes(x = annee, y = surface_ha, colour = haline_zone) +
+  geom_point()
 
 
-data_intertidal_surface_gironde_blanchet <- raw_data_intertidal_surface_gironde_blanchet |>
-  summarise(
-    across(
-      .cols = -EUNIS_habitat,
-      .fns = ~ sum(.x, na.rm = TRUE)
-    )
-  ) |>
-  mutate(estuaire = "gironde") |>
-  pivot_longer(cols = -estuaire, names_to = "annee", values_to = "surface_ha") |>
-  mutate(annee = as.numeric(annee)) |>
-  mutate(PROGRAMME = "Blanchet et al. 2018")
-
-
-
+# # Read raw data from Blanchet et al. 2018 Gironde estuary ----
+#
+# # EUNIS classes selection
+# # selected from A2 "Intertidal sediment" (A = Marine habitats):
+# # - A2.2 ("Intertidal sand and muddy sand")
+# # - A2.3 ("Intertidal mud")
+# # not selected
+# # - A1 ("Rock and other hard intertidal substrates") => mouth
+# # - A3 ("Infralittoral rock and other hard substrates") => mouth
+# # - A5 ("Subtidal sediment") => subtidal
+# # - A2.1 ("Intertidal coarse sediments") => not present in the estuary
+# # - A2.4 ("Intertidal mixed sediments") => not present in the estuary
+# # - A2.5 ("Coastal salt marshes and saline reedbeds") => uppermost level of sheltered shores that are predominantly closed and only periodically inundated, above the shoreline limit
+#
+# # expressed in hectares
+# raw_data_intertidal_surface_gironde_blanchet <- readxl::read_xlsx("../Intertidal areas/blanchet2018_gironde.xlsx")
+#
+#
+# data_intertidal_surface_gironde_blanchet <- raw_data_intertidal_surface_gironde_blanchet |>
+#   summarise(
+#     across(
+#       .cols = -EUNIS_habitat,
+#       .fns = ~ sum(.x, na.rm = TRUE)
+#     )
+#   ) |>
+#   mutate(estuaire = "gironde") |>
+#   pivot_longer(cols = -estuaire, names_to = "annee", values_to = "surface_ha") |>
+#   mutate(annee = as.numeric(annee)) |>
+#   mutate(PROGRAMME = "Blanchet et al. 2018")
+#
+#
+#
 # ---- Compile datasets ----
 
 # Compile data from all estuaries and renames variables and values
@@ -122,7 +136,7 @@ data_intertidal_surface <- full_join(
   data_intertidal_surface_area_seine_loire,
   data_intertidal_surface_gironde_sottolichio
 ) |>
-  full_join(data_intertidal_surface_gironde_blanchet) |>
+  # full_join(data_intertidal_surface_gironde_blanchet) |>
   rename(estuary = estuaire,
          year = annee) |>
   mutate(estuary = case_when(
@@ -142,12 +156,12 @@ data_raw_intertidal_surface_interp <- get_interpolation_spline(
   data = data_intertidal_surface,
   x = year,
   y = surface_ha,
-  group = estuary) |>
+  estuary, haline_zone) |>
   left_join(data_intertidal_surface)
 
 ggplot_raw_intertidal_areas <- ggplot(
   data = data_raw_intertidal_surface_interp) +
-  aes(x = year, y = surface_ha, colour = estuary) +
+  aes(x = year, y = surface_ha, colour = estuary, shape = haline_zone, linetype = haline_zone) +
   geom_line() +
   geom_point(data = data_raw_intertidal_surface_interp |> drop_na(),
              aes(x = year, y = surface_ha, colour = estuary))

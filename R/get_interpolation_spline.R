@@ -5,18 +5,19 @@
 #' @param data tibble, data with x, y, grouping variable
 #' @param x character, x variable
 #' @param y character, y variable
-#' @param group character, grouping variable
+#' @param group vector of character, grouping variable
 #'
 #' @return tibble with interpolated data by group
 #' 
 #' @noRd
-get_interpolation_spline <- function(data, x, y, group) {
+get_interpolation_spline <- function(data, x, y, ...) {
   
   x_var <- rlang::ensym(x)
   y_var <- rlang::ensym(y)
+  group_vars <- rlang::ensyms(...)
   
-  data_interpolated <- data |> 
-    dplyr::group_by({{ group }}) |> 
+  data |> 
+    dplyr::group_by(!!!group_vars) |> 
     dplyr::arrange(!!x_var, .by_group = TRUE) |>
     dplyr::group_modify(~{
       
@@ -26,6 +27,13 @@ get_interpolation_spline <- function(data, x, y, group) {
       ok <- !is.na(x_vals) & !is.na(y_vals)
       x_vals <- x_vals[ok]
       y_vals <- y_vals[ok]
+      
+      if (length(x_vals) < 2) {
+        return(tibble::tibble(
+          !!x_var := x_vals,
+          !!y_var := y_vals
+        ))
+      }
       
       spline_mod <- splinefun(
         x = x_vals,
@@ -45,6 +53,4 @@ get_interpolation_spline <- function(data, x, y, group) {
       )
     }) |> 
     dplyr::ungroup()
-  
-  return(data_interpolated)
 }

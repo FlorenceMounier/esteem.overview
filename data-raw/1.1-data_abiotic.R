@@ -389,8 +389,8 @@ data_flow_completed <- variables_combinations |>
 data_surface_area_completed <- variables_combinations |>
   left_join(
     data_intertidal_surface_interp |>
-      select(estuary, year, PROGRAMME, PARAMETRE_LIBELLE, RESULTAT),
-    by = join_by(estuary, year)
+      select(estuary, year, haline_zone, PROGRAMME, PARAMETRE_LIBELLE, RESULTAT),
+    by = join_by(estuary, year, haline_zone)
   ) |>
   arrange(estuary, year) |>
   group_by(estuary, haline_zone) |>
