@@ -6,6 +6,7 @@
 # Date: 2026-06-30
 # =====================================================
 
+
 # =====================================================
 # 00. Packages and raw data
 # =====================================================
@@ -43,9 +44,9 @@ data(raw_data_monthly_flow_gironde)
 # 01. Loire
 # =====================================================
 
-# ---- Monthly dataset from raw daily dataset ----
+# ---- Monthly means from raw daily data (1960-2025) ----
 
-data_flow_loire <- data_flow_loire_daily |>
+data_flow_loire <- raw_data_daily_flow_loire |>
   get_info_from_dates(date_variable = `Date (TU)`) |>
   group_by(year, month, year_month, season, year_season) |>
   summarise(RESULTAT = mean(`Valeur (en m³/s)`), .groups = "drop") |>
@@ -58,10 +59,9 @@ data_flow_loire <- data_flow_loire_daily |>
 # 02. Seine
 # =====================================================
 
-# --- DAILY DATASET ----
+# ---- Monthly means from raw daily data (1990-2025) ----
 
-# Monthly dataset from daily dataset
-data_flow_seine_daily_means <- data_flow_seine_daily_data |>
+data_flow_seine_daily <- raw_data_daily_flow_seine |>
   get_info_from_dates(date_variable = `Date (TU)`) |>
   group_by(year, month, year_month, season, year_season) |>
   summarise(RESULTAT = mean(`Valeur (en m³/s)`), .groups = "drop") |>
@@ -69,25 +69,24 @@ data_flow_seine_daily_means <- data_flow_seine_daily_data |>
   mutate(estuary = "Seine") |>
   mutate(source = "daily data")
 
+# ---- Monthly means from raw monthly data (1975-2010) ----
 
-# ---- MONTHLY DATASET ----
-
-data_flow_seine_monthly_means <- data_flow_seine_monthly_data |>
+data_flow_seine_monthly <- raw_data_monthly_flow_seine |>
   get_info_from_dates(date_variable = `Date (TU)`) |>
-  group_by(year, month, year_month, season, year_season) |>
-  summarise(RESULTAT = mean(`Valeur (en m³/s)`), .groups = "drop") |>
-  drop_na() |>
+  rename(RESULTAT = `Valeur (en m³/s)`) |>
   mutate(estuary = "Seine") |>
   mutate(source = "monthly data")
 
+# ---- Join datasets ----
 
-# ---- FULL DATASET ----
+data_flow_seine_raw <- data_flow_seine_daily |>
+  full_join(data_flow_seine_monthly) |>
+  select(year, month, year_month, season, year_season, RESULTAT,
+         estuary, source)
 
-# Join monthly means from daily and monthly means data
-data_flow_seine_raw <- data_flow_seine_daily_means |>
-  full_join(data_flow_seine_monthly_means)
+# ---- Compare common months from daily and monthly raw data ----
+# Percentage of the absolute difference from the mean values
 
-# Compare months with monthly means computed from daily and monthly data
 data_flow_seine_raw  |>
   group_by(year_month)  |>
   filter(n() > 1)  |>
@@ -100,32 +99,30 @@ data_flow_seine_raw  |>
     stat_DIFF_25 = stats::quantile(DIFF, probs = 0.25) |>  round(digits = 2),
     stat_DIFF_50 = stats::quantile(DIFF, probs = 0.50) |>  round(digits = 2),
     stat_DIFF_75 = stats::quantile(DIFF, probs = 0.75) |>  round(digits = 2),
-    stat_DIFF_95 = stats::quantile(DIFF, probs = 0.95) |>  round(digits = 2),
+    stat_DIFF_95 = stats::quantile(DIFF, probs = 0.95) |>  round(digits = 2)
   )
 
-# Compute final data using mean(RESULTAT) from `daily data` and `monthly data`
+# ---- Compute final data using mean(RESULTAT) from `daily data` and `monthly data`
+
 data_flow_seine <- data_flow_seine_raw |>
   group_by(year, month, year_month, season, year_season, estuary) |>
   summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop")
 
-# Check the absence of duplicates
+# ---- Check absence of duplicates ----
 data_flow_seine  |>
   group_by(year_month)  |>
   filter(n() > 1)  |>
   ungroup()
 
 
+
 # =====================================================
 # 03. Gironde
 # =====================================================
 
-### MONTHLY MEANS FROM DAILY DATASET 1996 - 2024 ###
+# ---- Dordogne - Monthly means from raw daily data (1996-2024) ----
 
-
-# ---- Dordogne daily flow ----
-
-# Monthly means from daily dataset
-data_flow_dordogne_daily_means <- data_flow_dordogne_daily_data  |>
+data_flow_dordogne_daily <- raw_data_daily_flow_dordogne  |>
   select(`Date (TU)`, `Valeur (en m³/s)`) |>
   get_info_from_dates(date_variable = `Date (TU)`) |>
   group_by(year, month, year_month, season, year_season) |>
@@ -133,10 +130,9 @@ data_flow_dordogne_daily_means <- data_flow_dordogne_daily_data  |>
   drop_na() |>
   mutate(zone = "Dordogne")
 
-# ---- Garonne daily flow ----
+# ---- Garonne - Monthly means from raw daily data (1985-2025) ----
 
-# Monthly means from daily dataset
-data_flow_garonne_daily_means <- data_flow_garonne_daily_data |>
+data_flow_garonne_daily <- raw_data_daily_flow_garonne |>
   select(Date, Valeur_m3_per_s) |>
   mutate(Valeur_m3_per_s = as.numeric(Valeur_m3_per_s)) |>
   get_info_from_dates(date_variable = Date) |>
@@ -145,11 +141,10 @@ data_flow_garonne_daily_means <- data_flow_garonne_daily_data |>
   drop_na() |>
   mutate(zone = "Garonne")
 
+# ---- Gironde - Monthly means from raw daily data (1996-2024) ----
 
-# ---- Gironde monthly means flow from daily dataset ----
-
-data_flow_gironde_daily_means <- data_flow_dordogne_daily_means |>
-  full_join(data_flow_garonne_daily_means) |>
+data_flow_gironde_daily <- data_flow_dordogne_daily |>
+  full_join(data_flow_garonne_daily) |>
   pivot_wider(names_from = zone, values_from = RESULTAT) |>
   mutate(RESULTAT = Dordogne + Garonne) |>
   drop_na() |>
@@ -157,11 +152,9 @@ data_flow_gironde_daily_means <- data_flow_dordogne_daily_means |>
   mutate(estuary = "Gironde") |>
   mutate(source = "daily data")
 
+# ---- Gironde - Monthly means from raw monthly data (1960-2015) ----
 
-### MONTHLY DATASET ###
-
-
-data_flow_gironde_monthly_means <- data_flow_gironde_monthly_data |>
+data_flow_gironde_monthly <- raw_data_monthly_flow_gironde |>
   rename(year = Annee,
          month = mois) |>
   mutate(year_month = str_c(year, month, sep = "_")) |>
@@ -174,13 +167,14 @@ data_flow_gironde_monthly_means <- data_flow_gironde_monthly_data |>
   mutate(source = "monthly data") |>
   select(-future_date)
 
-### FULL DATASET ###
+# ---- Join datasets ----
 
-# Join monthly means from daily and monthly means data
-data_flow_gironde_raw <- full_join(data_flow_gironde_daily_means,
-                               data_flow_gironde_monthly_means)
+data_flow_gironde_raw <- full_join(data_flow_gironde_daily,
+                               data_flow_gironde_monthly)
 
-# Compare months with monthly means computed from daily and monthly data
+# ---- Compare common months from daily and monthly raw data ----
+# Percentage of the absolute difference from the mean values
+
 data_flow_gironde_raw  |>
   group_by(year_month)  |>
   filter(n() > 1)  |>
@@ -196,12 +190,14 @@ data_flow_gironde_raw  |>
     stat_DIFF_95 = stats::quantile(DIFF, probs = 0.95) |>  round(digits = 2),
     )
 
-# Compute final data using mean(RESULTAT) from `daily data` and `monthly data`
+# ---- Compute final data using mean(RESULTAT) from `daily data` and `monthly data`
+
 data_flow_gironde <- data_flow_gironde_raw |>
   group_by(year, month, year_month, season, year_season, estuary) |>
   summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop")
 
-# Check the absence of duplicates
+# ---- Check absence of duplicates ----
+
 data_flow_gironde  |>
   group_by(year_month)  |>
   filter(n() > 1)  |>
@@ -209,7 +205,7 @@ data_flow_gironde  |>
 
 
 # =====================================================
-# 04. All estuaries
+# 04. All estuaries (1975-2024)
 # =====================================================
 
 data_flow <- data_flow_gironde |>
@@ -217,10 +213,7 @@ data_flow <- data_flow_gironde |>
   full_join(data_flow_seine) |>
   mutate(year_month = lubridate::ym(year_month)) |>
   mutate(PARAMETRE_LIBELLE = "Flow") |>
-  mutate(PROGRAMME = "Hydroportail")
+  mutate(PROGRAMME = "Hydroportail") |>
+  filter(year >= 1975 & year <= 2014)
 
 usethis::use_data(data_flow, overwrite = TRUE)
-
-ggplot(data_flow) +
-  aes(x = year_month, y = RESULTAT, colour = estuary) +
-  geom_point()

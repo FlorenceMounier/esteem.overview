@@ -1,8 +1,8 @@
 # =====================================================
 # Prepare contamination data from ROCCHMV program
 # Datasets:
-#  - data_biometrics.rda
-#  - data_ROCCHMV_contamination.rda
+#  - data_contamination_biometrics.rda
+#  - data_contamination.rda
 # Graphs in /inst/mat_meth/contamination
 #  - ggplot_dry_content.jpg
 #  - ggplot_lipid_content.jpg
@@ -24,7 +24,8 @@ library(cowplot)
 
 `%!in%` = Negate(`%in%`)
 
-data(raw_data_contamination)
+# From /data-raw/0.2-RAW-data_surval.R
+data(raw_data_surval_contamination)
 
 
 
@@ -32,7 +33,7 @@ data(raw_data_contamination)
 # 01. Cleaning raw data
 # =====================================================
 
-data_ROCCHMV_clean <- raw_data_contamination |>
+data_ROCCHMV_clean <- raw_data_surval_contamination |>
 
   # ---- Get studied species ----
 mutate(
@@ -101,30 +102,35 @@ select(
 # 02. Biometrics
 # =====================================================
 
-# ---- Filter biometrics data ----
-data_ROCCHMV_bio <- data_ROCCHMV_clean |>
-  filter(PARAMETRE_LIBELLE %in% c("Matière sèche", "Lipides totaux"))
 
+### DRY CONTENT ###
 
-# ---- Dry content ----
-data_ROCCHMV_bio_dry_content <- data_ROCCHMV_bio |>
+# ---- Filter dry content data ----
+
+data_ROCCHMV_bio_dry_content <- data_ROCCHMV_clean |>
   filter(PARAMETRE_LIBELLE == "Matière sèche")
 
-data_ROCCHMV_bio_dry_content_summarised <- data_ROCCHMV_bio_dry_content |>
+# ---- Summarise by estuary, year & species ----
+
+data_ROCCHMV_bio_dry_content_summarised <- data_ROCCHMV_bio_dry_content  |>
+  filter(PARAMETRE_LIBELLE == "Matière sèche") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
   group_by(estuary, year, species) |>
   summarise(percent_dw = mean(`Matière sèche`, na.rm = TRUE),
             n = n(),
             .groups = "drop")
 
+# ---- Graph of time evolution ----
+
 ggplot_dry_content <- ggplot(data_ROCCHMV_bio_dry_content_summarised) +
   aes(x = year, y = percent_dw, fill = estuary, colour = estuary) +
   geom_line() +
   facet_grid(vars(species)) +
   labs(y = "Dry content (%)")
-
 ggsave(ggplot_dry_content, filename = "inst/mat_meth/contamination/ggplot_dry_content.jpg",
        height = 15, width = 10, units = "cm")
+
+# ---- Summarise by estuary & species ----
 
 dry_contents <- data_ROCCHMV_bio_dry_content |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT) |>
@@ -137,9 +143,11 @@ dry_contents <- data_ROCCHMV_bio_dry_content |>
 # Seine M.edulis: 23.3 %
 
 
-# ---- Lipid content ----
+### LIPID CONTENT ###
 
-data_ROCCHMV_bio_lipid <- data_ROCCHMV_bio  |>
+# ---- Compute lipid content per gdw and gww from dry contents ----
+
+data_ROCCHMV_bio_lipid <- data_ROCCHMV_clean  |>
   filter(PARAMETRE_LIBELLE == "Lipides totaux") |>
   mutate(percent_ldw = case_when(
     UNITE == "%" ~ RESULTAT,
@@ -158,12 +166,16 @@ data_ROCCHMV_bio_lipid <- data_ROCCHMV_bio  |>
     TRUE ~ NA
   ))
 
+# ---- Summarise by estuary, year & species ----
+
 data_ROCCHMV_bio_lipid_content_summarised <- data_ROCCHMV_bio_lipid |>
   group_by(estuary, year, species) |>
   summarise(percent_ldw = mean(percent_ldw, na.rm = TRUE),
             percent_lww = mean(percent_lww, na.rm = TRUE),
             n = n(),
             .groups = "drop")
+
+# ---- Graph of time evolution ----
 
 ggplot_lipid_content <- ggplot(data_ROCCHMV_bio_lipid_content_summarised) +
   aes(x = year, y = percent_ldw, fill = estuary, colour = estuary) +
@@ -172,6 +184,8 @@ ggplot_lipid_content <- ggplot(data_ROCCHMV_bio_lipid_content_summarised) +
   labs(y = "Lipid content (%dw)")
 ggsave(ggplot_lipid_content, filename = "inst/mat_meth/contamination/ggplot_lipid_content.jpg",
        height = 15, width = 10, units = "cm")
+
+# ---- Summarise by estuary & species ----
 
 lipid_contents <- data_ROCCHMV_bio_lipid |>
   group_by(estuary, species) |>
@@ -186,10 +200,10 @@ lipid_contents <- data_ROCCHMV_bio_lipid |>
 # Seine M.edulis: ldw = 8.00 %, lww = 2.13 %
 
 
-# ---- Create data_biometrics ----
-data_biometrics <- full_join(dry_contents, lipid_contents)
+### SAVE ALL BIOMETRICS ###
 
-usethis::use_data(data_biometrics, overwrite = TRUE)
+data_contamination_biometrics <- full_join(dry_contents, lipid_contents)
+usethis::use_data(data_contamination_biometrics, overwrite = TRUE)
 
 
 
@@ -197,16 +211,20 @@ usethis::use_data(data_biometrics, overwrite = TRUE)
 # 03. Contamination data
 # =====================================================
 
-data_ROCCHMV_contam_transformed <- data_ROCCHMV_clean |>
+data_ROCCHMV_contam <- data_ROCCHMV_clean |>
 
-  # ---- Filter not biometrics ----
+# ---- Filter not biometrics ----
+
 filter(PARAMETRE_LIBELLE %!in% c("Matière sèche", "Lipides totaux")) |>
 
-  # ---- Add lipid contents %ldw & %lww ----
-left_join(data_biometrics) |>
+
+# ---- Add lipid contents %ldw & %lww ----
+
+left_join(data_contamination_biometrics) |>
   select(-n) |>
 
-  # ---- Units conversions ----
+
+# ---- Units conversions ----
 
 mutate(RESULTAT = case_when(
   UNITE == "ng.g-1, p.h." ~ RESULTAT,
@@ -251,7 +269,8 @@ mutate(RESULTAT = case_when(
   ) |>
   select(-c(RESULTAT, UNITE)) |>
 
-  # ---- Translate compounds if necessary ----
+
+# ---- Translate compounds if necessary ----
 
 mutate(PARAMETRE_LIBELLE = case_when(
   # -- Metals
@@ -276,9 +295,9 @@ mutate(PARAMETRE_LIBELLE = case_when(
   TRUE ~ PARAMETRE_LIBELLE
 )) |>
 
-  # ---- Add sub_family and family variables ----
 
-## Subfamilies
+# ---- Add sub families ----
+
 mutate(sub_family = case_when(
 
   # -- Metals
@@ -296,7 +315,7 @@ mutate(sub_family = case_when(
                            "Anthracene", "Naphtalene", "Phenanthrene") ~ "PAH",
 
   # -- PCBi
-  PARAMETRE_LIBELLE %in% c("CB 28", "CB 52", "CB 101", "CB 118", "CB 138", "CB153", "CB 180") ~ "PCBi",
+  PARAMETRE_LIBELLE %in% c("CB 28", "CB 52", "CB 101", "CB 118", "CB 138", "CB 153", "CB 180") ~ "PCBi",
 
   # -- Dioxin-Like Compounds (DLC)
   ## 7 polychlorinated dibenzo-p-dioxins (PCDDs)
@@ -335,10 +354,12 @@ mutate(sub_family = case_when(
   PARAMETRE_LIBELLE == "PFOS" ~ "PFAS",
 
   # -- Organostannic compounds - Tributyltin cation
-  PARAMETRE_LIBELLE == "Tributylétain cation" ~ "Organostannic compounds"
+  PARAMETRE_LIBELLE == "Tributyltin cation" ~ "Organostannic compounds"
 )) |>
 
-## Families
+
+# ---- Add families ----
+
 mutate(family = case_when(
   sub_family %in% c("HBCDD", "PBDE") ~ "Brominated",
   sub_family == "Metals" ~ "Metals",
@@ -349,50 +370,73 @@ mutate(family = case_when(
   sub_family %in% c("HBCDDs", "PBDEs") ~ "BFR",
   sub_family == "PFAS" ~ "Perfluorinated compounds",
   sub_family == "Tributylétain cation" ~ "Organostannic compounds",
-  TRUE ~ "Biometrics"
+  TRUE ~ NA
 ))
 
 
 
 # =====================================================
-# 02. Case of CB118: PCBi & DL-PCB
+# 02. Duplicate case of CB118: PCBi & DL-PCB
 # =====================================================
 
-# Subdataset
-data_ROCCHMV_CB118 <- data_ROCCHMV_contam_transformed |>
+# ---- Extract subdataset ----
+data_ROCCHMV_CB118 <- data_ROCCHMV_contam |>
   filter(PARAMETRE_LIBELLE == "CB 118") |>
   mutate(sub_family = "DL-PCBs") |>
   mutate(family = "DLC")
 
-# Duplicate rows with DL-PCB informations
-data_ROCCHMV_contam_transformed <- rbind(data_ROCCHMV_contam_transformed, data_ROCCHMV_CB118)
-
+# ---- Duplicate rows with DL-PCB informations ----
+data_ROCCHMV_contam <- rbind(data_ROCCHMV_contam, data_ROCCHMV_CB118)
 
 
 # =====================================================
-# 04. Check species matrix influence
+# 04. Group contaminants by family where the threshold applies to them
 # =====================================================
 
-data_ROCCHMV_contam <- data_ROCCHMV_contam_transformed |>
-  mutate(species = case_when(
+# ---- DDT total ----
+
+data_ROCCHMV_contam |>
+  filter(sub_family == "DDT total") |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gdw) |>
+  mutate(DDT_total_ng_gdw = `p,p'-DDD` + `p,p'-DDE` + `p,p'-DDT` + `o,p'-DDT`)
+
+data_ROCCHMV_contam |>
+  filter(sub_family == "DDT total") |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gww) |>
+  mutate(DDT_total_ng_gww = `p,p'-DDD` + `p,p'-DDE` + `p,p'-DDT` + `o,p'-DDT`)
+
+data_ROCCHMV_contam |>
+  filter(sub_family == "DDT total") |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_glw) |>
+  mutate(DDT_total_ng_glw = `p,p'-DDD` + `p,p'-DDE` + `p,p'-DDT` + `o,p'-DDT`)
+
+# =====================================================
+# 03. Check species matrix influence
+# =====================================================
+
+data_ROCCHMV_contam <- data_ROCCHMV_contam |>
+  mutate(group = case_when(
     species == "C. gigas" ~ "Oyster",
     species %in% c("M. edulis", "M. edulis & galloprovincialis") ~ "Mussels"
   ))
 
-data_ROCCHMV_clean |>
-  distinct(PARAMETRE_LIBELLE, year, estuary, species) |>
+data_2_groups <- data_ROCCHMV_contam |>
+  distinct(PARAMETRE_LIBELLE, year, estuary, group) |>
   group_by(PARAMETRE_LIBELLE, year, estuary) |>
-  summarise(n_species = n_distinct(species)) |>
-  filter(n_species > 1)
+  summarise(n_group = n_distinct(group), .groups = "drop") |>
+  filter(n_group > 1)
 
-data_ROCCHMV_contam |>
+data_ROCCHMV_contam_2_groups <- left_join(data_2_groups, data_ROCCHMV_contam)
+
+ggplot(data_ROCCHMV_contam_2_groups) +
+  aes(x = year, y = RESULTAT_ng_gdw, colour = estuary) +
+  geom_line() +
+  facet_grid(vars(PARAMETRE_LIBELLE))
+
+res <- data_ROCCHMV_contam_2_groups |>
   group_by(PARAMETRE_LIBELLE, year) |>
   summarise(
-    p_value = if (n_distinct(species) == 2) {
-      wilcox.test(RESULTAT_ng_gdw ~ species)$p.value
-    } else {
-      NA_real_
-    },
+    p_value = wilcox.test(RESULTAT_ng_gdw ~ species)$p.value,
     .groups = "drop"
   )
 
