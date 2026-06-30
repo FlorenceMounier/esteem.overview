@@ -149,9 +149,7 @@ knitr::include_graphics(
 As part of the ROCCHMV monitoring program, concentrations of various contaminants were measured in bivalves collected over the period 1979 to 2024. In the Gironde estuary, the Pacific oysters (_Crassostrea gigas_) was monitored. In the Seine estuary, the blue mussel (_Mytilus edulis_) was studied. In the Loire estuary, the blue mussel was initially monitored, and, from 2017 onward, oysters were also included in parallel. Sampling was conducted in the most saline zones of each estuary, near their respective mouths (Figure \@ref(fig:map_phychem)).
 
 ```{r map_phychem, fig.cap="Map of sampling points for the ROCCHMV program.", fig.show='hold'}
-knitr::include_graphics(get_shortened_path("mat_meth/maps/ROCCHMV/ggmap_ROCCHMV_gironde.jpg"))
-knitr::include_graphics(get_shortened_path("mat_meth/maps/ROCCHMV/ggmap_ROCCHMV_loire.jpg"))
-knitr::include_graphics(get_shortened_path("mat_meth/maps/ROCCHMV/ggmap_ROCCHMV_seine.jpg"))
+knitr::include_graphics(get_shortened_path("mat_meth/contamination/ggmap_ROCCHMV.jpg"))
 ```
 
 #### Data transformations
@@ -164,7 +162,7 @@ The full list of contaminants monitored under the ROCCHMV program is available o
 
 Table \@ref(tab:tab-contam-rocchmv) summarizes the main sources and ecotoxicological effects as synthetized from (Ifremer, 2021). The table also presents the relevant legislative thresholds, specifying their regulatory context (human health or ecotoxicology), the biological matrix of reference (primarily bivalves or fish), and the legislative source.
 
-Three legislated heavy metals have been studied (mercury, cadmium, and lead). Copper was also included due to its historical significance as a pollutant in the Gironde estuary (Ifremer, 2024). Two types of organochlorine (OC) pesticides are under legislative thresholds: γ-HCH (or Lindane) and so called DDT total (sum of isomers p,p'-DDT (4,4’-DDT), o,p’-DDT (2,4’-DDT), p,p'-DDE (4,4’-DDE), p,p'-DDD (4,4’-DDD)). Eight Polycyclic Aromatic Hydrocarbon (PAH) are under OSPAR legislation: fluoranthene, benzo(a)pyrene (abr. benzo-pyr.), anthracene, naphthalene, phenanthrene, pyrene, benzo(a)anthracene (abr. benzo-anthra.), and benzo(g,h,i)perylene (abr. benzo-peryl.). Seven indicator congeners of the polychlorinated biphenyls (PCB) family are under OSPAR legislation: CB 28, CB 52, CB 101, CB 118, CB 138, CB 153, CB 180. Dioxins and dioxin-like compounds are under a European Commission legislation under the form of a weighted sum of PCDD + PCDF + PCB-DL expressed in toxic equivalents concentrations (see SI for details). Two types of brominated flame retardant were studied: the three isomers of HBCDD (hexabromocyclododecane) and the sum of Polybrominated diphenyl ethers (PBDE) congeners 28, 47, 99, 100, 153 and 154. Two emergent compounds were studied more recently: a perfluorinated compound (perfluorooctane sulfonate, PFOS), and an organostannic compound (tributyltin cation).
+Three legislated heavy metals have been studied (mercury, cadmium, and lead). Copper was also included due to its historical significance as a pollutant in the Gironde estuary (Ifremer, 2024). Two types of organochlorine (OC) pesticides are under legislative thresholds: γ-HCH (or Lindane) and so called DDT total (sum of isomers p,p'-DDT (4,4’-DDT), o,p’-DDT (2,4’-DDT), p,p'-DDE (4,4’-DDE), p,p'-DDD (4,4’-DDD)). Eight Polycyclic Aromatic Hydrocarbon (PAH) are under OSPAR legislation: fluoranthene, benzo(a)pyrene (abr. benzo-pyr.), anthracene, naphthalene, phenanthrene, pyrene, benzo(a)anthracene (abr. benzo-anthr.), and benzo(g,h,i)perylene (abr. benzo-peryl.). Seven indicator congeners of the polychlorinated biphenyls (PCB) family are under OSPAR legislation: CB 28, CB 52, CB 101, CB 118, CB 138, CB 153, CB 180. Dioxins and dioxin-like compounds are under a European Commission legislation under the form of a weighted sum of PCDD + PCDF + PCB-DL expressed in toxic equivalents concentrations (see SI for details). Two types of brominated flame retardant (BFR) were studied: the three isomers of HBCDD (hexabromocyclododecane) and the sum of Polybrominated diphenyl ethers (PBDE) congeners 28, 47, 99, 100, 153 and 154. Two emergent compounds were studied more recently: a perfluorinated compound (perfluorooctane sulfonate, PFOS), and an organostannic compound (tributyltin cation).
 
 ```{r tab-contam-rocchmv, tab.cap="Studied Compounds in the ROCCHMV Program: Contaminant Families, Principal Sources, Available Time Series, Considered Measurement Matrices, and Sources of Regulatory Thresholds. Thresholds related to human health: QS(HH) (EU Quality Standard for Human Health); EC MPC (European Commission Maximum Permissible Concentrations). Thresholds related to ecotoxicology: EQS (Environmental Quality Standard); EAC (Environmental Assessment Criteria; OSPAR equivalent of EQS for the North-East Atlantic); NQE (Norme de Qualité Environnementale; French equivalent of EQS); VGE (Valeurs Guide Environnementales; French EQS equivalent for bivalves). Matrix abbreviations: f., fish; c., crustaceans; m., molluscs; b., bivalves.", out.width="90%", fig.show='hold'}
 knitr::include_graphics(get_shortened_path("mat_meth/contamination/table_rocchmv.jpg"))
@@ -298,7 +296,7 @@ Recent trends were studied from the year of the first and the last biotic data f
 
 ```{r}
 knitr::include_graphics(
-get_shortened_path("mat_meth/maps/POMET/haline_zones/ggplot_POMET_haline_zones_estuaries.png")
+get_shortened_path("mat_meth/haline_zones/ggplot_haline_zones.png")
 )
 ```
 

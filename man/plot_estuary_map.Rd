@@ -2,37 +2,48 @@
 % Please edit documentation in R/plot_estuary_map.R
 \name{plot_estuary_map}
 \alias{plot_estuary_map}
-\title{Plot estuary map with points, optional variable mapping and optional horizontal/vertical lines}
+\title{Plot estuary map with points, optional variable mapping and optional fixed aesthetics}
 \usage{
 plot_estuary_map(
   data,
   estuary_name,
   colour_var,
+  colour_points = "black",
   fill_var,
+  fill_points = NA,
   size_var,
   size_points = 0.6,
   shape_var,
+  shape_points = 19,
   package = "esteem.overview"
 )
 }
 \arguments{
-\item{data}{Data frame containing latitude and longitude}
+\item{data}{Data frame containing latitude and longitude.}
 
-\item{estuary_name}{Character name of the estuary}
+\item{estuary_name}{Character name of the estuary.}
 
-\item{colour_var}{Optional variable in \code{data} for point colour}
+\item{colour_var}{Optional variable in \code{data}, or fixed colour value, for point outline colour.}
 
-\item{fill_var}{Optional variable in \code{data} for point fill (shape 21)}
+\item{colour_points}{Fixed point outline colour used when \code{colour_var} is not supplied.}
 
-\item{size_var}{Optional variable in \code{data} for point size}
+\item{fill_var}{Optional variable in \code{data}, or fixed colour value, for point fill.}
 
-\item{shape_var}{Optional variable in \code{data} for point shape}
+\item{fill_points}{Fixed point fill colour used when \code{fill_var} is not supplied.}
 
-\item{package}{Package name where basemap is stored (default: "esteem.overview")}
+\item{size_var}{Optional variable in \code{data}, or fixed numeric value, for point size.}
+
+\item{size_points}{Fixed point size used when \code{size_var} is not supplied.}
+
+\item{shape_var}{Optional variable in \code{data}, or fixed shape value, for point shape.}
+
+\item{shape_points}{Fixed point shape used when \code{shape_var} is not supplied.}
+
+\item{package}{Package name where basemap is stored.}
 }
 \value{
-ggplot object
+ggplot object.
 }
 \description{
-Plot estuary map with points, optional variable mapping and optional horizontal/vertical lines
+Plot estuary map with points, optional variable mapping and optional fixed aesthetics
 }

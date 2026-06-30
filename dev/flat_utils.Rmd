@@ -44,6 +44,7 @@ test_that("ggplot2_colors works", {
 })
 ```
   
+  
 # make_points_sf
 
 ```{r function-make_points_sf}
@@ -335,7 +336,8 @@ get_interpolation_spline <- function(data, x, y, ...) {
 }
 ```
 
-  
+
+# Inflate
 
 ```{r development-inflate, eval=FALSE}
 # Run but keep eval=FALSE to avoid infinite loop

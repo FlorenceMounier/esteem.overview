@@ -9,30 +9,6 @@ library(tidyverse)
 library(here)
 ```
 
-# Get raw data for brominated flame retardand compounds => thresholds in ng/g ww
-```{r}
-data <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |> 
-  filter(support == "Bivalve") |> 
-  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau))
-```
-
-Hexabromocyclododecane isomers (HBCDD)
-```{r}
-HBCDD_names <- c("Alpha-HBCDD", "Beta-HBCDD", "Gamma-HBCDD")
-data_HBCDD <- data |> filter(PARAMETRE_LIBELLE %in% HBCDD_names)
-```
-
-Total sum PBDE congeners
-```{r}
-PBDE_names <- c("PBDE 28", "PBDE 47", "PBDE 99", "PBDE 100", "PBDE 153", "PBDE 154")
-data_PBDE <- data |> filter(PARAMETRE_LIBELLE %in% PBDE_names) 
-```
-
-Brominated flame retardant
-```{r}
-data_brominated <- full_join(data_HBCDD, data_PBDE)  |> 
-  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY")
-```
 
 ## Get the same unit of measurment
 

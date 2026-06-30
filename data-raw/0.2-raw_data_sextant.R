@@ -46,6 +46,7 @@ sextant_outputs <- sextant_outputs |>
 
   # Create a numerical variable for RESULTAT
   dplyr::mutate(RESULTAT = as.numeric(RESULTAT)) |>
+
   # Replace missing values by 0 for numerical RESULTAT
   dplyr::mutate(RESULTAT = replace(RESULTAT, is.na(RESULTAT), 0)) |>
 
@@ -119,7 +120,7 @@ usethis::use_data(raw_data_benthos, overwrite = TRUE)
 
 
 #------------------------------------------------------------------------------
-# Filter & Save "data_contamination.rda"
+# Filter & Save "raw_data_contamination.rda"
 
 raw_data_contamination <- sextant_outputs |>
   filter(
@@ -129,7 +130,6 @@ raw_data_contamination <- sextant_outputs |>
 
       # PARAMETRE_GROUPE: Mesures physiques
       "Matière sèche",
-      "Taille de l'individu",
 
       # PARAMETRE_GROUPE: Toxico et Ecotoxicologie/Chimie-biochimie
       "Lipides totaux",
@@ -139,11 +139,7 @@ raw_data_contamination <- sextant_outputs |>
       "Fluoranthène", "Naphtalène", "Phénanthrène", "Pyrène",
 
       # PARAMETRE_GROUPE: Contaminants/Métaux et métalloïdes
-      "Mercure", "Cadmium", "Plomb", "Zinc", "Cuivre",
-      "Nickel", "Vanadium", "Argent", "Chrome total",
-
-      # PARAMETRE_GROUPE: Contaminants/Organiques autres
-      "4-nonylphenols ramifiés", "Diéthylhexylphtalate (DEHP ou DOP)",
+      "Mercure", "Cadmium", "Plomb", "Cuivre",
 
       # PARAMETRE_GROUPE: Organohalogénés
       # PCBs

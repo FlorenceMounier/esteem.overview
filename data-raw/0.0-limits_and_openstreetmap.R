@@ -16,6 +16,9 @@
 library(tidyverse)
 library(rpart)
 library(ggpubr)
+
+`%!in%` = Negate(`%in%`)
+
 data(raw_data_POMET_traits)
 
 
@@ -26,7 +29,7 @@ data(raw_data_POMET_traits)
 GPS_limits_estuary <- tibble::tibble(
   estuary = c("Gironde", "Loire", "Seine"),
   estuary_limit_lat_min = c(45.0, 47.22, 49.4),
-  estuary_limit_lat_max = c(45.7, 47.34, 49.5),
+  estuary_limit_lat_max = c(45.7, 47.34, 49.48),
   estuary_limit_lon_min = c(-1.1, -2.3, 0.0),
   estuary_limit_lon_max = c(-0.6, -1.8, 0.5)
 )
@@ -37,7 +40,7 @@ usethis::use_data(GPS_limits_estuary, overwrite = TRUE)
 # 02. Extract autumn salinity by estuary from POMET data
 # =====================================================
 
-data_POMET_salinity <- raw_data_POMET_traits |>
+data_POMET_salinity_raw <- raw_data_POMET_traits |>
 
   # ---- Create GPS central position of traits ----
 mutate(latitude = (pos_deb_lat_dd + pos_fin_lat_dd) / 2) |>
@@ -49,7 +52,7 @@ filter(trait_id != 82) |> # fleuve Gironde
   filter(trait_id %!in% c(13477, 16087, 14362)) # filandres Seine
 
 # ----- Add estuary information from GPS positions of traits ----
-data_POMET_salinity <- get_estuary_from_gps_position(data = data_POMET_salinity,
+data_POMET_salinity <- get_estuary_from_gps_position(data = data_POMET_salinity_raw,
                                                      latitude = latitude,
                                                      longitude = longitude)
 
@@ -160,7 +163,9 @@ salinity_zones_loire <- ggplot(data = data_Loire) +
 
 data_Seine <- data_POMET_salinity |> filter(saison == "automne")
 
-map_seine <- plot_estuary_map(data = data_Seine, estuary_name = "Seine", colour_var = haline_zone) +
+map_seine <- plot_estuary_map(data = data_Seine,
+                              estuary_name = "Seine",
+                              colour_var = haline_zone) +
   theme(legend.position = "none")
 
 salinity_zones_seine <- ggplot(data = data_Seine) +
@@ -179,7 +184,11 @@ salinity_zones_seine <- ggplot(data = data_Seine) +
 ggplot_haline_zone <- plot_grid(map_gironde, salinity_zones_gironde,
                                 map_loire, salinity_zones_loire,
                                 map_seine, salinity_zones_seine,
-                                nrow = 3, ncol = 2, rel_widths = c(2,1))
+                                nrow = 3, rel_heights = c(1.4, 1, 1),
+                                ncol = 2, rel_widths = c(2,1)
+                                )
 
-ggsave(plot = ggplot_haline_zone, filename = "inst/mat_meth/haline_zones/ggplot_haline_zones.jpg")
+ggsave(plot = ggplot_haline_zone,
+       filename = "inst/mat_meth/haline_zones/ggplot_haline_zones.jpg",
+       height = 10, width = 7, units = "cm")
 
