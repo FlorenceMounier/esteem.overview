@@ -1,40 +1,45 @@
 # =====================================================
-# Preparation script from external `sextant_outputs`
+# Preparation script from external `surval_outputs`
 # Datasets:
-#  - raw_data_benthos.rda
-#  - raw_data_contamination.rda
-#  - raw_data_physico_chem.rda
+#  - raw_data_surval_benthos.rda
+#  - raw_data_surval_contamination.rda
+#  - raw_data_surval_physico_chem.rda
 # Author: FM
-# Date: 2026-06-12
+# Date: 2026-06-30
 # =====================================================
 
-#------------------------------------------------------------------------------
-# Packages
+
+# =====================================================
+# 00. Packages
+# =====================================================
 
 library(tidyverse, quietly = TRUE)
 
 
-#------------------------------------------------------------------------------
-# Read raw datasets and combine them
+# =====================================================
+# 01. Read raw datasets and combine them
+# =====================================================
 
-# Import raw sextant output files
-sextant_output_Gironde <- read_csv("../SEXTANT/sextant-output-Gironde.csv")
-sextant_output_Loire <- read_csv("../SEXTANT/sextant-output-Loire.csv")
-sextant_output_Seine <- read_csv("../SEXTANT/sextant-output-Seine.csv")
+# Import raw surval output files
+surval_output_Gironde <- read_csv("../SURVAL/surval-output-Gironde.csv")
+surval_output_Loire <- read_csv("../SURVAL/surval-output-Loire.csv")
+surval_output_Seine <- read_csv("../SURVAL/surval-output-Seine.csv")
 
 # Join datasets
-sextant_outputs <- sextant_output_Gironde |>
-  full_join(sextant_output_Loire) |>
-  full_join(sextant_output_Seine)
+raw_data_surval_outputs <- surval_output_Gironde |>
+  full_join(surval_output_Loire) |>
+  full_join(surval_output_Seine)
 
 # Easily opening files in Excel program
-write_csv2(sextant_outputs, "../SEXTANT/sextant-output-readr-csv2.csv")
+write_csv2(raw_data_surval_outputs, "../SURVAL/surval-output-readr-csv2.csv")
 
 
-#------------------------------------------------------------------------------
-# Data cleaning identified thanks to the exploration with the app
 
-sextant_outputs <- sextant_outputs |>
+# =====================================================
+# 02. Data cleaning identified thanks to the exploration with the app
+# =====================================================
+
+surval_outputs <- raw_data_surval_outputs |>
 
   # Delete redundant variables of identification
   dplyr::select(-c(ZONE_MARINE_QUADRIGE, SOUS_REGION_MARINE_DCSMM, MASSE_EAU_DCE,
@@ -105,10 +110,13 @@ sextant_outputs <- sextant_outputs |>
   dplyr::mutate(PARAMETRE_LIBELLE = PARAMETRE_LIBELLE |> str_replace("^pentabromodiphényl\\s+éther\\W+congénère\\W+[:alnum:]+\\W+", "PBDE 85"))
 
 
-#------------------------------------------------------------------------------
-# Filter & Save data_benthos.rda
 
-raw_data_benthos <- sextant_outputs |>
+
+# =====================================================
+# 03. Filter & Save raw_data_surval_benthos.rda
+# =====================================================
+
+raw_data_surval_benthos <- surval_outputs |>
   filter(THEME == "Benthos dont récif corallien",
          PROGRAMME == "REBENT_FAU",
          PARAMETRE_LIBELLE == "Nombre d'individus d'état non précisé" |
@@ -116,13 +124,15 @@ raw_data_benthos <- sextant_outputs |>
            PARAMETRE_LIBELLE == "Matière organique") |>
   select(- c(THEME, PROGRAMME))
 
-usethis::use_data(raw_data_benthos, overwrite = TRUE)
+usethis::use_data(raw_data_surval_benthos, overwrite = TRUE)
 
 
-#------------------------------------------------------------------------------
-# Filter & Save "raw_data_contamination.rda"
 
-raw_data_contamination <- sextant_outputs |>
+# =====================================================
+# 04. Filter & Save raw_data_surval_contamination.rda
+# =====================================================
+
+raw_data_surval_contamination <- surval_outputs |>
   filter(
     THEME == "Contaminants chimiques et écotoxicologie",
     PROGRAMME == "ROCCHMV",
@@ -182,13 +192,15 @@ raw_data_contamination <- sextant_outputs |>
   ) |>
   select(-c(THEME, PROGRAMME))
 
-usethis::use_data(raw_data_contamination, overwrite = TRUE)
+usethis::use_data(raw_data_surval_contamination, overwrite = TRUE)
 
 
-#------------------------------------------------------------------------------
-# Filter & Save "data_physico_chem.rda"
 
-raw_data_physico_chem <- sextant_outputs |>
+# =====================================================
+# 03. Filter & Save raw_data_surval_physico_chem.rda
+# =====================================================
+
+raw_data_surval_physico_chem <- surval_outputs |>
   filter(
     THEME == "Phytoplancton, hydrologie et phycotoxines",
     PARAMETRE_LIBELLE %in% c(
@@ -222,6 +234,4 @@ dplyr::select(-c(THEME, GROUPE_TAXON_LIBELLE, TAXON_LIBELLE, NUMERO_INDIVIDU_OBS
   # ----- Delete REPOMO program -----
 filter(PROGRAMME != "REPOMO")
 
-
-usethis::use_data(raw_data_physico_chem, overwrite = TRUE)
-
+usethis::use_data(raw_data_surval_physico_chem, overwrite = TRUE)

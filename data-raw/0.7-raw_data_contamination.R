@@ -12,6 +12,8 @@
 # Date: 2026-06-30
 # =====================================================
 
+
+
 # =====================================================
 # 00. Packages, functions and raw data from {quadrige.explorer}
 # =====================================================
@@ -23,6 +25,7 @@ library(cowplot)
 `%!in%` = Negate(`%in%`)
 
 data(raw_data_contamination)
+
 
 
 # =====================================================
@@ -91,6 +94,7 @@ select(
     support
   )
 )
+
 
 
 # =====================================================
@@ -187,11 +191,13 @@ data_biometrics <- full_join(dry_contents, lipid_contents)
 
 usethis::use_data(data_biometrics, overwrite = TRUE)
 
+
+
 # =====================================================
 # 03. Contamination data
 # =====================================================
 
-data_ROCCHMV_contamination <- data_ROCCHMV_clean |>
+data_ROCCHMV_contam_transformed <- data_ROCCHMV_clean |>
 
   # ---- Filter not biometrics ----
 filter(PARAMETRE_LIBELLE %!in% c("Matière sèche", "Lipides totaux")) |>
@@ -347,18 +353,119 @@ mutate(family = case_when(
 ))
 
 
+
 # =====================================================
 # 02. Case of CB118: PCBi & DL-PCB
 # =====================================================
 
 # Subdataset
-data_ROCCHMV_CB118 <- data_ROCCHMV_contamination |>
+data_ROCCHMV_CB118 <- data_ROCCHMV_contam_transformed |>
   filter(PARAMETRE_LIBELLE == "CB 118") |>
   mutate(sub_family = "DL-PCBs") |>
   mutate(family = "DLC")
 
 # Duplicate rows with DL-PCB informations
-data_ROCCHMV_contamination <- rbind(data_ROCCHMV_contamination, data_ROCCHMV_CB118)
+data_ROCCHMV_contam_transformed <- rbind(data_ROCCHMV_contam_transformed, data_ROCCHMV_CB118)
+
+
+
+# =====================================================
+# 04. Check species matrix influence
+# =====================================================
+
+data_ROCCHMV_contam <- data_ROCCHMV_contam_transformed |>
+  mutate(species = case_when(
+    species == "C. gigas" ~ "Oyster",
+    species %in% c("M. edulis", "M. edulis & galloprovincialis") ~ "Mussels"
+  ))
+
+data_ROCCHMV_clean |>
+  distinct(PARAMETRE_LIBELLE, year, estuary, species) |>
+  group_by(PARAMETRE_LIBELLE, year, estuary) |>
+  summarise(n_species = n_distinct(species)) |>
+  filter(n_species > 1)
+
+data_ROCCHMV_contam |>
+  group_by(PARAMETRE_LIBELLE, year) |>
+  summarise(
+    p_value = if (n_distinct(species) == 2) {
+      wilcox.test(RESULTAT_ng_gdw ~ species)$p.value
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+
+years_for_species_influence <- data_ROCCHMV_contam |>
+  group_by(PARAMETRE_LIBELLE, year) |>
+  summarise(n_species = n_distinct(species), .groups = "drop") |>
+  filter(n_species == 2) |>
+  select(-n_species)
+
+data_species_influence <- data_ROCCHMV_contam |>  right_join(years_for_species_influence) |>
+  group_by(PARAMETRE_LIBELLE, year) |>
+  summarise(p_value = glmm(RESULTAT_ng_gdw ~ year * species)$p.value, .groups = "drop"
+  ) |>
+  filter(p_value < 0.05)
+
+## Copper
+years_for_species_influence <- data_ROCCHMV_contam |>
+  filter(PARAMETRE_LIBELLE == "CB153") |>
+  group_by(PARAMETRE_LIBELLE, year) |>
+  summarise(n_species = n_distinct(species), .groups = "drop") |>
+  filter(n_species == 2) |>
+  select(-n_species)
+
+data_species_influence <- data_ROCCHMV_contam |>
+  group_by(PARAMETRE_LIBELLE, year, estuary) |>
+  summarise(n_distinct(species))
+
+summary(lm(data = data_species_influence, RESULTAT_ng_gdw ~ year + species ))
+
+
+## Cadmium
+years_for_species_influence <- data_ROCCHMV_contam |>
+  filter(PARAMETRE_LIBELLE == "Cadmium") |>
+  group_by(PARAMETRE_LIBELLE, year) |>
+  summarise(n_species = n_distinct(species), .groups = "drop") |>
+  filter(n_species == 2) |>
+  select(-n_species)
+
+data_species_influence <- data_ROCCHMV_contam |>
+  filter(PARAMETRE_LIBELLE == "Cadmium") |>
+  right_join(years_for_species_influence)
+
+lm(data = data_species_influence, RESULTAT_ng_gdw ~ year * species) |>
+  summary()
+
+data_ROCCHMV_contam |>
+  filter(PARAMETRE_LIBELLE == "Lead") |>
+  ggplot() +
+  aes(x = year, y = RESULTAT_ng_gdw, colour = species) +
+  geom_line() +
+  facet_wrap(vars(estuary)) +
+  theme_esteem()
+
+# =====================================================
+# 03. Summarize by year and by mussels vs oyster
+# =====================================================
+
+data_ROCCHMV_contam <- data_ROCCHMV_contam_transformed |>
+  mutate(species = case_when(
+    species == "C. gigas" ~ "Oyster",
+    species %in% c("M. edulis", "M. edulis & galloprovincialis") ~ "Mussels"
+  )) |>
+  group_by(estuary, year, PARAMETRE_LIBELLE, species) |>
+  summarise(
+    RESULTAT_ng_gdw = mean(RESULTAT_ng_gdw, na.rm = TRUE) |> round(digits = 4),
+    RESULTAT_ng_gww = mean(RESULTAT_ng_gww, na.rm = TRUE) |> round(digits = 4),
+    RESULTAT_ng_glw = mean(RESULTAT_ng_glw, na.rm = TRUE) |> round(digits = 4),
+    .groups = "drop"
+    )
+
+
+
+
 
 usethis::use_data(data_ROCCHMV_contamination, overwrite = TRUE)
 
@@ -369,7 +476,7 @@ usethis::use_data(data_ROCCHMV_contamination, overwrite = TRUE)
 
 # ---- Gironde ----
 ggmap_ROCCHMV_gironde <- plot_estuary_map(
-  data = data_ROCCHMV |> filter(estuary == "Gironde"),
+  data = data_ROCCHMV_contamination |> filter(estuary == "Gironde"),
   estuary_name = "Gironde", colour_var = ggplot2_colors(3)[3],
   size_var = 3
 ) + theme_esteem() +
@@ -377,7 +484,7 @@ ggmap_ROCCHMV_gironde <- plot_estuary_map(
 
 # ---- Loire ----
 ggmap_ROCCHMV_loire <- plot_estuary_map(
-  data = data_ROCCHMV |> filter(estuary == "Loire"),
+  data = data_ROCCHMV_contamination |> filter(estuary == "Loire"),
   estuary_name = "Loire", colour_var = ggplot2_colors(3)[2],
   size_var = 3
 ) + theme_esteem() +
@@ -386,7 +493,7 @@ ggmap_ROCCHMV_loire <- plot_estuary_map(
 
 # ---- Seine ----
 ggmap_ROCCHMV_seine <- plot_estuary_map(
-  data = data_ROCCHMV |> filter(estuary == "Seine"),
+  data = data_ROCCHMV_contamination |> filter(estuary == "Seine"),
   estuary_name = "Seine", colour_var = ggplot2_colors(3)[1],
   size_var = 3
 ) + theme_esteem() +

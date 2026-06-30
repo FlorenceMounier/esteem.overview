@@ -8,7 +8,17 @@
 # Date: 2026-06-30
 # =====================================================
 
+# =====================================================
+# 00. Packages and data
+# =====================================================
 
+library(esteem.overview)
+library(tidyverse, quietly = TRUE)
+
+`%!in%` = Negate(`%in%`)
+
+# data from ROCCHMV
+data(data_ROCCHMV_contamination)
 
 # =====================================================
 # 03. Campaign frequency

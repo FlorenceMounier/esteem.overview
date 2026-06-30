@@ -9,49 +9,9 @@ library(tidyverse)
 library(here)
 ```
 
-# Get raw data
-```{r}
-data <- esteem.overview::data_ROCCHMV_cleaned |> ungroup()
-```
-
-# Data for metals
-```{r}
-metals <- data.frame(
-  PARAMETRE_LIBELLE = c("Mercury", "Cadmium", "Lead", "Copper"),
-  EC_MPC_µg_gww = c(0.5, 1, 1.5, NA)
-  )
-
-data_metals <- data |> 
-  filter(support == "Bivalve") |> 
-  select(-c(SUPPORT_NIVEAU_PRELEVEMENT, support, niveau)) |> 
-  mutate(PARAMETRE_LIBELLE = case_when(
-    PARAMETRE_LIBELLE == "Mercure" ~ "Mercury",
-    PARAMETRE_LIBELLE == "Plomb" ~ "Lead",
-    PARAMETRE_LIBELLE == "Cuivre" ~ "Copper",
-    TRUE ~ PARAMETRE_LIBELLE
-  )) |> 
-  filter(PARAMETRE_LIBELLE %in% metals$PARAMETRE_LIBELLE) 
-```
 
 ## Importance of the species matrix
 
-Only for Bivalves (no interesting results for fish)
-
-- Gironde : only C. gigas
-- Seine : only M. edulis
-- Loire : 
-  - 1979-2021: M. edulis
-  - 2022-2024: M. edulis + M.galloprovincialis
-  - 2011-2013 : R. philippinarum duplicate
-  - 2017-2024 : C. gigas
-```{r}
-data_metals |> 
-  distinct(ESTUARY, espece)
-
-data_metals |> 
-  filter(ESTUARY == "Loire") |> 
-  count(YEAR, espece)
-```
 
 For copper oyster and mussels bioaccumulation is very different
 ```{r}
@@ -103,22 +63,6 @@ data_metals <- data_metals |>
 
 ## Get unit of measurment
 
-Conclusion : original unit in mg/kg dw (equivalent in µg/g)
-
-- 1979-2019 : "mg.kg-1"
-- 2020-2024 : "mg/(kg MS)" and "mg.kg-1" or only "mg/(kg MS)"
-```{r}
-# data_metals |>
-#   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE, espece) |>  View()
-
-data_metals |> 
-  filter(ESTUARY == "Gironde", PARAMETRE_LIBELLE == "Mercury") |> 
-  ggplot() +
-  aes(x = YEAR, y = RESULTAT, colour = UNITE) +
-  geom_point() +
-  theme_esteem()
-# => seems to be in the same range of values
-```
 
 ```{r}
 data_metals <- data_metals |> 

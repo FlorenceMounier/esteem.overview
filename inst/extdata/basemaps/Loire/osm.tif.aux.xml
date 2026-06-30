@@ -2,9 +2,9 @@
   <PAMRasterBand band="1">
     <Description>red</Description>
     <Metadata>
-      <MDI key="STATISTICS_MAXIMUM">250</MDI>
+      <MDI key="STATISTICS_MAXIMUM">252</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">23</MDI>
+      <MDI key="STATISTICS_MINIMUM">2</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>
@@ -13,7 +13,7 @@
     <Metadata>
       <MDI key="STATISTICS_MAXIMUM">251</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">42</MDI>
+      <MDI key="STATISTICS_MINIMUM">16</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>
@@ -22,7 +22,7 @@
     <Metadata>
       <MDI key="STATISTICS_MAXIMUM">253</MDI>
       <MDI key="STATISTICS_MEAN">-9999</MDI>
-      <MDI key="STATISTICS_MINIMUM">18</MDI>
+      <MDI key="STATISTICS_MINIMUM">2</MDI>
       <MDI key="STATISTICS_STDDEV">-9999</MDI>
     </Metadata>
   </PAMRasterBand>

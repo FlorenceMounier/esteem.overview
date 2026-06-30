@@ -1,46 +1,36 @@
 # =====================================================
-# Preparation script
+# Preparation script for GPS haline limits and basemaps
 # Datasets:
-#   - GPS_limits_estuary
 #   - GPS_limits_haline
 # Base maps of type OpenStreetMaps:
 #   - files in ~/inst/extdata/
 # Author: FM
-# Date: 2026-06-11
+# Date: 2026-06-30
 # =====================================================
+
+
 
 # =====================================================
 # 00. Packages and data
 # =====================================================
 
+library(esteem.overview)
 library(tidyverse)
 library(rpart)
 library(ggpubr)
 
 `%!in%` = Negate(`%in%`)
 
+# raw_data_POMET_traits <- read_csv2(file = "../POMET/DCE_AllTrait_VTrait.csv")
 data(raw_data_POMET_traits)
 
-
-# =====================================================
-# 01. Estuaries limits
-# =====================================================
-
-GPS_limits_estuary <- tibble::tibble(
-  estuary = c("Gironde", "Loire", "Seine"),
-  estuary_limit_lat_min = c(45.0, 47.22, 49.4),
-  estuary_limit_lat_max = c(45.7, 47.34, 49.48),
-  estuary_limit_lon_min = c(-1.1, -2.3, 0.0),
-  estuary_limit_lon_max = c(-0.6, -1.8, 0.5)
-)
-usethis::use_data(GPS_limits_estuary, overwrite = TRUE)
 
 
 # =====================================================
 # 02. Extract autumn salinity by estuary from POMET data
 # =====================================================
 
-data_POMET_salinity_raw <- raw_data_POMET_traits |>
+data_POMET_salinity <- raw_data_POMET_traits |>
 
   # ---- Create GPS central position of traits ----
 mutate(latitude = (pos_deb_lat_dd + pos_fin_lat_dd) / 2) |>
@@ -49,17 +39,16 @@ mutate(latitude = (pos_deb_lat_dd + pos_fin_lat_dd) / 2) |>
   # ----- Filter unrelevant observations -----
 filter(trait_id != 82) |> # fleuve Gironde
   filter(trait_id %!in% c(6185, 8494)) |>  # out of Loire
-  filter(trait_id %!in% c(13477, 16087, 14362)) # filandres Seine
+  filter(trait_id %!in% c(13477, 16087, 14362)) |> # filandres Seine
 
 # ----- Add estuary information from GPS positions of traits ----
-data_POMET_salinity <- get_estuary_from_gps_position(data = data_POMET_salinity_raw,
-                                                     latitude = latitude,
-                                                     longitude = longitude)
+get_estuary_from_gps_position(latitude = latitude, longitude = longitude)
 
 # ---- Create sub-dataset by estuary ----
 data_POMET_gironde_salinity_autumn <- data_POMET_salinity |> filter(estuary == "Gironde", saison == "automne")
 data_POMET_loire_salinity_autumn <- data_POMET_salinity |> filter(estuary == "Loire", saison == "automne")
 data_POMET_seine_salinity_autumn <- data_POMET_salinity |> filter(estuary == "Seine", saison == "automne")
+
 
 
 # =====================================================
@@ -95,27 +84,30 @@ data_POMET_salinity <- get_haline_zone_from_gps_position(data_POMET_salinity,
                                                          longitude = longitude)
 usethis::use_data(data_POMET_salinity, overwrite = TRUE)
 
+
+
 # =====================================================
 # 04. Base OpenStreetMaps by estuary
 # =====================================================
 
 fct_build_and_save_basemap(
-  data = data_POMET_ALL_densities |> filter(estuary == "Gironde"),
+  data = data_POMET_salinity |> filter(estuary == "Gironde"),
   estuary_name = "Gironde",
   villes_selection = c("Royan", "Pauillac", "Saint-Estèphe", "Blaye")
 )
 
 fct_build_and_save_basemap(
-  data = data_POMET_ALL_densities |> filter(estuary == "Loire"),
+  data = data_POMET_salinity |> filter(estuary == "Loire"),
   estuary_name = "Loire",
   villes_selection = c("Saint-Nazaire", "Cordemais")
 )
 
 fct_build_and_save_basemap(
-  data = data_POMET_ALL_densities |> filter(estuary == "Seine"),
+  data = data_POMET_salinity |> filter(estuary == "Seine"),
   estuary_name = "Seine",
   villes_selection = c("Le Havre", "Honfleur", "Tancarville")
 )
+
 
 
 # =====================================================

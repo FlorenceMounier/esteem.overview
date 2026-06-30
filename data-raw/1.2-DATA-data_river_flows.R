@@ -1,27 +1,50 @@
 # =====================================================
-# Preparation script
+# Preparation script for river flows data
 # Datasets:
 #  - data_flow.rda
 # Author: FM
-# Date: 2026-06-17
+# Date: 2026-06-30
 # =====================================================
 
 # =====================================================
-# 00. Packages
+# 00. Packages and raw data
 # =====================================================
 
 library(esteem.overview)
 library(tidyverse, quietly = TRUE)
+
+# raw_data_daily_flow_loire <- read_csv("../HYDROPORTAIL/Daily_flows/MontjeanSurLoire.csv")
+# usethis::use_data(raw_data_daily_flow_loire)
+data(raw_data_daily_flow_loire)
+
+# raw_data_daily_flow_seine <- read_csv("../HYDROPORTAIL/Daily_flows/Vernon_Seine.csv")
+# usethis::use_data(raw_data_daily_flow_seine)
+data(raw_data_daily_flow_seine)
+
+# raw_data_monthly_flow_seine <- read_csv("../HYDROPORTAIL/Monthly_mean_flows/H320000101_VernonSeine.csv")
+# usethis::use_data(raw_data_monthly_flow_seine)
+data(raw_data_monthly_flow_seine)
+
+# raw_data_daily_flow_dordogne <- read_csv("../HYDROPORTAIL/Daily_flows/PessacSurDordogne.csv")
+# usethis::use_data(raw_data_daily_flow_dordogne)
+data(raw_data_daily_flow_dordogne)
+
+# raw_data_daily_flow_garonne <- read_csv2("../HYDROPORTAIL/Daily_flows/Garonne Tonneins.csv")
+# usethis::use_data(raw_data_daily_flow_garonne)
+data(raw_data_daily_flow_garonne)
+
+# raw_data_monthly_flow_gironde <- read_csv("../HYDROPORTAIL/Monthly_mean_flows/DebitGirondeEDF_1963-2013.csv")
+# usethis::use_data(raw_data_monthly_flow_gironde)
+data(raw_data_monthly_flow_gironde)
+
 
 
 # =====================================================
 # 01. Loire
 # =====================================================
 
-# Daily dataset
-data_flow_loire_daily <- read_csv("../DATA débits/Data débits journaliers/MontjeanSurLoire.csv")
+# ---- Monthly dataset from raw daily dataset ----
 
-# Monthly dataset from daily dataset
 data_flow_loire <- data_flow_loire_daily |>
   get_info_from_dates(date_variable = `Date (TU)`) |>
   group_by(year, month, year_month, season, year_season) |>
@@ -29,14 +52,13 @@ data_flow_loire <- data_flow_loire_daily |>
   drop_na() |>
   mutate(estuary = "Loire")
 
+
+
 # =====================================================
 # 02. Seine
 # =====================================================
 
 # --- DAILY DATASET ----
-
-# Load daily dataset
-data_flow_seine_daily_data <- read_csv("../DATA débits/Data débits journaliers/Vernon_Seine.csv")
 
 # Monthly dataset from daily dataset
 data_flow_seine_daily_means <- data_flow_seine_daily_data |>
@@ -49,9 +71,6 @@ data_flow_seine_daily_means <- data_flow_seine_daily_data |>
 
 
 # ---- MONTHLY DATASET ----
-
-# Load monthly dataset
-data_flow_seine_monthly_data <- read_csv("../DATA débits/Data débits mensuels moyens/H320000101_VernonSeine.csv")
 
 data_flow_seine_monthly_means <- data_flow_seine_monthly_data |>
   get_info_from_dates(date_variable = `Date (TU)`) |>
@@ -105,11 +124,9 @@ data_flow_seine  |>
 
 # ---- Dordogne daily flow ----
 
-data_flow_dordogne_daily_data <- read_csv("../DATA débits/Data débits journaliers/PessacSurDordogne.csv") |>
-  select(`Date (TU)`, `Valeur (en m³/s)`)
-
 # Monthly means from daily dataset
-data_flow_dordogne_daily_means <- data_flow_dordogne_daily_data |>
+data_flow_dordogne_daily_means <- data_flow_dordogne_daily_data  |>
+  select(`Date (TU)`, `Valeur (en m³/s)`) |>
   get_info_from_dates(date_variable = `Date (TU)`) |>
   group_by(year, month, year_month, season, year_season) |>
   summarise(RESULTAT = mean(`Valeur (en m³/s)`, na.rm = TRUE), .groups = "drop") |>
@@ -118,40 +135,10 @@ data_flow_dordogne_daily_means <- data_flow_dordogne_daily_data |>
 
 # ---- Garonne daily flow ----
 
-fun_correct_csv <- function(path, zone_name){
-# lire les lignes
-lines <- read_lines(path)
-# enlever le guillemet début/fin
-lines <- str_remove(lines, '^"')
-lines <- str_remove(lines, '"$')
-# transformer en table
-data <- read_csv(
-paste(lines, collapse = "\n"),
-show_col_types = FALSE
-)
-data <- data %>%
-# enlever guillemets dans les noms de colonnes
-rename_with(~ str_remove_all(.x, '"')) %>%
-# enlever guillemets restants dans toutes les colonnes texte
-mutate(across(where(is.character), ~ str_remove_all(.x, '"')))
-# colonne names
-names(data) <- c(
-"Date",
-"Valeur_m3_per_s",
-"Statut",
-"Qualification",
-"Methode",
-"Continuite"
-)
-return(data)
-}
-# corrupted csv for garonne
-data_flow_garonne_daily_data <- fun_correct_csv(path = "../DATA débits/Data débits journaliers/Garonne Tonneins.csv") |>
-  select(Date, Valeur_m3_per_s) |>
-mutate(Valeur_m3_per_s = as.numeric(Valeur_m3_per_s))
-
 # Monthly means from daily dataset
 data_flow_garonne_daily_means <- data_flow_garonne_daily_data |>
+  select(Date, Valeur_m3_per_s) |>
+  mutate(Valeur_m3_per_s = as.numeric(Valeur_m3_per_s)) |>
   get_info_from_dates(date_variable = Date) |>
   group_by(year, month, year_month, season, year_season) |>
   summarise(RESULTAT = mean(Valeur_m3_per_s, na.rm = TRUE), .groups = "drop") |>
@@ -173,12 +160,6 @@ data_flow_gironde_daily_means <- data_flow_dordogne_daily_means |>
 
 ### MONTHLY DATASET ###
 
-data_flow_gironde_monthly_data <- read_delim(
-  "../DATA débits/Data débits mensuels moyens/DebitGirondeEDF_1963-2013.csv",
-  delim = ";",
-  escape_double = FALSE,
-  trim_ws = TRUE
-)
 
 data_flow_gironde_monthly_means <- data_flow_gironde_monthly_data |>
   rename(year = Annee,
