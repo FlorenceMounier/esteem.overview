@@ -208,10 +208,10 @@ usethis::use_data(data_contamination_biometrics, overwrite = TRUE)
 
 
 # =====================================================
-# 03. Contamination data
+# 03. Contamination data cleaning
 # =====================================================
 
-data_ROCCHMV_contam <- data_ROCCHMV_clean |>
+data_ROCCHMV_contam_completed <- data_ROCCHMV_clean |>
 
 # ---- Filter not biometrics ----
 
@@ -290,7 +290,7 @@ mutate(PARAMETRE_LIBELLE = case_when(
   ## PBDE congeners
   PARAMETRE_LIBELLE %in% c("PBDE 28", "PBDE 47", "PBDE 99", "PBDE 100", "PBDE 153", "PBDE 154") ~ PARAMETRE_LIBELLE,
   # -- Organostannic compounds - Tributyltin cation
-  PARAMETRE_LIBELLE == "Tributylétain cation" ~ "Tributyltin cation",
+  PARAMETRE_LIBELLE == "Tributylétain cation" ~ "TBT",
   # Others + biometrics parameters
   TRUE ~ PARAMETRE_LIBELLE
 )) |>
@@ -348,13 +348,13 @@ mutate(sub_family = case_when(
   ## Hexabromocyclododecane isomers (HBCDD isomers)
   PARAMETRE_LIBELLE %in% c("Alpha-HBCDD", "Beta-HBCDD", "Gamma-HBCDD") ~ "HBCDDs",
   ## PBDE congeners
-  PARAMETRE_LIBELLE %in% c("PBDE 28", "PBDE 47", "PBDE 99", "PBDE 100", "PBDE 153", "PBDE 154") ~ "PBDE",
+  PARAMETRE_LIBELLE %in% c("PBDE 28", "PBDE 47", "PBDE 99", "PBDE 100", "PBDE 153", "PBDE 154") ~ "PBDEs",
 
   # -- PFAS - PFOS
   PARAMETRE_LIBELLE == "PFOS" ~ "PFAS",
 
   # -- Organostannic compounds - Tributyltin cation
-  PARAMETRE_LIBELLE == "Tributyltin cation" ~ "Organostannic compounds"
+  PARAMETRE_LIBELLE == "TBT" ~ "Organotin compounds"
 )) |>
 
 
@@ -363,13 +363,13 @@ mutate(sub_family = case_when(
 mutate(family = case_when(
   sub_family %in% c("HBCDD", "PBDE") ~ "Brominated",
   sub_family == "Metals" ~ "Metals",
-  sub_family %in% c("DTT total", "Lindane") ~ "Organochlorin pesticides",
+  sub_family %in% c("DDT total", "Lindane") ~ "Organochlorin pesticides",
   sub_family ==  "PAH" ~ "PAH",
   sub_family ==  "PCBi" ~ "PCB",
   sub_family %in% c("PCDDs", "PCDFs", "PCB-DL", "DL-PCBs") ~ "DLC",
   sub_family %in% c("HBCDDs", "PBDEs") ~ "BFR",
   sub_family == "PFAS" ~ "Perfluorinated compounds",
-  sub_family == "Tributylétain cation" ~ "Organostannic compounds",
+  sub_family == "Organotin compounds" ~ "Organometallic compounds",
   TRUE ~ NA
 ))
 
@@ -380,35 +380,225 @@ mutate(family = case_when(
 # =====================================================
 
 # ---- Extract subdataset ----
-data_ROCCHMV_CB118 <- data_ROCCHMV_contam |>
+data_ROCCHMV_CB118 <- data_ROCCHMV_contam_completed |>
   filter(PARAMETRE_LIBELLE == "CB 118") |>
   mutate(sub_family = "DL-PCBs") |>
   mutate(family = "DLC")
 
-# ---- Duplicate rows with DL-PCB informations ----
-data_ROCCHMV_contam <- rbind(data_ROCCHMV_contam, data_ROCCHMV_CB118)
+# ---- Duplicate rows with DL-PCB data_ROCCHMV_contam_completed ----
+data_ROCCHMV_contam_completed <- rbind(data_ROCCHMV_contam_completed, data_ROCCHMV_CB118)
 
 
 # =====================================================
-# 04. Group contaminants by family where the threshold applies to them
+# 03. Summarise by estuary, year & species
+# =====================================================
+
+data_ROCCHMV_contam_summarized <- data_ROCCHMV_contam_completed |>
+  group_by(estuary, year, species, PARAMETRE_LIBELLE, family, sub_family) |>
+  summarise(
+    RESULTAT_ng_gww = median(RESULTAT_ng_gww, na.rm = TRUE),
+    RESULTAT_ng_gdw = median(RESULTAT_ng_gdw, na.rm = TRUE),
+    RESULTAT_ng_glw = median(RESULTAT_ng_glw, na.rm = TRUE),
+    .groups = "drop"
+    )
+
+
+# =====================================================
+# 04. Summarize contaminant concentrations by family
+#     or sub-family where the threshold applies to them
 # =====================================================
 
 # ---- DDT total ----
 
-data_ROCCHMV_contam |>
+data_ROCCHMV_contam_DDT_total_ng_gdw <- data_ROCCHMV_contam_summarized |>
   filter(sub_family == "DDT total") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gdw) |>
-  mutate(DDT_total_ng_gdw = `p,p'-DDD` + `p,p'-DDE` + `p,p'-DDT` + `o,p'-DDT`)
+  group_by(estuary, year, species, family, sub_family) |>
+  summarise(RESULTAT_ng_gdw = sum(`p,p'-DDD`, `p,p'-DDE`, `p,p'-DDT`,`o,p'-DDT`, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "DDT total")
 
-data_ROCCHMV_contam |>
+data_ROCCHMV_contam_DDT_total_ng_gww <- data_ROCCHMV_contam_summarized |>
   filter(sub_family == "DDT total") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gww) |>
-  mutate(DDT_total_ng_gww = `p,p'-DDD` + `p,p'-DDE` + `p,p'-DDT` + `o,p'-DDT`)
+  group_by(estuary, year, species, family, sub_family) |>
+  summarise(RESULTAT_ng_gww = sum(`p,p'-DDD`, `p,p'-DDE`, `p,p'-DDT`,`o,p'-DDT`, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "DDT total")
 
-data_ROCCHMV_contam |>
+data_ROCCHMV_contam_DDT_total_ng_glw <- data_ROCCHMV_contam_summarized |>
   filter(sub_family == "DDT total") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_glw) |>
-  mutate(DDT_total_ng_glw = `p,p'-DDD` + `p,p'-DDE` + `p,p'-DDT` + `o,p'-DDT`)
+  group_by(estuary, year, species, family, sub_family) |>
+  summarise(RESULTAT_ng_glw = sum(`p,p'-DDD`, `p,p'-DDE`, `p,p'-DDT`,`o,p'-DDT`, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "DDT total")
+
+data_ROCCHMV_contam_DDT_total <- data_ROCCHMV_contam_DDT_total_ng_gdw |>
+  full_join(data_ROCCHMV_contam_DDT_total_ng_gww) |>
+  full_join(data_ROCCHMV_contam_DDT_total_ng_glw)
+
+
+# ---- HBCDDs ----
+
+data_ROCCHMV_contam_sum_HBCDDs_ng_gdw <- data_ROCCHMV_contam_summarized |>
+  filter(sub_family == "HBCDDs") |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gdw) |>
+  group_by(estuary, year, species, family, sub_family) |>
+  summarise(RESULTAT_ng_gdw = sum(`Alpha-HBCDD`, `Beta-HBCDD`, `Gamma-HBCDD`, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "sum_HBCDDs")
+
+data_ROCCHMV_contam_sum_HBCDDs_ng_gww <- data_ROCCHMV_contam_summarized |>
+  filter(sub_family == "HBCDDs") |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gww) |>
+  group_by(estuary, year, species, family, sub_family) |>
+  summarise(RESULTAT_ng_gww = sum(`Alpha-HBCDD`, `Beta-HBCDD`, `Gamma-HBCDD`, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "sum_HBCDDs")
+
+data_ROCCHMV_contam_sum_HBCDDs_ng_glw <- data_ROCCHMV_contam_summarized |>
+  filter(sub_family == "HBCDDs") |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_glw) |>
+  group_by(estuary, year, species, family, sub_family) |>
+  summarise(RESULTAT_ng_glw = sum(`Alpha-HBCDD`, `Beta-HBCDD`, `Gamma-HBCDD`, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "sum_HBCDDs")
+
+data_ROCCHMV_contam_sum_HBCDDs <- data_ROCCHMV_contam_sum_HBCDDs_ng_gdw |>
+  full_join(data_ROCCHMV_contam_sum_HBCDDs_ng_gww) |>
+  full_join(data_ROCCHMV_contam_sum_HBCDDs_ng_glw)
+
+
+
+# ---- PBDEs ----
+
+## sum_PBDEs_ng_gdw
+data_ROCCHMV_contam_sum_PBDEs_ng_gdw <- data_ROCCHMV_contam_summarized |>
+  filter(sub_family == "PBDEs") |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gdw) |>
+  group_by(estuary, year, species, family, sub_family) |>
+  summarise(RESULTAT_ng_gdw = sum(`PBDE 28`, `PBDE 47`, `PBDE 99`, `PBDE 100`, `PBDE 153`, `PBDE 154`, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "sum_PBDEs")
+
+## sum_PBDEs_ng_gww
+data_ROCCHMV_contam_sum_PBDEs_ng_gww <- data_ROCCHMV_contam_summarized |>
+  filter(sub_family == "PBDEs") |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gww) |>
+  group_by(estuary, year, species, family, sub_family) |>
+  summarise(RESULTAT_ng_gww = sum(`PBDE 28`, `PBDE 47`, `PBDE 99`, `PBDE 100`, `PBDE 153`, `PBDE 154`, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "sum_PBDEs")
+
+## sum_PBDEs_ng_glw
+data_ROCCHMV_contam_sum_PBDEs_ng_glw <- data_ROCCHMV_contam_summarized |>
+  filter(sub_family == "PBDEs") |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_glw) |>
+  group_by(estuary, year, species, family, sub_family) |>
+  summarise(RESULTAT_ng_glw = sum(`PBDE 28`, `PBDE 47`, `PBDE 99`, `PBDE 100`, `PBDE 153`, `PBDE 154`, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "sum_PBDEs")
+
+## join units
+data_ROCCHMV_contam_sum_PBDEs <- data_ROCCHMV_contam_sum_PBDEs_ng_gdw |>
+  full_join(data_ROCCHMV_contam_sum_PBDEs_ng_gww) |>
+  full_join(data_ROCCHMV_contam_sum_PBDEs_ng_glw)
+
+
+# ---- Weighted sum of DLC (PCDD, PCDF, DL-PCB) ----
+
+## Weight factors dataset
+data_TEF_DLC <- data_ROCCHMV_contam_summarized |>
+  filter(family == "DLC") |>
+  distinct(PARAMETRE_LIBELLE, sub_family) |>
+  mutate(TEF_DLC = case_when(
+    PARAMETRE_LIBELLE %in% c("2,3,7,8-tetrachlorodibenzo-p-dioxine",
+                             "1,2,3,7,8-pentachlorodibenzo-p-dioxine") ~ 1,
+    PARAMETRE_LIBELLE %in% c("2,3,4,7,8-pentachlorodibenzofuran") ~ 0.3,
+    PARAMETRE_LIBELLE %in% c("1,2,3,4,7,8-hexachlorodibenzo-p-dioxine",
+                             "1,2,3,6,7,8-hexachlorodibenzo-p-dioxine",
+                             "1,2,3,7,8,9-hexachlorodibenzo-p-dioxine",
+                             "2,3,7,8-tetrachlorodibenzofuran",
+                             "1,2,3,4,7,8-hexachlorodibenzofuran",
+                             "1,2,3,6,7,8-hexachlorodibenzofuran",
+                             "1,2,3,7,8,9-hexachlorodibenzofuran",
+                             "2,3,4,6,7,8-hexachlorodibenzofuran",
+                             "1,2,3,4,6,7,8-heptachlorodibenzofuran",
+                             "1,2,3,4,7,8,9-heptachlorodibenzofuran",
+                             "CB 126"
+                             ) ~ 0.1,
+    PARAMETRE_LIBELLE == "1,2,3,4,6,7,8- heptachlorodibenzo-p-dioxine" ~ 0.01,
+    PARAMETRE_LIBELLE %in% c("1,2,3,7,8-pentachlorodibenzofuran", "CB 169") ~ 0.03,
+    PARAMETRE_LIBELLE %in% c("octachlorodibenzo-p-dioxine",
+                             "octachlorodibenzofuranne",
+                             "CB 81") ~ 0.0003,
+    PARAMETRE_LIBELLE %in% c("CB 77") ~ 0.0001,
+    PARAMETRE_LIBELLE %in% c("CB 105", "CB 114", "CB 118", "CB 123", "CB 156", "CB 157", "CB 167", "CB 189") ~ 0.00003
+  )) |>
+  arrange(desc(TEF_DLC), sub_family, PARAMETRE_LIBELLE)
+
+usethis::use_data(data_TEF_DLC, overwrite = TRUE)
+
+## Weighted contamination levels
+data_ROCCHMV_contam_W_ng_g <- data_ROCCHMV_contam_summarized |>
+  filter(family == "DLC") |>
+  left_join(data_TEF_DLC) |>
+  mutate(RESULTAT_W_ng_gdw = RESULTAT_ng_gdw * TEF_DLC,
+         RESULTAT_W_ng_gww = RESULTAT_ng_gww * TEF_DLC,
+         RESULTAT_W_ng_glw = RESULTAT_ng_glw * TEF_DLC)
+
+## Wsum_DLC_ng_gdw
+data_ROCCHMV_contam_Wsum_DLC_ng_gdw <- data_ROCCHMV_contam_W_ng_g |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_W_ng_gdw) |>
+  group_by(estuary, year, species, family) |>
+  summarise(RESULTAT_ng_gdw = sum(rowSums(across(all_of(DLC_names)), na.rm = TRUE)),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "Wsum_DLC")
+
+## Wsum_DLC_ng_gww
+data_ROCCHMV_contam_Wsum_DLC_ng_gww <- data_ROCCHMV_contam_W_ng_g |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_W_ng_gww) |>
+  group_by(estuary, year, species, family) |>
+  summarise(RESULTAT_ng_gww = sum(rowSums(across(all_of(DLC_names)), na.rm = TRUE)),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "Wsum_DLC")
+
+## Wsum_DLC_ng_glw
+data_ROCCHMV_contam_Wsum_DLC_ng_glw <- data_ROCCHMV_contam_W_ng_g |>
+  pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_W_ng_glw) |>
+  group_by(estuary, year, species, family) |>
+  summarise(RESULTAT_ng_glw = sum(rowSums(across(all_of(DLC_names)), na.rm = TRUE)),
+            .groups = "drop") |>
+  mutate(PARAMETRE_LIBELLE = "Wsum_DLC")
+
+
+## join units
+data_ROCCHMV_contam_Wsum_DLC <- data_ROCCHMV_contam_Wsum_DLC_ng_gdw |>
+  full_join(data_ROCCHMV_contam_Wsum_DLC_ng_gww) |>
+  full_join(data_ROCCHMV_contam_Wsum_DLC_ng_glw)
+
+
+# ---- Join new variables ----
+
+## DLC names vector
+DLC_names_non_CB118 <- data_TEF_DLC |> filter(PARAMETRE_LIBELLE != "CB 118") |>  pull(PARAMETRE_LIBELLE)
+
+data_ROCCHMV_contam <- data_ROCCHMV_contam_summarized |>
+  full_join(data_ROCCHMV_contam_DDT_total) |>
+  filter(PARAMETRE_LIBELLE %!in% c("p,p'-DDE", "p,p'-DDD", "p,p'-DDT", "o,p'-DDT")) |>
+  full_join(data_ROCCHMV_contam_sum_HBCDDs) |>
+  filter(PARAMETRE_LIBELLE %!in% c("Alpha-HBCDD", "Beta-HBCDD", "Gamma-HBCDD")) |>
+  full_join(data_ROCCHMV_contam_sum_PBDEs) |>
+  filter(PARAMETRE_LIBELLE %!in% c("PBDE 28", "PBDE 47", "PBDE 99", "PBDE 100", "PBDE 153", "PBDE 154")) |>
+  full_join(data_ROCCHMV_contam_Wsum_DLC) |>
+  filter(PARAMETRE_LIBELLE %!in% DLC_names_non_CB118) |>
+  filter(!(PARAMETRE_LIBELLE == "CB 118" & family == "DLC"))
+
+# Check resulting list of contaminants
+data_ROCCHMV_contam |>
+distinct(PARAMETRE_LIBELLE, family) |>  View()
+
 
 # =====================================================
 # 03. Check species matrix influence

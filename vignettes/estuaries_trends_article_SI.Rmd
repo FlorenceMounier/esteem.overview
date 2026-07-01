@@ -49,6 +49,8 @@ library(esteem.overview)
 library(officer)
 library(tidyverse)
 library(flextable)
+
+data(data_TEF_DLC)
 ```
 
 # Haline zones definition
@@ -112,46 +114,12 @@ phychemtab
 
 ## Dioxins and dioxin-like comparison to European threshold
 
-Dioxins and dioxin-like compounds threshold refers to a weighted sum of 7 polychlorinated dibenzo-p-dioxins (PCDDs), 10 polychlorinated dibenzofurans (PCDFs), and 12 dioxin-like polychlorinated biphenyls (PCB-DL), listed in Table \@ref(tab:tab_tef_oms_2005).
+Dioxins and dioxin-like compounds threshold refers to a weighted sum of 7 polychlorinated dibenzo-p-dioxins (PCDDs), 10 polychlorinated dibenzofurans (PCDFs), and 12 dioxin-like polychlorinated biphenyls (PCB-DL), listed in Table \@ref(tab:tab_tef_oms_2005). 
 
-The threshold of 0.0065 ng/g TEQ refers to the weighted sum of compounds concentrations expressed in toxic equivalents (TEQ), using a multiplication factor known as the toxic equivalency factor (TEF according to the World Health Organization 2005 for mammals). This factor reflects the toxicity of each compound relative to the reference dioxin (2,3,7,8-T4CDD), which has a TEF of 1. Values are given in Table \@ref(tab:tab_tef_oms_2005).
+The threshold of 0.0065 ng/g TEQ refers to the weighted sum of compounds concentrations expressed in toxic equivalents (TEQ), using a multiplication factor known as the toxic equivalency factor (TEF according to the World Health Organization 2005 for mammals). This factor reflects the toxicity of each compound relative to the reference dioxin (2,3,7,8-T4CDD), which has a TEF of 1 (@safePolychlorinatedBiphenylsPCBs1990). Values are given in Table \@ref(tab:tab_tef_oms_2005).
 
 ```{r tab_tef_oms_2005"}
-tef_oms_2005 <- tribble(
-  ~CHEMICAL, ~Type, ~TEF_OMS_2005,
-
-  "2,3,7,8-tetrachlorodibenzo-p-dioxine", "PCDD", 1,
-  "1,2,3,7,8-pentachlorodibenzo-p-dioxine", "PCDD", 1,
-  "1,2,3,4,7,8-hexachlorodibenzo-p-dioxine", "PCDD", 0.1,
-  "1,2,3,6,7,8-hexachlorodibenzo-p-dioxine", "PCDD", 0.1,
-  "1,2,3,7,8,9-hexachlorodibenzo-p-dioxine", "PCDD", 0.1,
-  "1,2,3,4,6,7,8-heptachlorodibenzo-p-dioxine", "PCDD", 0.01,
-  "octachlorodibenzo-p-dioxine", "PCDD", 0.0003,
-
-  "2,3,7,8-tetrachlorodibenzofuran", "PCDF", 0.1,
-  "1,2,3,7,8-pentachlorodibenzofuran", "PCDF", 0.03,
-  "2,3,4,7,8-pentachlorodibenzofuran", "PCDF", 0.3,
-  "1,2,3,4,7,8-hexachlorodibenzofuran", "PCDF", 0.1,
-  "1,2,3,6,7,8-hexachlorodibenzofuran", "PCDF", 0.1,
-  "1,2,3,7,8,9-hexachlorodibenzofuran", "PCDF", 0.1,
-  "2,3,4,6,7,8-hexachlorodibenzofuran", "PCDF", 0.1,
-  "1,2,3,4,6,7,8-heptachlorodibenzofuran", "PCDF", 0.01,
-  "1,2,3,4,7,8,9-heptachlorodibenzofuran", "PCDF", 0.01,
-  "octachlorodibenzofuranne", "PCDF", 0.0003,
-
-  "CB 77",  "DL-PCB", 0.0001,
-  "CB 81",  "DL-PCB", 0.0003,
-  "CB 105", "DL-PCB", 0.00003,
-  "CB 114", "DL-PCB", 0.00003,
-  "CB 118", "DL-PCB", 0.00003,
-  "CB 123", "DL-PCB", 0.00003,
-  "CB 126", "DL-PCB", 0.1,
-  "CB 156", "DL-PCB", 0.00003,
-  "CB 157", "DL-PCB", 0.00003,
-  "CB 167", "DL-PCB", 0.00003,
-  "CB 169", "DL-PCB", 0.03,
-  "CB 189", "DL-PCB", 0.00003
-) |> flextable()
+tef_oms_2005 <- data_TEF_DLC |> flextable()
 
 tef_oms_2005 <- set_table_properties(tef_oms_2005, width = 1, layout = "autofit")  # width = 1 → 100% de la page
 tef_oms_2005 <- set_caption(
