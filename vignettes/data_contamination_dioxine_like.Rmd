@@ -50,43 +50,6 @@ data_dioxine_like <- esteem.overview::data_ROCCHMV_cleaned |> ungroup() |>
 
 ## Get the same unit of measurment
 
-Different units:
-
-- 1992-2007: µg.kg-1 (eq ng.g-1)
-- 2008-2016: PCDDs & PCDFs: ng.kg-1 ; PCBs: µg.kg-1
-- 2017-2024: ng.g-1, p.h. 
-```{r}
-data_dioxine_like |> 
-  distinct(UNITE)
-
-# data_dioxine_like |> 
-#   mutate(YEAR = as.factor(YEAR)) |> 
-#   distinct(YEAR, UNITE, ESTUARY, PARAMETRE_LIBELLE) |>  View(title = "dioxine_like units")
-```
-
-Transform all results in ng/g dw (same as µg/kg):
-```{r}
-data_dioxine_like_dw <- data_dioxine_like |>
-  # transformation into dw concentrations
-  mutate(RESULTAT = case_when(
-    UNITE == "ng.g-1, p.h." ~ RESULTAT / (`Matière sèche_%` / 100),
-    UNITE == "µg.kg-1" ~ RESULTAT,
-    UNITE == "ng.kg-1" ~ RESULTAT / 1000
-  )) |>  
-  # Change to unified unit
-  mutate(UNITE = "ng/g dw") |> 
-  # Get only one value per year
-  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
-  mutate(RESULTAT = mean(RESULTAT)) |> 
-  ungroup() |> 
-  # Round result values
-  mutate(RESULTAT = round(RESULTAT, digits = 7))
-
-# # Checking
-# data_dioxine_like |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "octachlorodibenzofuranne")
-# data_dioxine_like_dw |> filter(YEAR %in% c(2015, 2023), PARAMETRE_LIBELLE == "octachlorodibenzofuranne")
-```
-
 Transform all results in ng/g TEQ:
 ```{r}
 data_dioxine_like_TEQ <- data_dioxine_like_dw |> 

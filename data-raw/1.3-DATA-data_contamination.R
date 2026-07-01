@@ -2,14 +2,17 @@
 # Prepare contamination data from ROCCHMV program
 # Datasets:
 #  - data_contamination_biometrics.rda
+#  - data_contamination_TEF_DLC.rda
+#  - data_contamination_convert_factors.rda
 #  - data_contamination.rda
 # Graphs in /inst/mat_meth/contamination
 #  - ggplot_dry_content.jpg
 #  - ggplot_lipid_content.jpg
+#  - ggplot_contamination_loire_parallel_sampling.jpg
 #  - ggmap_ROCCHMV.jpg
 # Preparation script
 # Author: FM
-# Date: 2026-06-30
+# Date: 2026-07-01
 # =====================================================
 
 
@@ -26,8 +29,6 @@ library(cowplot)
 
 # From /data-raw/0.2-RAW-data_surval.R
 data(raw_data_surval_contamination)
-
-
 
 # =====================================================
 # 01. Cleaning raw data
@@ -95,6 +96,47 @@ select(
     support
   )
 )
+
+
+
+# =====================================================
+# 04. Sampling maps
+# =====================================================
+
+# ---- Gironde ----
+ggmap_ROCCHMV_gironde <- plot_estuary_map(
+  data = data_ROCCHMV_clean |> filter(estuary == "Gironde"),
+  estuary_name = "Gironde", colour_var = ggplot2_colors(3)[3],
+  size_var = 3
+) + theme_esteem() +
+  theme(legend.position = "none", axis.title = ggplot2::element_blank())
+
+# ---- Loire ----
+ggmap_ROCCHMV_loire <- plot_estuary_map(
+  data = data_ROCCHMV_clean |> filter(estuary == "Loire"),
+  estuary_name = "Loire", colour_var = ggplot2_colors(3)[2],
+  size_var = 3
+) + theme_esteem() +
+  theme(legend.position = "none", axis.title = ggplot2::element_blank())
+
+
+# ---- Seine ----
+ggmap_ROCCHMV_seine <- plot_estuary_map(
+  data = data_ROCCHMV_clean |> filter(estuary == "Seine"),
+  estuary_name = "Seine", colour_var = ggplot2_colors(3)[1],
+  size_var = 3
+) + theme_esteem() +
+  theme(legend.position = "none", axis.title = ggplot2::element_blank())
+
+# ---- Cowplot ----
+ggmap_ROCCHMV <- plot_grid(ggmap_ROCCHMV_gironde,
+                           ggmap_ROCCHMV_loire,
+                           ggmap_ROCCHMV_seine,
+                           nrow = 3, ncol = 1, rel_heights = c(1.4,1,1))
+
+ggsave(plot = ggmap_ROCCHMV,
+       filename = "inst/mat_meth/contamination/ggmap_ROCCHMV.jpg",
+       height = 10, width = 7, units = "cm")
 
 
 
@@ -390,27 +432,13 @@ data_ROCCHMV_contam_completed <- rbind(data_ROCCHMV_contam_completed, data_ROCCH
 
 
 # =====================================================
-# 03. Summarise by estuary, year & species
-# =====================================================
-
-data_ROCCHMV_contam_summarized <- data_ROCCHMV_contam_completed |>
-  group_by(estuary, year, species, PARAMETRE_LIBELLE, family, sub_family) |>
-  summarise(
-    RESULTAT_ng_gww = median(RESULTAT_ng_gww, na.rm = TRUE),
-    RESULTAT_ng_gdw = median(RESULTAT_ng_gdw, na.rm = TRUE),
-    RESULTAT_ng_glw = median(RESULTAT_ng_glw, na.rm = TRUE),
-    .groups = "drop"
-    )
-
-
-# =====================================================
-# 04. Summarize contaminant concentrations by family
+# 03. Summarize contaminant concentrations by family
 #     or sub-family where the threshold applies to them
 # =====================================================
 
 # ---- DDT total ----
 
-data_ROCCHMV_contam_DDT_total_ng_gdw <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_DDT_total_ng_gdw <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "DDT total") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gdw) |>
   group_by(estuary, year, species, family, sub_family) |>
@@ -418,7 +446,7 @@ data_ROCCHMV_contam_DDT_total_ng_gdw <- data_ROCCHMV_contam_summarized |>
             .groups = "drop") |>
   mutate(PARAMETRE_LIBELLE = "DDT total")
 
-data_ROCCHMV_contam_DDT_total_ng_gww <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_DDT_total_ng_gww <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "DDT total") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gww) |>
   group_by(estuary, year, species, family, sub_family) |>
@@ -426,7 +454,7 @@ data_ROCCHMV_contam_DDT_total_ng_gww <- data_ROCCHMV_contam_summarized |>
             .groups = "drop") |>
   mutate(PARAMETRE_LIBELLE = "DDT total")
 
-data_ROCCHMV_contam_DDT_total_ng_glw <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_DDT_total_ng_glw <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "DDT total") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_glw) |>
   group_by(estuary, year, species, family, sub_family) |>
@@ -441,7 +469,7 @@ data_ROCCHMV_contam_DDT_total <- data_ROCCHMV_contam_DDT_total_ng_gdw |>
 
 # ---- HBCDDs ----
 
-data_ROCCHMV_contam_sum_HBCDDs_ng_gdw <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_sum_HBCDDs_ng_gdw <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "HBCDDs") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gdw) |>
   group_by(estuary, year, species, family, sub_family) |>
@@ -449,7 +477,7 @@ data_ROCCHMV_contam_sum_HBCDDs_ng_gdw <- data_ROCCHMV_contam_summarized |>
             .groups = "drop") |>
   mutate(PARAMETRE_LIBELLE = "sum_HBCDDs")
 
-data_ROCCHMV_contam_sum_HBCDDs_ng_gww <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_sum_HBCDDs_ng_gww <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "HBCDDs") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gww) |>
   group_by(estuary, year, species, family, sub_family) |>
@@ -457,7 +485,7 @@ data_ROCCHMV_contam_sum_HBCDDs_ng_gww <- data_ROCCHMV_contam_summarized |>
             .groups = "drop") |>
   mutate(PARAMETRE_LIBELLE = "sum_HBCDDs")
 
-data_ROCCHMV_contam_sum_HBCDDs_ng_glw <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_sum_HBCDDs_ng_glw <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "HBCDDs") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_glw) |>
   group_by(estuary, year, species, family, sub_family) |>
@@ -474,7 +502,7 @@ data_ROCCHMV_contam_sum_HBCDDs <- data_ROCCHMV_contam_sum_HBCDDs_ng_gdw |>
 # ---- PBDEs ----
 
 ## sum_PBDEs_ng_gdw
-data_ROCCHMV_contam_sum_PBDEs_ng_gdw <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_sum_PBDEs_ng_gdw <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "PBDEs") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gdw) |>
   group_by(estuary, year, species, family, sub_family) |>
@@ -483,7 +511,7 @@ data_ROCCHMV_contam_sum_PBDEs_ng_gdw <- data_ROCCHMV_contam_summarized |>
   mutate(PARAMETRE_LIBELLE = "sum_PBDEs")
 
 ## sum_PBDEs_ng_gww
-data_ROCCHMV_contam_sum_PBDEs_ng_gww <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_sum_PBDEs_ng_gww <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "PBDEs") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gww) |>
   group_by(estuary, year, species, family, sub_family) |>
@@ -492,7 +520,7 @@ data_ROCCHMV_contam_sum_PBDEs_ng_gww <- data_ROCCHMV_contam_summarized |>
   mutate(PARAMETRE_LIBELLE = "sum_PBDEs")
 
 ## sum_PBDEs_ng_glw
-data_ROCCHMV_contam_sum_PBDEs_ng_glw <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_sum_PBDEs_ng_glw <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "PBDEs") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_glw) |>
   group_by(estuary, year, species, family, sub_family) |>
@@ -509,7 +537,7 @@ data_ROCCHMV_contam_sum_PBDEs <- data_ROCCHMV_contam_sum_PBDEs_ng_gdw |>
 # ---- Weighted sum of DLC (PCDD, PCDF, DL-PCB) ----
 
 ## Weight factors dataset
-data_TEF_DLC <- data_ROCCHMV_contam_summarized |>
+data_contamination_TEF_DLC <- data_ROCCHMV_contam_completed |>
   filter(family == "DLC") |>
   distinct(PARAMETRE_LIBELLE, sub_family) |>
   mutate(TEF_DLC = case_when(
@@ -538,12 +566,15 @@ data_TEF_DLC <- data_ROCCHMV_contam_summarized |>
   )) |>
   arrange(desc(TEF_DLC), sub_family, PARAMETRE_LIBELLE)
 
-usethis::use_data(data_TEF_DLC, overwrite = TRUE)
+usethis::use_data(data_contamination_TEF_DLC, overwrite = TRUE)
+
+## DLC names vector
+DLC_names <- data_contamination_TEF_DLC |>  pull(PARAMETRE_LIBELLE)
 
 ## Weighted contamination levels
-data_ROCCHMV_contam_W_ng_g <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam_W_ng_g <- data_ROCCHMV_contam_completed |>
   filter(family == "DLC") |>
-  left_join(data_TEF_DLC) |>
+  left_join(data_contamination_TEF_DLC) |>
   mutate(RESULTAT_W_ng_gdw = RESULTAT_ng_gdw * TEF_DLC,
          RESULTAT_W_ng_gww = RESULTAT_ng_gww * TEF_DLC,
          RESULTAT_W_ng_glw = RESULTAT_ng_glw * TEF_DLC)
@@ -581,10 +612,10 @@ data_ROCCHMV_contam_Wsum_DLC <- data_ROCCHMV_contam_Wsum_DLC_ng_gdw |>
 
 # ---- Join new variables ----
 
-## DLC names vector
-DLC_names_non_CB118 <- data_TEF_DLC |> filter(PARAMETRE_LIBELLE != "CB 118") |>  pull(PARAMETRE_LIBELLE)
+## DLC names vector without CB118
+DLC_names_non_CB118 <- data_contamination_TEF_DLC |> filter(PARAMETRE_LIBELLE != "CB 118") |>  pull(PARAMETRE_LIBELLE)
 
-data_ROCCHMV_contam <- data_ROCCHMV_contam_summarized |>
+data_ROCCHMV_contam <- data_ROCCHMV_contam_completed |>
   full_join(data_ROCCHMV_contam_DDT_total) |>
   filter(PARAMETRE_LIBELLE %!in% c("p,p'-DDE", "p,p'-DDD", "p,p'-DDT", "o,p'-DDT")) |>
   full_join(data_ROCCHMV_contam_sum_HBCDDs) |>
@@ -595,149 +626,131 @@ data_ROCCHMV_contam <- data_ROCCHMV_contam_summarized |>
   filter(PARAMETRE_LIBELLE %!in% DLC_names_non_CB118) |>
   filter(!(PARAMETRE_LIBELLE == "CB 118" & family == "DLC"))
 
-# Check resulting list of contaminants
-data_ROCCHMV_contam |>
-distinct(PARAMETRE_LIBELLE, family) |>  View()
+# # Check resulting list of contaminants
+# data_ROCCHMV_contam |>
+# distinct(PARAMETRE_LIBELLE, family) |>  View()
 
 
 # =====================================================
-# 03. Check species matrix influence
+# 04. Summarise by estuary, year & group
 # =====================================================
 
-data_ROCCHMV_contam <- data_ROCCHMV_contam |>
+data_ROCCHMV_contam_summarized <- data_ROCCHMV_contam |>
   mutate(group = case_when(
     species == "C. gigas" ~ "Oyster",
     species %in% c("M. edulis", "M. edulis & galloprovincialis") ~ "Mussels"
-  ))
+  )) |>
+  group_by(estuary, year, group, PARAMETRE_LIBELLE, family, sub_family) |>
+  summarise(
+    RESULTAT_ng_gww = median(RESULTAT_ng_gww, na.rm = TRUE),
+    RESULTAT_ng_gdw = median(RESULTAT_ng_gdw, na.rm = TRUE),
+    RESULTAT_ng_glw = median(RESULTAT_ng_glw, na.rm = TRUE),
+    .groups = "drop"
+  )
 
-data_2_groups <- data_ROCCHMV_contam |>
+
+# =====================================================
+# 05. Check species matrix influence
+# =====================================================
+
+# ---- Identify parallel sampling ----
+data_2_groups <- data_ROCCHMV_contam_summarized |>
   distinct(PARAMETRE_LIBELLE, year, estuary, group) |>
   group_by(PARAMETRE_LIBELLE, year, estuary) |>
   summarise(n_group = n_distinct(group), .groups = "drop") |>
   filter(n_group > 1)
 
-data_ROCCHMV_contam_2_groups <- left_join(data_2_groups, data_ROCCHMV_contam)
+# ---- Estuary and period of parallel sampling ----
+data_2_groups |> distinct(estuary, year) |> arrange(year)
 
-ggplot(data_ROCCHMV_contam_2_groups) +
-  aes(x = year, y = RESULTAT_ng_gdw, colour = estuary) +
+# ---- Graphical representation of contamination level differences ----
+ggplot_contamination_loire_parallel_sampling <- ggplot(data_ROCCHMV_contam_summarized |> filter(estuary == "Loire")) +
+  aes(x = year, y = RESULTAT_ng_gdw, colour = group) +
+  geom_point() +
   geom_line() +
-  facet_grid(vars(PARAMETRE_LIBELLE))
+  facet_wrap(vars(PARAMETRE_LIBELLE), ncol = 4, scale = "free_y") +
+  labs(y = "Concentration (ng/gdw)") +
+  theme(axis.title.x = element_blank(),
+        legend.position="bottom",
+        axis.text.x = element_text(angle = 60, vjust = 0.9, hjust=1))
+# only copper seems to have really different contamination levels
+# despite the natural variability of contamination
+ggsave(ggplot_contamination_loire_parallel_sampling,
+       filename = "inst/mat_meth/contamination/ggplot_contamination_loire_parallel_sampling.jpg",
+       height = 22, width = 18, units = "cm")
 
-res <- data_ROCCHMV_contam_2_groups |>
-  group_by(PARAMETRE_LIBELLE, year) |>
+# ---- Estimate correction factors ----
+data_ROCCHMV_contam_summarized_2_groups <- left_join(data_2_groups, data_ROCCHMV_contam_summarized)
+
+ggplot(data_ROCCHMV_contam_summarized_2_groups |> filter(estuary == "Loire")) +
+  aes(x = year, y = RESULTAT_ng_gdw, colour = group) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(vars(PARAMETRE_LIBELLE), scale = "free_y")
+
+data_contamination_convert_factors <- data_ROCCHMV_contam_summarized_2_groups |>
+  filter(PARAMETRE_LIBELLE %in% c("Copper", "Cadmium", "Mercury")) |>
+  select(PARAMETRE_LIBELLE, year, group,
+         RESULTAT_ng_gdw, RESULTAT_ng_gww, RESULTAT_ng_glw) |> pivot_longer(
+           cols = starts_with("RESULTAT_ng_"),
+           names_to = "metric",
+           values_to = "value"
+         ) |>
+  pivot_wider(
+    names_from = group,
+    values_from = value
+  ) |>
+  mutate(
+    ratio_Oyster_Mussels = Oyster / Mussels,
+    ratio_Mussels_Oyster = Mussels / Oyster
+  ) |>
+  group_by(PARAMETRE_LIBELLE, metric) |>
   summarise(
-    p_value = wilcox.test(RESULTAT_ng_gdw ~ species)$p.value,
+    median_ratio_Oyster_Mussels = median(ratio_Oyster_Mussels, na.rm = TRUE),
+    median_ratio_Mussels_Oyster = median(ratio_Mussels_Oyster, na.rm = TRUE),
     .groups = "drop"
+  ) |>
+  select(
+    PARAMETRE_LIBELLE,
+    metric,
+    median_ratio_Oyster_Mussels
+  ) |>
+  pivot_wider(
+    names_from = metric,
+    values_from = median_ratio_Oyster_Mussels
   )
 
-years_for_species_influence <- data_ROCCHMV_contam |>
-  group_by(PARAMETRE_LIBELLE, year) |>
-  summarise(n_species = n_distinct(species), .groups = "drop") |>
-  filter(n_species == 2) |>
-  select(-n_species)
+usethis::use_data(data_contamination_convert_factors, overwrite = TRUE)
 
-data_species_influence <- data_ROCCHMV_contam |>  right_join(years_for_species_influence) |>
-  group_by(PARAMETRE_LIBELLE, year) |>
-  summarise(p_value = glmm(RESULTAT_ng_gdw ~ year * species)$p.value, .groups = "drop"
-  ) |>
-  filter(p_value < 0.05)
+# ---- Transform raw data ----
 
-## Copper
-years_for_species_influence <- data_ROCCHMV_contam |>
-  filter(PARAMETRE_LIBELLE == "CB153") |>
-  group_by(PARAMETRE_LIBELLE, year) |>
-  summarise(n_species = n_distinct(species), .groups = "drop") |>
-  filter(n_species == 2) |>
-  select(-n_species)
-
-data_species_influence <- data_ROCCHMV_contam |>
-  group_by(PARAMETRE_LIBELLE, year, estuary) |>
-  summarise(n_distinct(species))
-
-summary(lm(data = data_species_influence, RESULTAT_ng_gdw ~ year + species ))
-
-
-## Cadmium
-years_for_species_influence <- data_ROCCHMV_contam |>
-  filter(PARAMETRE_LIBELLE == "Cadmium") |>
-  group_by(PARAMETRE_LIBELLE, year) |>
-  summarise(n_species = n_distinct(species), .groups = "drop") |>
-  filter(n_species == 2) |>
-  select(-n_species)
-
-data_species_influence <- data_ROCCHMV_contam |>
-  filter(PARAMETRE_LIBELLE == "Cadmium") |>
-  right_join(years_for_species_influence)
-
-lm(data = data_species_influence, RESULTAT_ng_gdw ~ year * species) |>
-  summary()
-
-data_ROCCHMV_contam |>
-  filter(PARAMETRE_LIBELLE == "Lead") |>
-  ggplot() +
-  aes(x = year, y = RESULTAT_ng_gdw, colour = species) +
-  geom_line() +
-  facet_wrap(vars(estuary)) +
-  theme_esteem()
-
-# =====================================================
-# 03. Summarize by year and by mussels vs oyster
-# =====================================================
-
-data_ROCCHMV_contam <- data_ROCCHMV_contam_transformed |>
-  mutate(species = case_when(
-    species == "C. gigas" ~ "Oyster",
-    species %in% c("M. edulis", "M. edulis & galloprovincialis") ~ "Mussels"
+data_contamination <- data_ROCCHMV_contam_summarized |>
+  mutate(RESULTAT_ng_gdw = case_when(
+    PARAMETRE_LIBELLE == "Cadmium" & group == "Oyster" ~ RESULTAT_ng_gdw *
+      data_contamination_convert_factors |> filter(PARAMETRE_LIBELLE == "Cadmium") |> pull("RESULTAT_ng_gdw"),
+    PARAMETRE_LIBELLE == "Copper" & group == "Oyster" ~ RESULTAT_ng_gdw *
+      data_contamination_convert_factors |> filter(PARAMETRE_LIBELLE == "Copper") |> pull("RESULTAT_ng_gdw"),
+    PARAMETRE_LIBELLE == "Mercury" & group == "Oyster" ~ RESULTAT_ng_gdw *
+      data_contamination_convert_factors |> filter(PARAMETRE_LIBELLE == "Mercury") |> pull("RESULTAT_ng_gdw"),
+    TRUE ~ RESULTAT_ng_gdw
   )) |>
-  group_by(estuary, year, PARAMETRE_LIBELLE, species) |>
-  summarise(
-    RESULTAT_ng_gdw = mean(RESULTAT_ng_gdw, na.rm = TRUE) |> round(digits = 4),
-    RESULTAT_ng_gww = mean(RESULTAT_ng_gww, na.rm = TRUE) |> round(digits = 4),
-    RESULTAT_ng_glw = mean(RESULTAT_ng_glw, na.rm = TRUE) |> round(digits = 4),
-    .groups = "drop"
-    )
+  mutate(RESULTAT_ng_gww = case_when(
+    PARAMETRE_LIBELLE == "Cadmium" & group == "Oyster" ~ RESULTAT_ng_gww *
+      data_contamination_convert_factors |> filter(PARAMETRE_LIBELLE == "Cadmium") |> pull("RESULTAT_ng_gww"),
+    PARAMETRE_LIBELLE == "Copper" & group == "Oyster" ~ RESULTAT_ng_gww *
+      data_contamination_convert_factors |> filter(PARAMETRE_LIBELLE == "Copper") |> pull("RESULTAT_ng_gww"),
+    PARAMETRE_LIBELLE == "Mercury" & group == "Oyster" ~ RESULTAT_ng_gww *
+      data_contamination_convert_factors |> filter(PARAMETRE_LIBELLE == "Mercury") |> pull("RESULTAT_ng_gww"),
+    TRUE ~ RESULTAT_ng_gww
+  )) |>
+  mutate(RESULTAT_ng_glw = case_when(
+    PARAMETRE_LIBELLE == "Cadmium" & group == "Oyster" ~ RESULTAT_ng_glw *
+      data_contamination_convert_factors |> filter(PARAMETRE_LIBELLE == "Cadmium") |> pull("RESULTAT_ng_glw"),
+    PARAMETRE_LIBELLE == "Copper" & group == "Oyster" ~ RESULTAT_ng_glw *
+      data_contamination_convert_factors |> filter(PARAMETRE_LIBELLE == "Copper") |> pull("RESULTAT_ng_glw"),
+    PARAMETRE_LIBELLE == "Mercury" & group == "Oyster" ~ RESULTAT_ng_glw *
+      data_contamination_convert_factors |> filter(PARAMETRE_LIBELLE == "Mercury") |> pull("RESULTAT_ng_glw"),
+    TRUE ~ RESULTAT_ng_glw
+  ))
 
-
-
-
-
-usethis::use_data(data_ROCCHMV_contamination, overwrite = TRUE)
-
-
-# =====================================================
-# 04. Sampling maps
-# =====================================================
-
-# ---- Gironde ----
-ggmap_ROCCHMV_gironde <- plot_estuary_map(
-  data = data_ROCCHMV_contamination |> filter(estuary == "Gironde"),
-  estuary_name = "Gironde", colour_var = ggplot2_colors(3)[3],
-  size_var = 3
-) + theme_esteem() +
-  theme(legend.position = "none", axis.title = ggplot2::element_blank())
-
-# ---- Loire ----
-ggmap_ROCCHMV_loire <- plot_estuary_map(
-  data = data_ROCCHMV_contamination |> filter(estuary == "Loire"),
-  estuary_name = "Loire", colour_var = ggplot2_colors(3)[2],
-  size_var = 3
-) + theme_esteem() +
-  theme(legend.position = "none", axis.title = ggplot2::element_blank())
-
-
-# ---- Seine ----
-ggmap_ROCCHMV_seine <- plot_estuary_map(
-  data = data_ROCCHMV_contamination |> filter(estuary == "Seine"),
-  estuary_name = "Seine", colour_var = ggplot2_colors(3)[1],
-  size_var = 3
-) + theme_esteem() +
-  theme(legend.position = "none", axis.title = ggplot2::element_blank())
-
-# ---- Cowplot ----
-ggmap_ROCCHMV <- plot_grid(ggmap_ROCCHMV_gironde,
-                           ggmap_ROCCHMV_loire,
-                           ggmap_ROCCHMV_seine,
-                           nrow = 3, ncol = 1, rel_heights = c(1.4,1,1))
-
-ggsave(plot = ggmap_ROCCHMV, filename = "inst/mat_meth/contamination/ggmap_ROCCHMV.jpg",
-       height = 10, width = 7, units = "cm")
+usethis::use_data(data_contamination, overwrite = TRUE)

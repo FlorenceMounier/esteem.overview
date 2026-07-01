@@ -14,29 +14,11 @@ library(here)
 
 
 For copper oyster and mussels bioaccumulation is very different
-```{r}
-data_metals |> 
-  filter(ESTUARY == "Loire") |>
-  ggplot() +
-  aes(x = YEAR, y = RESULTAT, colour = espece) +
-  geom_line() +
-  facet_wrap(vars(PARAMETRE_LIBELLE), scales = "free_y") +
-  theme_esteem()
-```
+
 
 Estimate species conversion factor from data in the Loire estuary (2017-2024)
 ```{r}
-data_metals <- data_metals |> 
-  filter(espece != "Ruditapes philippinarum (palourde japonaise)") |>
-  mutate(SPECIES = case_when(
-    espece == "Crassostrea gigas (huître creuse)" ~ "oyster",
-    espece %in% c("Mytilus edulis (moule commune)",
-                  "Mytilus edulis + galloprovincialis (moule)") ~ "mussel"
-  ))
 
-data_metals_loire <- data_metals |> 
-  filter(ESTUARY == "Loire", YEAR >= 2017)
-  
 factors_metals <- data_metals_loire |> 
   group_by(PARAMETRE_LIBELLE, SPECIES) |> 
   summarise(median_RESULTAT = median(RESULTAT, na.rm = TRUE), .groups = "drop")  |> 
