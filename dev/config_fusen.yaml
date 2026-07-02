@@ -72,9 +72,12 @@ flat_long_term_trends.Rmd:
   path: dev/flat_long_term_trends.Rmd
   state: active
   R:
-  - R/safe_mmkh.R
-  - R/safe_sen.R
-  - R/test_monotonic_trend.R
+  - R/safe_gam.R
+  - R/run_gam_by_parameter.R
+  - R/get_group_vars_from_grouping.R
+  - R/auto_plot_layout.R
+  - R/plot_trend_one_parameter.R
+  - R/plot_trends_by_parameter.R
   tests: []
   vignettes: []
   inflate:
@@ -106,21 +109,6 @@ flat_maps.Rmd:
     check: false
     document: true
     overwrite: ask
-    clean: ask
-    codecov: false
-flat_phychem.Rmd:
-  path: dev/flat_phychem.Rmd
-  state: active
-  R: R/plot_physicochem_parameter_trend.R
-  tests: []
-  vignettes: []
-  inflate:
-    flat_file: dev/flat_phychem.Rmd
-    vignette_name: ~
-    open_vignette: true
-    check: false
-    document: true
-    overwrite: 'yes'
     clean: ask
     codecov: false
 flat_utils.Rmd:

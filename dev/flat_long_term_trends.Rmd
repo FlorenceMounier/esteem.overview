@@ -14,92 +14,602 @@ library(testthat)
 pkgload::load_all(export_all = FALSE)
 ```
 
-
-# safe_mmkh
- 
-```{r function-safe_mmkh}
-#' Mann-Kendall test p-value
-#' 
-#' @param x vector
-#' 
-#' @importFrom modifiedmk mmkh
-#'
-#' @return function
-#' 
-#' @noRd
-safe_mmkh <- function(x) {
-  x <- as.numeric(x)
-  x <- x[!is.na(x)]
-
-  if (length(x) < 4) return(NA_real_)
-
-  modifiedmk::mmkh(x)[["new P-value"]]
-}
-```
-  
-# safe_sen
- 
-```{r function-safe_sen}
-#' Sen's slope with NAs
-#' 
-#' @param x vector
-#' 
-#' @importFrom trend sens.slope
-#'
-#' @return Sen's slope
-#' 
-#' @noRd
-safe_sen <- function(x) {
-  x <- na.omit(x)
-
-  if(length(x) < 2) return(NA_real_)
-
-  as.numeric(trend::sens.slope(x)$estimates)
-}
-```
-
-# test_monotonic_trend
-
-```{r function-test_monotonic_trend}
-#' Get Mann-Kendall test p-value and Sen's slope values by estuary, haline_zone and season
-#' 
-#' @param data tibble with estuary, haline_zone, season, parameter, RESULTAT variables
-#' @param parameter character, variable which trend is to be studied
-#'
-#' @return tibble with estuary, haline_zone, season, mk_parameter_p, sen_parameter_slope 
-#' 
-#' @noRd
-test_monotonic_trend <- function(data, parameter){
+# safe_gam
     
-  filtered_data <- data |>
-    filter(PARAMETRE_LIBELLE == {{parameter}}) |> 
-    group_by(estuary, haline_zone, year, season) |> 
-    summarise(RESULTAT = mean(RESULTAT, na.rm = TRUE), .groups = "drop") |> 
-    tidyr::complete(estuary, haline_zone, season, year)
+```{r function-safe_gam}
+#' Title
+#' 
+#' p_value < 0.05 : effet significatif de l’année.
+#' edf ≈ 1 : tendance quasi linéaire.
+#' edf > 1.5–2 : trajectoire non linéaire, donc potentiellement plus intéressante que le simple Mann-Kendall.
+#' deviance_explained : part de variabilité expliquée par le modèle.
+#' 
+#' @param df 
+#'
+#' @return
+#' 
+#' @noRd
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(mgcv)
+library(rlang)
+library(tibble)
+
+safe_gam <- function(df,
+                     response_col = "RESULTAT",
+                     year_col = "year",
+                     k_max = 6,
+                     min_n = 6,
+                     min_years = 6) {
   
-  # Mann-Kendall non-monotonic trend test with autocorrelation correction
-  mk_parameter_p <- filtered_data |> 
-    arrange(estuary, haline_zone, season, year) |>
-    group_by(estuary, haline_zone, season) |> 
-    summarise(mk_parameter = safe_mmkh(RESULTAT), .groups = "drop")
+  response_sym <- sym(response_col)
+  year_sym <- sym(year_col)
   
-  # Theil–Sen estimator
-  sen_parameter_slope <- filtered_data |> 
-    arrange(estuary, haline_zone, season, year) |>
-    group_by(estuary, haline_zone, season) |> 
-    summarise(sen_slope_parameter = safe_sen(RESULTAT), .groups = "drop")
+  df_mod <- df |>
+    filter(
+      !is.na(!!response_sym),
+      !is.na(!!year_sym)
+    ) |>
+    arrange(!!year_sym)
   
-  # Join
-  monotonic_stats <- full_join(
-  mk_parameter_p,
-  sen_parameter_slope,
-  by = c("estuary", "haline_zone", "season")
-)
+  n_obs <- nrow(df_mod)
+  n_years <- n_distinct(df_mod[[year_col]])
   
-  return(monotonic_stats)
+  if (n_obs < min_n || n_years < min_years) {
+    return(tibble(
+      n = n_obs,
+      n_years = n_years,
+      edf = NA_real_,
+      F = NA_real_,
+      p_value = NA_real_,
+      deviance_explained = NA_real_,
+      trend_type = "not tested"
+    ))
+  }
+  
+  k_use <- min(k_max, n_years - 1)
+  
+  if (k_use < 3) {
+    return(tibble(
+      n = n_obs,
+      n_years = n_years,
+      edf = NA_real_,
+      F = NA_real_,
+      p_value = NA_real_,
+      deviance_explained = NA_real_,
+      trend_type = "not tested"
+    ))
+  }
+  
+  formula_gam <- as.formula(
+    paste0(response_col, " ~ s(", year_col, ", k = ", k_use, ")")
+  )
+  
+  mod <- tryCatch(
+    mgcv::gam(
+      formula_gam,
+      data = df_mod,
+      method = "REML"
+    ),
+    error = function(e) NULL
+  )
+  
+  if (is.null(mod)) {
+    return(tibble(
+      n = n_obs,
+      n_years = n_years,
+      edf = NA_real_,
+      F = NA_real_,
+      p_value = NA_real_,
+      deviance_explained = NA_real_,
+      trend_type = "model failed"
+    ))
+  }
+  
+  sm <- summary(mod)
+  
+  edf <- sm$s.table[1, "edf"]
+  F_value <- sm$s.table[1, "F"]
+  p_value <- sm$s.table[1, "p-value"]
+  dev_exp <- sm$dev.expl
+  
+  trend_type <- case_when(
+    is.na(p_value) ~ "not tested",
+    p_value >= 0.05 ~ "no significant temporal pattern",
+    p_value < 0.05 & edf <= 1.5 ~ "linear / monotonic temporal trend",
+    p_value < 0.05 & edf > 1.5 ~ "non-linear temporal pattern"
+  )
+  
+  gam_results <- tibble(
+    n = n_obs,
+    n_years = n_years,
+    edf = edf,
+    F = F_value,
+    p_value = p_value,
+    deviance_explained = dev_exp,
+    trend_type = trend_type
+  )
+  
+  return(gam_results)
 }
 ```
 
+# run_gam_by_parameter
+
+```{r function-run_gam_by_parameter}
+#' Title
+#' 
+#' Description
+#' 
+#' @param data 
+#' @param response_col character, name of the column containing measurements values
+#' @param year_col character, name of the column containing years
+#' @param group_vars vector of characters, groupin variables
+#' @param all_group_combinations logical, TRUE test all combinations of the different variables from group_vars, FALSE test only with the combination of the group_vars given
+#' @param k_max 
+#' @param min_n 
+#' @param min_years 
+#'
+#' @return
+#' 
+#' @export
+run_gam_by_parameter <- function(data,
+                                 response_col = "RESULTAT",
+                                 parameter_col = "PARAMETRE_LIBELLE",
+                                 year_col = "year",
+                                 group_vars = c("estuary", "haline_zone", "season"),
+                                 all_group_combinations = FALSE,
+                                 k_max = 6,
+                                 min_n = 6,
+                                 min_years = 6) {
+  
+  parameter_sym <- sym(parameter_col)
+  
+  # Vérifications simples
+  required_cols <- c(parameter_col, year_col, response_col, group_vars)
+  missing_cols <- setdiff(required_cols, names(data))
+  
+  if (length(missing_cols) > 0) {
+    stop(
+      "Colonnes absentes du tableau : ",
+      paste(missing_cols, collapse = ", ")
+    )
+  }
+  
+  # Crée les combinaisons de variables de groupement si demandé
+  if (all_group_combinations) {
+    
+    grouping_list <- map(
+      seq_along(group_vars),
+      ~ combn(group_vars, .x, simplify = FALSE)
+    ) |>
+      flatten()
+    
+  } else {
+    
+    grouping_list <- list(group_vars)
+  }
+  
+  map_dfr(grouping_list, function(current_group_vars) {
+    
+    grouping_syms <- syms(c(parameter_col, current_group_vars))
+    
+    data |>
+      group_by(!!!grouping_syms) |>
+      nest() |>
+      mutate(
+        gam_stats = map(
+          data,
+          ~ safe_gam(
+            df = .x,
+            response_col = response_col,
+            year_col = year_col,
+            k_max = k_max,
+            min_n = min_n,
+            min_years = min_years
+          )
+        ),
+        grouping = paste(current_group_vars, collapse = " + ")
+      ) |>
+      select(-data) |>
+      unnest(gam_stats)
+  })
+}
+```
+
+# get_group_vars_from_grouping
+    
+```{r function-get_group_vars_from_grouping}
+#' Tranform characters separated by "+" in a vector of characters
+#' 
+#' @return vector of characters
+#' 
+#' @noRd
+get_group_vars_from_grouping <- function(grouping) {
+  
+  if (is.null(grouping) || is.na(grouping)) {
+    return(character(0))
+  }
+  
+  grouping |>
+    stringr::str_split("\\s*\\+\\s*") |>
+    purrr::pluck(1)
+}
+```
+  
+# auto_plot_layout
+  
+```{r function-auto_plot_layout}
+#' Create a layout automatically
+#' 
+#' It determines what to set for `colour`, `facet_rows` and `facet_cols` based on the variables present in `grouping`.
+#' 
+#' @return
+#' 
+#' @noRd
+auto_plot_layout <- function(group_vars) {
+  
+  n_vars <- length(group_vars)
+  
+  if (n_vars == 0) {
+    return(list(
+      colour_var = NULL,
+      facet_rows = NULL,
+      facet_cols = NULL
+    ))
+  }
+  
+  if (n_vars == 1) {
+    return(list(
+      colour_var = group_vars[1],
+      facet_rows = NULL,
+      facet_cols = NULL
+    ))
+  }
+  
+  if (n_vars == 2) {
+    return(list(
+      colour_var = group_vars[2],
+      facet_rows = NULL,
+      facet_cols = group_vars[1]
+    ))
+  }
+  
+  if (n_vars >= 3) {
+    return(list(
+      colour_var = group_vars[3],
+      facet_rows = group_vars[1],
+      facet_cols = group_vars[2]
+    ))
+  }
+}
+```
+  
+
+# plot_trend_one_parameter
+
+```{r function-plot_trend_one_parameter}
+#' Graph function for time-series of one parameter
+#' 
+#' Description
+#' 
+#' @return ggplot
+#' 
+#' @noRd
+plot_trend_one_parameter <- function(data,
+                                     gam_results,
+                                     parameter_value,
+                                     response_col = "RESULTAT",
+                                     x_col = "year_month",
+                                     parameter_col = "PARAMETRE_LIBELLE",
+                                     grouping = NULL,
+                                     colour_var = NULL,
+                                     facet_rows = NULL,
+                                     facet_cols = NULL,
+                                     auto_layout = TRUE,
+                                     point_alpha = 0.5,
+                                     point_size = 1,
+                                     smooth = TRUE,
+                                     smooth_method = "gam",
+                                     smooth_formula = y ~ s(x, k = 6),
+                                     symbol_linear = "▲",
+                                     symbol_nonlinear = "●",
+                                     symbol_size = 5) {
+  
+  # Sécurité alpha
+  point_alpha <- as.numeric(point_alpha)[1]
+  if (is.na(point_alpha)) point_alpha <- 0.5
+  
+  # Si grouping non fourni, on essaie de le déduire automatiquement
+  if (is.null(grouping) && "grouping" %in% names(gam_results)) {
+    unique_grouping <- unique(gam_results$grouping)
+    unique_grouping <- unique_grouping[!is.na(unique_grouping)]
+    
+    if (length(unique_grouping) == 1) {
+      grouping <- unique_grouping
+    }
+  }
+  
+  group_vars <- get_group_vars_from_grouping(grouping)
+  
+  if (auto_layout && length(group_vars) > 0) {
+    
+    layout <- auto_plot_layout(group_vars)
+    
+    if (is.null(colour_var)) {
+      colour_var <- layout$colour_var
+    }
+    
+    if (is.null(facet_rows)) {
+      facet_rows <- layout$facet_rows
+    }
+    
+    if (is.null(facet_cols)) {
+      facet_cols <- layout$facet_cols
+    }
+  }
+  
+  join_vars <- c(parameter_col, group_vars)
+  
+  data_param <- data |>
+    filter(.data[[parameter_col]] == parameter_value) |>
+    filter(!is.na(.data[[response_col]]), !is.na(.data[[x_col]]))
+  
+  if (nrow(data_param) == 0) {
+    warning("Aucune donnée pour le paramètre : ", parameter_value)
+    return(NULL)
+  }
+  
+  gam_param <- gam_results |>
+    filter(.data[[parameter_col]] == parameter_value)
+  
+  if (!is.null(grouping) && "grouping" %in% names(gam_param)) {
+    gam_param <- gam_param |>
+      filter(.data[["grouping"]] == grouping)
+  }
+  
+  gam_symbols <- gam_param |>
+    mutate(
+      trend_symbol = case_when(
+        stringr::str_detect(
+          trend_type,
+          stringr::regex("non-linear", ignore_case = TRUE)
+        ) &
+          !stringr::str_detect(
+            trend_type,
+            stringr::regex("no significant", ignore_case = TRUE)
+          ) ~ symbol_nonlinear,
+        
+        stringr::str_detect(
+          trend_type,
+          stringr::regex("linear|monotonic", ignore_case = TRUE)
+        ) &
+          !stringr::str_detect(
+            trend_type,
+            stringr::regex("no significant", ignore_case = TRUE)
+          ) ~ symbol_linear,
+        
+        TRUE ~ NA_character_
+      )
+    ) |>
+    filter(!is.na(trend_symbol))
+  
+  # Dernier point observé de chaque série
+  if (length(group_vars) > 0) {
+    
+    last_points <- data_param |>
+      group_by(across(all_of(group_vars))) |>
+      arrange(.data[[x_col]], .by_group = TRUE) |>
+      slice_tail(n = 1) |>
+      ungroup()
+    
+  } else {
+    
+    last_points <- data_param |>
+      arrange(.data[[x_col]]) |>
+      slice_tail(n = 1)
+  }
+  
+  # Jointure avec les résultats GAM
+  if (length(group_vars) > 0 && all(join_vars %in% names(gam_symbols))) {
+    
+    last_points <- last_points |>
+      left_join(
+        gam_symbols |>
+          select(all_of(join_vars), trend_type, trend_symbol),
+        by = join_vars
+      ) |>
+      filter(!is.na(trend_symbol))
+    
+  } else if (nrow(gam_symbols) > 0) {
+    
+    last_points <- last_points |>
+      mutate(
+        trend_type = gam_symbols$trend_type[1],
+        trend_symbol = gam_symbols$trend_symbol[1]
+      ) |>
+      filter(!is.na(trend_symbol))
+    
+  } else {
+    
+    last_points <- last_points |>
+      mutate(
+        trend_type = NA_character_,
+        trend_symbol = NA_character_
+      ) |>
+      filter(!is.na(trend_symbol))
+  }
+  
+  # ------------------------------------------------------------------
+  # ggplot robuste
+  # ------------------------------------------------------------------
+  
+  if (is.null(colour_var)) {
+    
+    p <- ggplot(
+      data_param,
+      aes(
+        x = .data[[x_col]],
+        y = .data[[response_col]]
+      )
+    )
+    
+  } else {
+    
+    p <- ggplot(
+      data_param,
+      aes(
+        x = .data[[x_col]],
+        y = .data[[response_col]],
+        colour = .data[[colour_var]]
+      )
+    )
+  }
+  
+  p <- p +
+    geom_point(
+      alpha = point_alpha,
+      size = point_size
+    )
+  
+  if (smooth) {
+    p <- p +
+      geom_smooth(
+        method = smooth_method,
+        formula = smooth_formula,
+        se = TRUE
+      )
+  }
+  
+  # Symboles de tendance
+  if (nrow(last_points) > 0) {
+    
+    if (is.null(colour_var)) {
+      
+      p <- p +
+        geom_text(
+          data = last_points,
+          aes(
+            x = .data[[x_col]],
+            y = .data[[response_col]],
+            label = trend_symbol
+          ),
+          size = symbol_size,
+          vjust = -0.8,
+          show.legend = FALSE
+        )
+      
+    } else {
+      
+      p <- p +
+        geom_text(
+          data = last_points,
+          aes(
+            x = .data[[x_col]],
+            y = .data[[response_col]],
+            label = trend_symbol,
+            colour = .data[[colour_var]]
+          ),
+          size = symbol_size,
+          vjust = -0.8,
+          show.legend = FALSE
+        )
+    }
+  }
+    
+  # Facettes
+  if (!is.null(facet_rows) || !is.null(facet_cols)) {
+    
+    rows <- if (!is.null(facet_rows)) vars(!!sym(facet_rows)) else vars()
+    cols <- if (!is.null(facet_cols)) vars(!!sym(facet_cols)) else vars()
+    
+    p <- p +
+      facet_grid(
+        rows = rows,
+        cols = cols,
+        scales = "free_y"
+      )
+  }
+  
+  p +
+    labs(
+      title = parameter_value,
+      x = x_col,
+      y = response_col,
+      colour = colour_var
+    ) +
+    theme_bw() +
+    theme(
+      strip.background = element_rect(fill = "grey95"),
+      panel.grid.minor = element_blank()
+    )
+}
+```
+
+# plot_trends_by_parameter
+    
+```{r function-plot_trends_by_parameter}
+#' Automate graph function for time-series across all parameters
+#' 
+#' Description
+#' 
+#' @return list of ggplots
+#' 
+#' @export
+plot_trends_by_parameter <- function(data,
+                                     gam_results,
+                                     response_col = "RESULTAT",
+                                     x_col = "year_month",
+                                     parameter_col = "PARAMETRE_LIBELLE",
+                                     grouping = NULL,
+                                     colour_var = NULL,
+                                     facet_rows = NULL,
+                                     facet_cols = NULL,
+                                     auto_layout = TRUE,
+                                     ...) {
+  
+  # Déduction automatique du grouping si un seul existe dans gam_results
+  if (is.null(grouping) && "grouping" %in% names(gam_results)) {
+    
+    unique_grouping <- unique(gam_results$grouping)
+    unique_grouping <- unique_grouping[!is.na(unique_grouping)]
+    
+    if (length(unique_grouping) == 1) {
+      grouping <- unique_grouping
+    }
+  }
+  
+  parameters <- data |>
+    distinct(.data[[parameter_col]]) |>
+    arrange(.data[[parameter_col]]) |>
+    pull(.data[[parameter_col]])
+  
+  plots <- parameters |>
+    set_names() |>
+    map(
+      ~ plot_trend_one_parameter(
+        data = data,
+        gam_results = gam_results,
+        parameter_value = .x,
+        response_col = response_col,
+        x_col = x_col,
+        parameter_col = parameter_col,
+        grouping = grouping,
+        colour_var = colour_var,
+        facet_rows = facet_rows,
+        facet_cols = facet_cols,
+        auto_layout = auto_layout,
+        ...
+      )
+    )
+  
+  plots
+}
+```
+  
+# Inflate  
+  
 ```{r development-inflate, eval=FALSE}
 # Run but keep eval=FALSE to avoid infinite loop
 # Execute in the console directly

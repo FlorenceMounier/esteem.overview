@@ -138,7 +138,7 @@ In contrast, @blanchet2018habitats derived intertidal surface area from habitat 
 
 ```{r fig.cap="Estimated intertidal surface areas.", fig.width=6, fig.height=4}
 knitr::include_graphics(
-  get_shortened_path("mat_meth/ggplot_intertidal_areas.jpg")
+  get_shortened_path("mat_meth/intertidal_surface/ggplot_raw_intertidal_areas.jpg")
 )
 ```
 
@@ -263,15 +263,28 @@ Long-term analyses were conducted on physico-chemical parameters monitored over 
 
 #### Individual parameter analyses
 
-For each time series, temporal dynamics were visualized using a LOESS (locally estimated scatterplot smoothing) curve fitted with the geom_smooth() function from the {ggplot2} package in R. This non-parametric smoothing approach was used to highlight long-term patterns while reducing short-term variability.
+For each time series of abiotic and contamination parameters, temporal dynamics were visualized using a LOESS (locally estimated scatterplot smoothing) curve fitted with the geom_smooth() function from the {ggplot2} package in R. This non-parametric smoothing approach was used to highlight long-term patterns while reducing short-term variability.
 
-For time series displaying an apparent monotonic trend, the significance of the trend was assessed using the modified Mann–Kendall test for autocorrelated data, implemented with the mmkh() function from the {modifiedmk} package. Depending on whether the trend was identified as monotonic or non-monotonic, different analytical approaches were applied.
+Long-term temporal trends in abiotic and contamination parameters were assessed using generalized additive models (GAMs). This approach was chosen to allow the detection of both monotonic and non-linear temporal patterns, which may not be adequately captured by classical trend tests such as Mann–Kendall when environmental trajectories show temporal shifts, plateaus, or reversals.
 
-For significantly monotonic trends, trend magnitude was estimated using the Theil–Sen slope estimator, computed with the sens.slope() function from the {trend} package. In addition, differences between the beginning and the end of the study period were evaluated by comparing observations from the first and last ten years of each time series using a Mann–Whitney U test (Wilcoxon rank-sum test), implemented with the wilcox.test() function in R.
+For each environmental parameter, observations were first aggregated within each combination of estuary, haline zone, and season. Annual mean values were calculated from all available observations after excluding missing values. This aggregation reduced the influence of short-term variability and allowed the analysis to focus on long-term changes.
 
-For legislated contaminants exhibiting a significant decreasing trend, the time required for concentrations to fall below the Environmental Quality Standard (EQS) was estimated assuming a constant linear rate of decline derived from the Theil–Sen slope estimate. This approach provided an approximate projection of the time required to achieve compliance with the EQS.
+For each parameter and each selected grouping structure, a separate GAM was fitted using year as the explanatory variable:
 
-For time series displaying either a visually non-monotonic pattern or a non-significant Mann–Kendall trend, structural changes were investigated using change-point analysis. Breakpoints associated with changes in both mean and variance were identified using the cpt.meanvar() function from the {changepoint} package.
+$$
+Y_t = \alpha + s(\mathrm{year}_t) + \varepsilon_t
+$$
+
+where ($Y_t$) is the annual mean value of the abiotic parameter in year ($t$), ($\alpha$) is the intercept, ($s(\text{year}_t$)) is a penalized smoothing function of time, and ($\varepsilon_t$) is the residual error term. Models were fitted using restricted maximum likelihood (REML), as implemented in the `mgcv` package in R.
+
+The term ($s(\mathrm{year}_t)$) represents a penalized regression spline describing the temporal variation in the parameter. This smooth term allows the relationship between the parameter and time to deviate from linearity, while penalization controls the degree of smoothness to avoid overfitting short-term fluctuations. The maximum basis dimension of the smooth term was restricted to avoid overfitting and to focus on broad temporal patterns rather than short-term fluctuations. Specifically, the value of (k) was set to a maximum of 6, or to the number of distinct years minus one when fewer years were available. Models were only fitted when at least six observations and six distinct years were available for a given time series. Otherwise, the trend was not tested.
+
+The significance of the temporal smooth was used to determine whether there was evidence for a long-term temporal pattern. The estimated degrees of freedom (edf) of the smooth term were used to distinguish approximately linear or monotonic trends from non-linear trajectories. Significant smooths with edf close to 1 were interpreted as approximately linear or monotonic temporal trends, whereas significant smooths with higher edf values were interpreted as evidence of non-linear temporal patterns. Non-significant smooths were interpreted as providing no evidence for a long-term temporal trend.
+
+This procedure was applied independently to each enviromental parameter and could be performed at different spatial and seasonal resolutions, including by estuary, haline zone, season, or combinations of these factors. This allowed the detection of broad temporal changes while accounting for potential differences among estuaries, salinity zones, and seasonal periods.
+
+For legislated contaminants exhibiting a significant decreasing trend, the time required for concentrations to fall below the Environmental Quality Standard (EQS) was estimated assuming ????. This approach provided an approximate projection of the time required to achieve compliance with the EQS.
+
 
 #### Relationships among parameters
 
@@ -296,9 +309,69 @@ Recent trends were studied from the year of the first and the last biotic data f
 
 ```{r}
 knitr::include_graphics(
-get_shortened_path("mat_meth/haline_zones/ggplot_haline_zones.png")
+get_shortened_path("mat_meth/haline_zones/ggplot_haline_zones.jpg")
 )
 ```
+
+## Long term trends
+
+triangle: significant linear/monotonic trend
+circle: significant non-linear trend
+
+### Abiotic parameters
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/long_term_trends/abiotic/ggplot_surface.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/long_term_trends/abiotic/ggplot_flow.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/long_term_trends/abiotic/ggplot_temperature.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/long_term_trends/abiotic/ggplot_salinity.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/long_term_trends/abiotic/ggplot_O2sat.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/long_term_trends/abiotic/ggplot_risk_NH4_temp.jpg")
+)
+```
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/long_term_trends/abiotic/ggplot_hydro_stress.jpg")
+)
+```
+
+### Contamination
+
+#### Metals
+
+```{r}
+knitr::include_graphics(
+get_shortened_path("results/long_term_trends/contamination/gg_metal.jpg")
+)
+```
+
 
 ## PCA on physico-chemical variables by estuary
 

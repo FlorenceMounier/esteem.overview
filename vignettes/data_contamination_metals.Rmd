@@ -43,35 +43,6 @@ data_metals <- data_metals |>
   ))
 ```
 
-## Get unit of measurment
-
-
-```{r}
-data_metals <- data_metals |> 
-  mutate(UNITE = "µg/g dw") |> 
-  # Get only one value per year
-  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE) |>
-  mutate(RESULTAT = mean(RESULTAT)) |> 
-  ungroup() |> 
-  # Round result values
-  mutate(RESULTAT = round(RESULTAT, digits = 3))
-```
-
-Transform all results in µg/g ww (same as µg/kg):
-```{r}
-data_metals_ww <- data_metals |>
-  left_join(esteem.overview::data_ROCCHMV_bio, by = "ESTUARY") |> 
-  # transformation into ww concentrations
-  mutate(RESULTAT = RESULTAT * (`Matière sèche_%` / 100)) |>  
-  # Change to unified unit
-  mutate(UNITE = "µg/g ww") |> 
-  # Get only one value per year
-  group_by(ESTUARY, YEAR, PARAMETRE_LIBELLE)  |>
-  mutate(RESULTAT = mean(RESULTAT)) |> 
-  ungroup() |>
-  # Round result values
-  mutate(RESULTAT = round(RESULTAT, digits = 3))
-```
 
 ## Identify first and last periods
 

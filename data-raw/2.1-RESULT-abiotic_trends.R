@@ -16,7 +16,7 @@
 #  - ggplot_hydro_stress.jpg in /int/mat_meth/phychem
 #  - ggplot_hydro_stress_map.jpg in /int/mat_meth/phychem
 # Author: FM
-# Date: 2026-06-17
+# Date: 2026-07-02
 # =====================================================
 
 # =====================================================
@@ -28,86 +28,191 @@ library(tidyverse, quietly = TRUE)
 `%!in%` = Negate(`%in%`)
 
 # data from Quadrige/Sextant & POMET
-data(data_physico_chem_complete_full)
+data(data_abiotic)
+data(data_contamination)
 
 
 # =====================================================
-# 01. Temperature trend
+# 01. Abiotic parameters trends
 # =====================================================
 
-# Optimum seabass & common sole: 24°C
-
-# ---- Trend ----
-
-ggplot_temperature <- plot_physicochem_parameter_trend(
-  data = data_physico_chem_complete_full,
-  parameter = "Temperature",
-  threshold = 24,
-  ylab = "Temperature (°C)"
+# ---- GAM results ----
+gam_results_abiotic <- run_gam_by_parameter(
+  data = data_abiotic,
+  response_col = "RESULTAT",
+  group_vars = c("estuary", "haline_zone", "season"),
+  all_group_combinations = FALSE
 )
-ggplot_temperature
 
+# ---- Plots ----
+plots_results_abiotic <- plot_trends_by_parameter(
+  data = data_abiotic,
+  gam_results = gam_results_abiotic,
+  response_col = "RESULTAT",
+  x_col = "year_month"
+)
+# "Ammonium", "Flow", "O2sat", "Salinity", "Surface area", "Temperature",
+# "hydro_stress", "risk_NH4_temp"
+
+# Surface area
+ggplot_surface  = plots_results_abiotic[["Surface area"]] +
+  theme(axis.title.x = element_blank())
+ggsave(ggplot_surface,
+       filename = "inst/results/long_term_trends/abiotic/ggplot_surface.jpg")
+
+# Flow
+ggplot_flow  = plots_results_abiotic[["Flow"]] +
+  theme(axis.title.x = element_blank())
+ggsave(ggplot_flow,
+       filename = "inst/results/long_term_trends/abiotic/ggplot_flow.jpg")
+
+# Temperature (Optimum seabass & common sole: 24°C)
+ggplot_temperature = plots_results_abiotic[["Temperature"]] +
+  geom_hline(yintercept = 24) +
+  theme(axis.title.x = element_blank())
 ggsave(ggplot_temperature,
-       filename = "inst/mat_meth/phychem/ggplot_temperature.jpg")
+       filename = "inst/results/long_term_trends/abiotic/ggplot_temperature.jpg")
 
-test_monotonic_trend(data = data_physico_chem_complete_full,
-                     parameter = "Temperature")
+# Salinity
+ggplot_salinity  = plots_results_abiotic[["Salinity"]] +
+  labs(y = "Salinity") +
+  theme(axis.title.x = element_blank())
+ggsave(ggplot_salinity,
+       filename = "inst/results/long_term_trends/abiotic/ggplot_salinity.jpg")
 
-# ---- Map ----
+# O2sat
+ggplot_O2sat  = plots_results_abiotic[["O2sat"]] +
+  labs(y = "Dissolved oxygen saturation (%)") +
+  theme(axis.title.x = element_blank())
+ggsave(ggplot_O2sat,
+       filename = "inst/results/long_term_trends/abiotic/ggplot_O2sat.jpg")
+
+# risk_NH4_temp
+ggplot_risk_NH4_temp  = plots_results_abiotic[["risk_NH4_temp"]] +
+  labs(y = "Ammonia formation toxicity indicator") +
+  theme(axis.title.x = element_blank())
+ggsave(ggplot_risk_NH4_temp,
+       filename = "inst/results/long_term_trends/abiotic/ggplot_risk_NH4_temp.jpg")
+
+# hydro_stress
+ggplot_hydro_stress  = plots_results_abiotic[["hydro_stress"]] +
+  geom_hline(yintercept = 0) +
+  labs(y = "Stress indicator") +
+  theme(axis.title.x = element_blank())
+ggsave(ggplot_hydro_stress,
+       filename = "inst/results/long_term_trends/abiotic/ggplot_hydro_stress.jpg")
+
+
+# =====================================================
+# 02. Contamination trends
+# =====================================================
+
+# ---- GAM results ----
+gam_results_contamination_ng_gdw <- run_gam_by_parameter(
+  data = data_contamination,
+  response_col = "RESULTAT_ng_gdw",
+  group_vars = c("estuary")
+)
+
+gam_results_contamination_ng_gdw |>
+  filter(p_value < 0.05) |>
+  arrange(PARAMETRE_LIBELLE, grouping, p_value) |>
+  ungroup() |>
+  distinct(PARAMETRE_LIBELLE)
+
+gam_results_contamination_ng_gww <- run_gam_by_parameter(
+  data = data_contamination,
+  response_col = "RESULTAT_ng_gww",
+  group_vars = c("estuary")
+)
+
+gam_results_contamination_ng_glw <- run_gam_by_parameter(
+  data = data_contamination,
+  response_col = "RESULTAT_ng_glw",
+  group_vars = c("estuary")
+)
+
+# ---- Plots ----
+
+plots_results_contamination_ng_dw <- plot_trends_by_parameter(
+  data = data_contamination,
+  gam_results = gam_results_contamination,
+  response_col = "RESULTAT_ng_gdw",
+  x_col = "year"
+)
+
+plots_results_contamination_ng_ww <- plot_trends_by_parameter(
+  data = data_contamination,
+  gam_results = gam_results_contamination,
+  response_col = "RESULTAT_ng_gww",
+  x_col = "year"
+)
+
+plots_results_contamination_ng_lw <- plot_trends_by_parameter(
+  data = data_contamination,
+  gam_results = gam_results_contamination,
+  response_col = "RESULTAT_ng_glw",
+  x_col = "year"
+)
+
+# "Anthracene", "Benzo-anthr.", "Benzo-peryl.", "Benzo-pyr.",
+# "CB 101", "CB 118", "CB 138", "CB 153", "CB 180", "CB 28", "CB 52",
+# "Cadmium", "Copper", "DDT total", "Fluoranthene", "Gamma-HCH",
+# "Lead", "Mercury", "Naphtalene", "PFOS", "Phenanthrene", "Pyrene",
+# "TBT", "Wsum_DLC", "sum_HBCDDs", "sum_PBDEs"
+
+gg_mercury <- plots_results_contamination_ng_ww[["Mercury"]] +
+  geom_hline(yintercept = 500)  +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = "none")
+
+gg_cadmium <- plots_results_contamination_ng_ww[["Cadmium"]] +
+  geom_hline(yintercept = 1000)  +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = "none")
+
+gg_lead <- plots_results_contamination_ng_ww[["Lead"]] +
+  geom_hline(yintercept = 1500)  +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = "bottom")
+
+gg_copper <- plots_results_contamination_ng_ww[["Copper"]] +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = "bottom")
+
+
+# ---- Cowplot ----
+gg_metal <- plot_grid(gg_mercury, gg_cadmium, gg_lead, gg_copper,
+                      nrow = 2, ncol = 2, rel_heights = c(0.75, 1))
+
+ggsave(plot = gg_metal,
+       filename = "inst/results/long_term_trends/contamination/gg_metal.jpg")
+
+
+# =====================================================
+# 03. Map
+# =====================================================
+
+# ---- Temperature ----
 
 plot_maps_parameter_years(
-  data = data_physico_chem_filtered,
+  data = data_abiotic,
   parameter = "Temperature",
   filename = "inst/mat_meth/phychem/ggplot_temperature_map.jpg"
 )
 
-
-# =====================================================
-# 02. Salinity trend
-# =====================================================
-
-# ---- Trend ----
-
-ggplot_salinity <- plot_physicochem_parameter_trend(
-  data = data_physico_chem_complete_full,
-  parameter = "Salinity",
-  threshold = NULL,
-  ylab = "Salinity"
-)
-
-ggplot_salinity
-
-ggsave(ggplot_salinity,
-       filename = "inst/mat_meth/phychem/ggplot_salinity.jpg")
-
-# ---- Map ----
+# ---- Salinity ----
 
 plot_maps_parameter_years(
-  data = data_physico_chem_filtered,
+  data = data_abiotic,
   parameter = "Salinity",
   filename = "inst/mat_meth/phychem/ggplot_salinity_map.jpg"
 )
-
-
-# =====================================================
-# 03. O2sat trend
-# =====================================================
-
-# ---- Trend ----
-
-ggplot_O2sat <- plot_physicochem_parameter_trend(
-  data = data_physico_chem_complete_full,
-  parameter = "O2sat",
-  threshold = 40,
-  ylab = "Dissolved oxygen saturation (%)"
-)
-
-ggplot_O2sat
-
-ggsave(plot = ggplot_O2sat,
-       filename = "inst/mat_meth/phychem/ggplot_O2sat.jpg")
-
-# ---- Map ----
+# ---- O2sat trend ----
 
 plot_maps_parameter_years(
   data = data_physico_chem_filtered,
@@ -115,26 +220,7 @@ plot_maps_parameter_years(
   filename = "inst/mat_meth/phychem/ggplot_O2sat_map.jpg"
 )
 
-
-# =====================================================
-# 04. Ammonium trend
-# =====================================================
-
-# ---- Trend ----
-
-ggplot_ammonium <- plot_physicochem_parameter_trend(
-  data = data_physico_chem_complete_full,
-  parameter = "Ammonium",
-  threshold = 1,
-  ylab = "Dissolved oxygen saturation (%)"
-)
-
-ggplot_ammonium
-
-ggsave(ggplot_ammonium,
-       filename = "inst/mat_meth/phychem/ggplot_ammonium.jpg")
-
-# ---- Map ----
+# ---- Ammonium ----
 
 plot_maps_parameter_years(
   data = data_physico_chem_filtered,
@@ -142,54 +228,18 @@ plot_maps_parameter_years(
   filename = "inst/mat_meth/phychem/ggplot_ammonium_map.jpg"
 )
 
-# =====================================================
-# 05. Ammonia formation toxicity indicator trend
-# =====================================================
-
-# ---- Trend ----
-
-ggplot_risk_NH4_temp <- plot_physicochem_parameter_trend(
-  data = data_physico_chem_complete_full,
-  parameter = "risk_NH4_temp",
-  threshold = NULL,
-  ylab = "Ammonia formation toxicity indicator"
-)
-
-ggplot_risk_NH4_temp
-
-ggsave(ggplot_risk_NH4_temp,
-       filename = "inst/mat_meth/phychem/ggplot_risk_NH4_temp.jpg")
-
-# ---- Map ----
+# ---- Ammonia formation toxicity indicator trend ----
 
 plot_maps_parameter_years(
-  data = data_physico_chem_complete_full,
+  data = data_abiotic,
   parameter = "risk_NH4_temp",
   filename = "inst/mat_meth/phychem/ggplot_risk_NH4_temp_map.jpg"
 )
 
-# =====================================================
-# 06. Hydrological stress indicator trend
-# =====================================================
-
-# ---- Trend ----
-
-ggplot_hydro_stress <- plot_physicochem_parameter_trend(
-  data = data_physico_chem_complete_full,
-  parameter = "hydro_stress",
-  threshold = 0,
-  ylab = "Stress indicator"
-)
-
-ggplot_hydro_stress
-
-ggsave(ggplot_hydro_stress,
-       filename = "inst/mat_meth/phychem/ggplot_hydro_stress.jpg")
-
-# ---- Map ----
+# ---- Hydrological stress indicator ----
 
 plot_maps_parameter_years(
-  data = data_physico_chem_complete_full,
+  data = data_abiotic,
   parameter = "hydro_stress",
   filename = "inst/mat_meth/phychem/ggplot_hydro_stress_map.jpg"
 )
