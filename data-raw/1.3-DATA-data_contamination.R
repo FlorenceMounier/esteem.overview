@@ -3,6 +3,8 @@
 # Datasets:
 #  - data_contamination_biometrics.rda
 #  - data_contamination_TEF_DLC.rda
+#  - data_contamination_no_correction.rda
+#  - data_contamination_full_corr.rda
 #  - data_contamination_convert_factors.rda
 #  - data_contamination.rda
 # Graphs in /inst/mat_meth/contamination
@@ -187,7 +189,7 @@ dry_contents <- data_ROCCHMV_bio_dry_content |>
 
 ### LIPID CONTENT ###
 
-# ---- Compute lipid content per gdw and gww from dry contents ----
+# ---- Compute lipid content per glw and gww from dry contents ----
 
 data_ROCCHMV_bio_lipid <- data_ROCCHMV_clean  |>
   filter(PARAMETRE_LIBELLE == "Lipides totaux") |>
@@ -501,7 +503,7 @@ data_ROCCHMV_contam_sum_HBCDDs <- data_ROCCHMV_contam_sum_HBCDDs_ng_gdw |>
 
 # ---- PBDEs ----
 
-## sum_PBDEs_ng_gdw
+## sum_PBDEs_ng_glw
 data_ROCCHMV_contam_sum_PBDEs_ng_gdw <- data_ROCCHMV_contam_completed |>
   filter(sub_family == "PBDEs") |>
   pivot_wider(names_from = PARAMETRE_LIBELLE, values_from = RESULTAT_ng_gdw) |>
@@ -635,22 +637,23 @@ data_ROCCHMV_contam <- data_ROCCHMV_contam_completed |>
 # 04. Summarise by estuary, year & group
 # =====================================================
 
-data_ROCCHMV_contam_summarized <- data_ROCCHMV_contam |>
+data_contamination_no_correction <- data_ROCCHMV_contam |>
   mutate(group = case_when(
     species == "C. gigas" ~ "Oyster",
     species %in% c("M. edulis", "M. edulis & galloprovincialis") ~ "Mussels"
   )) |>
   group_by(estuary, year, group, PARAMETRE_LIBELLE, family, sub_family) |>
   summarise(
-    RESULTAT_ng_gww = median(RESULTAT_ng_gww, na.rm = TRUE),
     RESULTAT_ng_gdw = median(RESULTAT_ng_gdw, na.rm = TRUE),
+    RESULTAT_ng_gww = median(RESULTAT_ng_gww, na.rm = TRUE),
     RESULTAT_ng_glw = median(RESULTAT_ng_glw, na.rm = TRUE),
     .groups = "drop"
   )
 
+usethis::use_data(data_contamination_no_correction, overwrite = TRUE)
 
 # =====================================================
-# 05. Check species matrix influence
+# 05. Check species matrix influence and correct if necessary
 # =====================================================
 
 # ---- Identify parallel sampling ----
@@ -679,11 +682,246 @@ ggsave(ggplot_contamination_loire_parallel_sampling,
        filename = "inst/mat_meth/contamination/ggplot_contamination_loire_parallel_sampling.jpg",
        height = 22, width = 18, units = "cm")
 
-# ---- Estimate correction factors ----
+
+# ---- Estimate correction factors for all contaminants ----
+
+# 1. Identify the years in which both groups are available
+
+df_overlap <- data_ROCCHMV_contam_summarized |>
+  select(PARAMETRE_LIBELLE, family, sub_family, year, group,
+         RESULTAT_ng_gdw, RESULTAT_ng_gww, RESULTAT_ng_glw) |>
+  group_by(PARAMETRE_LIBELLE, family, sub_family, year, group) |>
+  summarise(
+    RESULTAT_ng_gdw = median(RESULTAT_ng_gdw, na.rm = TRUE),
+    RESULTAT_ng_gww = median(RESULTAT_ng_gww, na.rm = TRUE),
+    RESULTAT_ng_glw = median(RESULTAT_ng_glw, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  pivot_wider(
+    names_from = group,
+    values_from = c(RESULTAT_ng_gdw, RESULTAT_ng_gww, RESULTAT_ng_glw),
+    names_sep = "_"
+  ) |>
+  filter(
+    !is.na(RESULTAT_ng_gdw_Oyster), !is.na(RESULTAT_ng_gdw_Mussels),
+    !is.na(RESULTAT_ng_gww_Oyster), !is.na(RESULTAT_ng_gww_Mussels),
+    !is.na(RESULTAT_ng_glw_Oyster), !is.na(RESULTAT_ng_glw_Mussels)
+  ) |>
+  mutate(
+    log_ratio_ng_gdw = log10((RESULTAT_ng_gdw_Oyster + 1) / (RESULTAT_ng_gdw_Mussels + 1)),
+    log_ratio_ng_gww = log10((RESULTAT_ng_gww_Oyster + 1) / (RESULTAT_ng_gww_Mussels + 1)),
+    log_ratio_ng_glw = log10((RESULTAT_ng_glw_Oyster + 1) / (RESULTAT_ng_glw_Mussels + 1)),
+    ratio_Oyster_Mussels_year_ng_gdw = (RESULTAT_ng_gdw_Oyster + 1) / (RESULTAT_ng_gdw_Mussels + 1),
+    ratio_Oyster_Mussels_year_ng_gww = (RESULTAT_ng_gww_Oyster + 1) / (RESULTAT_ng_gww_Mussels + 1),
+    ratio_Oyster_Mussels_year_ng_glw = (RESULTAT_ng_glw_Oyster + 1) / (RESULTAT_ng_glw_Mussels + 1)
+  )
+
+# 2. Estimate a correction factor for each contaminant
+# when n = 3 points
+# when diff +/- 50% (ratio != 1)
+
+estimate_correction_factor <- function(dat,
+                                       min_pairs = 3,
+                                       factor_threshold = 1.5,
+                                       unit) {
+
+  n_pairs <- nrow(dat)
+
+  if (n_pairs < min_pairs) {
+    return(tibble(
+      n_pairs = n_pairs,
+      mean_log_ratio = NA_real_,
+      conf_low_log10 = NA_real_,
+      conf_high_log10 = NA_real_,
+      ratio_Mussels_Oyster = NA_real_,
+      ratio_low = NA_real_,
+      ratio_high = NA_real_,
+      p_value = NA_real_,
+      correction_factor = 1,
+      correction_applied = FALSE,
+      reason = "Not enough paired years"
+    ))
+  }
+
+  log_ratio_col_name <- paste("log_ratio", unit, sep = "_")
+  tt <- t.test(dat[log_ratio_col_name], mu = 0)
+
+  mean_log_ratio <- unname(tt$estimate)
+  ratio <- 10^mean_log_ratio
+  ratio_low <- 10^tt$conf.int[1]
+  ratio_high <- 10^tt$conf.int[2]
+
+  marked_effect <- ratio >= factor_threshold | ratio <= 1 / factor_threshold
+  significant_raw <- tt$p.value < 0.05
+
+  apply_correction <- marked_effect & significant_raw
+
+  tibble(
+    n_pairs = n_pairs,
+    mean_log_ratio = mean_log_ratio,
+    conf_low_log10 = tt$conf.int[1],
+    conf_high_log10 = tt$conf.int[2],
+    ratio_Oyster_Mussels = ratio,
+    ratio_low = ratio_low,
+    ratio_high = ratio_high,
+    p_value = tt$p.value,
+    correction_factor = if_else(apply_correction, ratio, 1),
+    correction_applied = apply_correction,
+    reason = case_when(
+      apply_correction ~ "Correction applied",
+      !marked_effect ~ "Effect size below threshold",
+      !significant_raw ~ "Difference not statistically clear",
+      TRUE ~ "No correction"
+    )
+  )
+}
+
+# 3. Table of correction factors
+
+fct_correction_table <- function(unit){
+  correction_table <- df_overlap |>
+  group_by(PARAMETRE_LIBELLE, family, sub_family) |>
+  nest() |>
+  mutate(
+    correction = map(data, .f = estimate_correction_factor, unit = unit)
+  ) |>
+  select(-data) |>
+  unnest(correction) |>
+  ungroup() |>
+  mutate(
+    p_adj_BH = p.adjust(p_value, method = "BH"),
+    direction = case_when(
+      is.na(ratio_Oyster_Mussels) ~ "Not tested",
+      ratio_Oyster_Mussels > 1 ~ "Mussels > Oyster",
+      ratio_Oyster_Mussels < 1 ~ "Mussels < Oyster",
+      TRUE ~ "No difference"
+    ),
+    ratio_txt = case_when(
+      is.na(ratio_Oyster_Mussels) ~ NA_character_,
+      TRUE ~ sprintf(
+        "%.2f [%.2f–%.2f]",
+        ratio_Oyster_Mussels, ratio_low, ratio_high
+      )
+    )
+  ) |>
+  arrange(desc(correction_applied), PARAMETRE_LIBELLE)
+
+  return(correction_table)
+}
+
+correction_table_ng_gdw <- fct_correction_table(unit = "ng_gdw")
+correction_table_ng_gww <- fct_correction_table(unit = "ng_gww")
+correction_table_ng_glw <- fct_correction_table(unit = "ng_glw")
+
+# 4. Apply the correction to the entire game
+
+data_contamination_full_corr <- data_ROCCHMV_contam_summarized |>
+  left_join(
+    correction_table_ng_gdw |>
+      select(PARAMETRE_LIBELLE, correction_factor, correction_applied) |>
+      rename(correction_factor_ng_gdw = correction_factor,
+             correction_applied_ng_gdw = correction_applied),
+    by = "PARAMETRE_LIBELLE"
+  ) |>
+  left_join(
+    correction_table_ng_gww |>
+      select(PARAMETRE_LIBELLE, correction_factor, correction_applied) |>
+      rename(correction_factor_ng_gww = correction_factor,
+             correction_applied_ng_gww = correction_applied),
+    by = "PARAMETRE_LIBELLE"
+  ) |>
+  left_join(
+    correction_table_ng_glw |>
+      select(PARAMETRE_LIBELLE, correction_factor, correction_applied) |>
+      rename(correction_factor_ng_glw = correction_factor,
+             correction_applied_ng_glw = correction_applied),
+    by = "PARAMETRE_LIBELLE"
+  ) |>
+  mutate(
+    correction_factor_ng_gdw = replace_na(correction_factor_ng_gdw, 1),
+    correction_factor_ng_gww = replace_na(correction_factor_ng_gww, 1),
+    correction_factor_ng_glw = replace_na(correction_factor_ng_glw, 1),
+    correction_applied_ng_gdw = replace_na(correction_applied_ng_gdw, FALSE),
+    correction_applied_ng_gww = replace_na(correction_applied_ng_gww, FALSE),
+    correction_applied_ng_glw = replace_na(correction_applied_ng_glw, FALSE),
+
+    RESULTAT_ng_gdw = case_when(
+      group == "Mussels" ~ RESULTAT_ng_gdw,
+      group == "Oyster" ~ RESULTAT_ng_gdw / correction_factor_ng_gdw,
+      TRUE ~ RESULTAT_ng_gdw
+    ),
+    RESULTAT_ng_gww = case_when(
+      group == "Mussels" ~ RESULTAT_ng_gww,
+      group == "Oyster" ~ RESULTAT_ng_gww / correction_factor_ng_gww,
+      TRUE ~ RESULTAT_ng_gww
+    ),
+    RESULTAT_ng_glw = case_when(
+      group == "Mussels" ~ RESULTAT_ng_glw,
+      group == "Oyster" ~ RESULTAT_ng_glw / correction_factor_ng_glw,
+      TRUE ~ RESULTAT_ng_glw
+    )
+  )
+
+usethis::use_data(data_contamination_full_corr, overwrite = TRUE)
+
+# 5. Graphical check before/after correction
+
+df_mussel_equiv_ng_gdw <- data_ROCCHMV_contam_summarized |>
+  left_join(
+    correction_table_ng_gdw |>
+      select(PARAMETRE_LIBELLE, correction_factor, correction_applied),
+    by = "PARAMETRE_LIBELLE"
+  ) |>
+  mutate(
+    correction_factor = replace_na(correction_factor, 1),
+    correction_applied = replace_na(correction_applied, FALSE),
+
+    RESULTAT_ng_gdw_mussel_equiv = case_when(
+      group == "Mussels" ~ RESULTAT_ng_gdw,
+      group == "Oyster" ~ RESULTAT_ng_gdw / correction_factor,
+      TRUE ~ RESULTAT_ng_gdw
+    )
+  )
+
+df_plot_before_after_ng_gdw <- df_mussel_equiv_ng_gdw |>
+  select(
+    PARAMETRE_LIBELLE, family, sub_family, year, group,
+    RESULTAT_ng_gdw,
+    RESULTAT_ng_gdw_mussel_equiv,
+    correction_applied
+  ) |>
+  filter(correction_applied == TRUE) |>
+  pivot_longer(
+    cols = c(RESULTAT_ng_gdw, RESULTAT_ng_gdw_mussel_equiv),
+    names_to = "type",
+    values_to = "value"
+  ) |>
+  mutate(
+    type = recode(
+      type,
+      RESULTAT_ng_gdw = "Observed",
+      RESULTAT_ng_gdw_mussel_equiv = "Mussel-equivalent"
+    )
+  )
+
+ggplot(df_plot_before_after_ng_gdw, aes(year, value, colour = group)) +
+  geom_point() +
+  geom_line() +
+  scale_y_log10() +
+  facet_grid(type ~ PARAMETRE_LIBELLE, scales = "free_y") +
+  labs(
+    x = "Year",
+    y = "Concentration ng/g dw",
+    colour = "Group"
+  ) +
+  theme_bw()
+
+
+# ---- Estimate correction factors for Copper, Cadmium & Mercury ----
 data_ROCCHMV_contam_summarized_2_groups <- left_join(data_2_groups, data_ROCCHMV_contam_summarized)
 
 ggplot(data_ROCCHMV_contam_summarized_2_groups |> filter(estuary == "Loire")) +
-  aes(x = year, y = RESULTAT_ng_gdw, colour = group) +
+  aes(x = year, y = RESULTAT_ng_glw, colour = group) +
   geom_point() +
   geom_line() +
   facet_wrap(vars(PARAMETRE_LIBELLE), scale = "free_y")
@@ -691,7 +929,7 @@ ggplot(data_ROCCHMV_contam_summarized_2_groups |> filter(estuary == "Loire")) +
 data_contamination_convert_factors <- data_ROCCHMV_contam_summarized_2_groups |>
   filter(PARAMETRE_LIBELLE %in% c("Copper", "Cadmium", "Mercury")) |>
   select(PARAMETRE_LIBELLE, year, group,
-         RESULTAT_ng_gdw, RESULTAT_ng_gww, RESULTAT_ng_glw) |> pivot_longer(
+         RESULTAT_ng_glw, RESULTAT_ng_gww, RESULTAT_ng_glw) |> pivot_longer(
            cols = starts_with("RESULTAT_ng_"),
            names_to = "metric",
            values_to = "value"
