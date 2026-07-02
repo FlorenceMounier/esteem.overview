@@ -12,7 +12,7 @@
 #' @param size_points Fixed point size used when `size_var` is not supplied.
 #' @param shape_var Optional variable in `data`, or fixed shape value, for point shape.
 #' @param shape_points Fixed point shape used when `shape_var` is not supplied.
-#' @param package Package name where basemap is stored.
+#' @param package Package where basemaps are stored
 #'
 #' @return ggplot object.
 #' @export
@@ -343,17 +343,26 @@ plot_estuary_map <- function(data,
   x_half <- diff(basemap$xlim) * line_frac / 2
   y_half <- diff(basemap$ylim) * line_frac / 2
 
-  # ---------------------------------------------------------
+  if (!exists("GPS_limits_haline")) {
+    stop("GPS_limits_haline not found in the package")
+  }
+  
+  halin_values <- GPS_limits_haline[GPS_limits_haline$estuary == estuary_name, ]
+  halin_limit_lat <- halin_values$halin_limit_lat
+  halin_limit_lon <- halin_values$halin_limit_lon
+  
+
+    # ---------------------------------------------------------
   # Add horizontal salinity limit when available
   # ---------------------------------------------------------
 
-  if (!is.null(basemap$halin_limit_lat) &&
-      !is.na(basemap$halin_limit_lat)) {
+  if (!is.null(halin_limit_lat) &&
+      !is.na(halin_limit_lat)) {
     line_data <- data.frame(
       x = x_mid - x_half,
       xend = x_mid + x_half,
-      y = basemap$halin_limit_lat,
-      yend = basemap$halin_limit_lat
+      y = halin_limit_lat,
+      yend = halin_limit_lat
     )
 
     p <- p +
@@ -374,11 +383,11 @@ plot_estuary_map <- function(data,
   # Add vertical salinity limit when available
   # ---------------------------------------------------------
 
-  if (!is.null(basemap$halin_limit_lon) &&
-      !is.na(basemap$halin_limit_lon)) {
+  if (!is.null(halin_limit_lon) &&
+      !is.na(halin_limit_lon)) {
     line_data <- data.frame(
-      x = basemap$halin_limit_lon,
-      xend = basemap$halin_limit_lon,
+      x = halin_limit_lon,
+      xend = halin_limit_lon,
       y = y_mid - y_half,
       yend = y_mid + y_half
     )
@@ -396,7 +405,7 @@ plot_estuary_map <- function(data,
         linewidth = 0.8
       )
   }
-
+  
   # ---------------------------------------------------------
   # Set map extent
   # ---------------------------------------------------------
@@ -428,7 +437,7 @@ plot_estuary_map <- function(data,
     ggplot2::scale_y_continuous(
       labels = scales::label_number(accuracy = 0.01)
     )
-
+  
   # ---------------------------------------------------------
   # Add plot title
   # ---------------------------------------------------------

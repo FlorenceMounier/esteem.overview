@@ -17,18 +17,15 @@
 #' 
 #' @export
 run_gam_by_parameter <- function(data,
-                                 response_col = "RESULTAT",
-                                 parameter_col = "PARAMETRE_LIBELLE",
-                                 year_col = "year",
-                                 group_vars = c("estuary", "haline_zone", "season"),
-                                 all_group_combinations = FALSE,
-                                 k_max = 6,
-                                 min_n = 6,
-                                 min_years = 6) {
+                                      response_col = "RESULTAT",
+                                      parameter_col = "PARAMETRE_LIBELLE",
+                                      year_col = "year",
+                                      group_vars = c("estuary", "haline_zone", "season"),
+                                      all_group_combinations = FALSE,
+                                      k_max = 6,
+                                      min_n = 6,
+                                      min_years = 6) {
   
-  parameter_sym <- sym(parameter_col)
-  
-  # Vérifications simples
   required_cols <- c(parameter_col, year_col, response_col, group_vars)
   missing_cols <- setdiff(required_cols, names(data))
   
@@ -39,7 +36,6 @@ run_gam_by_parameter <- function(data,
     )
   }
   
-  # Crée les combinaisons de variables de groupement si demandé
   if (all_group_combinations) {
     
     grouping_list <- map(
@@ -53,7 +49,7 @@ run_gam_by_parameter <- function(data,
     grouping_list <- list(group_vars)
   }
   
-  map_dfr(grouping_list, function(current_group_vars) {
+  results_nested <- map_dfr(grouping_list, function(current_group_vars) {
     
     grouping_syms <- syms(c(parameter_col, current_group_vars))
     
@@ -61,7 +57,8 @@ run_gam_by_parameter <- function(data,
       group_by(!!!grouping_syms) |>
       nest() |>
       mutate(
-        gam_stats = map(
+        grouping = paste(current_group_vars, collapse = " + "),
+        gam_output = map(
           data,
           ~ safe_gam(
             df = .x,
@@ -71,10 +68,29 @@ run_gam_by_parameter <- function(data,
             min_n = min_n,
             min_years = min_years
           )
-        ),
-        grouping = paste(current_group_vars, collapse = " + ")
+        )
       ) |>
-      select(-data) |>
-      unnest(gam_stats)
+      select(-data)
   })
+  
+  stats <- results_nested |>
+    mutate(
+      stats = map(gam_output, "stats")
+    ) |>
+    select(-gam_output) |>
+    unnest(stats)
+  
+  predictions <- results_nested |>
+    mutate(
+      predictions = map(gam_output, "predictions")
+    ) |>
+    select(-gam_output) |>
+    unnest(predictions)
+  
+  gam_by_parameter_results <- list(
+    stats = stats,
+    predictions = predictions
+  )
+  
+  return(gam_by_parameter_results)
 }

@@ -43,6 +43,7 @@ safe_gam <- function(df,
                      min_n = 6,
                      min_years = 6) {
   
+  
   response_sym <- sym(response_col)
   year_sym <- sym(year_col)
   
@@ -56,29 +57,36 @@ safe_gam <- function(df,
   n_obs <- nrow(df_mod)
   n_years <- n_distinct(df_mod[[year_col]])
   
+  empty_stats <- tibble(
+    n = n_obs,
+    n_years = n_years,
+    edf = NA_real_,
+    F = NA_real_,
+    p_value = NA_real_,
+    deviance_explained = NA_real_,
+    trend_type = "not tested"
+  )
+  
+  empty_predictions <- df_mod |>
+    transmute(
+      year = .data[[year_col]],
+      observed = .data[[response_col]],
+      fitted_gam = NA_real_
+    )
+  
   if (n_obs < min_n || n_years < min_years) {
-    return(tibble(
-      n = n_obs,
-      n_years = n_years,
-      edf = NA_real_,
-      F = NA_real_,
-      p_value = NA_real_,
-      deviance_explained = NA_real_,
-      trend_type = "not tested"
+    return(list(
+      stats = empty_stats,
+      predictions = empty_predictions
     ))
   }
   
   k_use <- min(k_max, n_years - 1)
   
   if (k_use < 3) {
-    return(tibble(
-      n = n_obs,
-      n_years = n_years,
-      edf = NA_real_,
-      F = NA_real_,
-      p_value = NA_real_,
-      deviance_explained = NA_real_,
-      trend_type = "not tested"
+    return(list(
+      stats = empty_stats,
+      predictions = empty_predictions
     ))
   }
   
@@ -96,14 +104,12 @@ safe_gam <- function(df,
   )
   
   if (is.null(mod)) {
-    return(tibble(
-      n = n_obs,
-      n_years = n_years,
-      edf = NA_real_,
-      F = NA_real_,
-      p_value = NA_real_,
-      deviance_explained = NA_real_,
-      trend_type = "model failed"
+    failed_stats <- empty_stats |>
+      mutate(trend_type = "model failed")
+    
+    return(list(
+      stats = failed_stats,
+      predictions = empty_predictions
     ))
   }
   
@@ -121,7 +127,7 @@ safe_gam <- function(df,
     p_value < 0.05 & edf > 1.5 ~ "non-linear temporal pattern"
   )
   
-  gam_results <- tibble(
+  stats <- tibble(
     n = n_obs,
     n_years = n_years,
     edf = edf,
@@ -131,6 +137,18 @@ safe_gam <- function(df,
     trend_type = trend_type
   )
   
+  predictions <- df_mod |>
+    transmute(
+      year = .data[[year_col]],
+      observed = .data[[response_col]],
+      fitted_gam = as.numeric(predict(mod, newdata = df_mod))
+    )
+  
+  gam_results = list(
+    stats = stats,
+    predictions = predictions
+  )
+
   return(gam_results)
 }
 ```
@@ -155,18 +173,15 @@ safe_gam <- function(df,
 #' 
 #' @export
 run_gam_by_parameter <- function(data,
-                                 response_col = "RESULTAT",
-                                 parameter_col = "PARAMETRE_LIBELLE",
-                                 year_col = "year",
-                                 group_vars = c("estuary", "haline_zone", "season"),
-                                 all_group_combinations = FALSE,
-                                 k_max = 6,
-                                 min_n = 6,
-                                 min_years = 6) {
+                                      response_col = "RESULTAT",
+                                      parameter_col = "PARAMETRE_LIBELLE",
+                                      year_col = "year",
+                                      group_vars = c("estuary", "haline_zone", "season"),
+                                      all_group_combinations = FALSE,
+                                      k_max = 6,
+                                      min_n = 6,
+                                      min_years = 6) {
   
-  parameter_sym <- sym(parameter_col)
-  
-  # Vérifications simples
   required_cols <- c(parameter_col, year_col, response_col, group_vars)
   missing_cols <- setdiff(required_cols, names(data))
   
@@ -177,7 +192,6 @@ run_gam_by_parameter <- function(data,
     )
   }
   
-  # Crée les combinaisons de variables de groupement si demandé
   if (all_group_combinations) {
     
     grouping_list <- map(
@@ -191,7 +205,7 @@ run_gam_by_parameter <- function(data,
     grouping_list <- list(group_vars)
   }
   
-  map_dfr(grouping_list, function(current_group_vars) {
+  results_nested <- map_dfr(grouping_list, function(current_group_vars) {
     
     grouping_syms <- syms(c(parameter_col, current_group_vars))
     
@@ -199,7 +213,8 @@ run_gam_by_parameter <- function(data,
       group_by(!!!grouping_syms) |>
       nest() |>
       mutate(
-        gam_stats = map(
+        grouping = paste(current_group_vars, collapse = " + "),
+        gam_output = map(
           data,
           ~ safe_gam(
             df = .x,
@@ -209,12 +224,31 @@ run_gam_by_parameter <- function(data,
             min_n = min_n,
             min_years = min_years
           )
-        ),
-        grouping = paste(current_group_vars, collapse = " + ")
+        )
       ) |>
-      select(-data) |>
-      unnest(gam_stats)
+      select(-data)
   })
+  
+  stats <- results_nested |>
+    mutate(
+      stats = map(gam_output, "stats")
+    ) |>
+    select(-gam_output) |>
+    unnest(stats)
+  
+  predictions <- results_nested |>
+    mutate(
+      predictions = map(gam_output, "predictions")
+    ) |>
+    select(-gam_output) |>
+    unnest(predictions)
+  
+  gam_by_parameter_results <- list(
+    stats = stats,
+    predictions = predictions
+  )
+  
+  return(gam_by_parameter_results)
 }
 ```
 

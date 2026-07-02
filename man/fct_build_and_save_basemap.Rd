@@ -5,20 +5,23 @@
 \title{Create and save OpenStreetMap base map for an estuary}
 \usage{
 fct_build_and_save_basemap(
-  data,
+  GPS_limits_estuary,
   estuary_name,
   villes_selection = NULL,
-  path = "inst/extdata/basemaps"
+  path = "inst/extdata/basemaps",
+  buffer_deg = 0.02
 )
 }
 \arguments{
-\item{data}{Data frame containing latitude and longitude}
+\item{GPS_limits_estuary}{Data frame containing one row per estuary with latitude/longitude limits}
 
-\item{estuary_name}{Character name of estuary (used for folder name)}
+\item{estuary_name}{Character name of estuary to build}
 
 \item{villes_selection}{Character vector of city names to keep (optional)}
 
 \item{path}{Base path for saving (default: inst/extdata/basemaps)}
+
+\item{buffer_deg}{Numeric buffer added around bbox in decimal degrees}
 }
 \value{
 A list with map components (also saved on disk)

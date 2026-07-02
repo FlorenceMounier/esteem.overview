@@ -2,67 +2,78 @@
 
 #' Create and save OpenStreetMap base map for an estuary
 #'
-#' @param data Data frame containing latitude and longitude
-#' @param estuary_name Character name of estuary (used for folder name)
+#' @param GPS_limits_estuary Data frame containing one row per estuary with latitude/longitude limits
+#' @param estuary_name Character name of estuary to build
 #' @param villes_selection Character vector of city names to keep (optional)
 #' @param path Base path for saving (default: inst/extdata/basemaps)
+#' @param buffer_deg Numeric buffer added around bbox in decimal degrees
 #'
 #' @return A list with map components (also saved on disk)
 #'
 #' @import dplyr
-#' @importFrom sf st_as_sf st_bbox st_polygon st_sf st_sfc
-#' @importFrom sf st_intersection st_distance st_write
+#' @importFrom sf st_bbox st_polygon st_sf st_sfc st_as_sfc
+#' @importFrom sf st_intersection st_write
 #' @importFrom osmdata opq add_osm_feature osmdata_sf
 #' @importFrom maptiles get_tiles
 #' @importFrom terra writeRaster
 #' @export
-fct_build_and_save_basemap <- function(data,
+fct_build_and_save_basemap <- function(GPS_limits_estuary,
                                        estuary_name,
                                        villes_selection = NULL,
-                                       path = "inst/extdata/basemaps") {
+                                       path = "inst/extdata/basemaps",
+                                       buffer_deg = 0.02) {
 
   # -------------------------
-  # 0. Charger halin_table du package
+  # 1. Get estuary limits
   # -------------------------
-  if (!exists("GPS_limits_haline")) {
-    stop("GPS_limits_haline not found in the package")
+  estuary_limits <- GPS_limits_estuary |>
+    dplyr::filter(estuary == estuary_name)
+
+  if (nrow(estuary_limits) == 0) {
+    stop("No limits found for estuary: ", estuary_name)
   }
 
-  halin_values <- GPS_limits_haline[GPS_limits_haline$estuary == estuary_name, ]
-  halin_limit_lat <- halin_values$halin_limit_lat
-  halin_limit_lon <- halin_values$halin_limit_lon
-  
-  # -------------------------
-  # 1. Convert to sf
-  # -------------------------
-  points_sf <- data |>
-    dplyr::filter(!is.na(latitude) & !is.na(longitude)) |>
-    sf::st_as_sf(
-      coords = c("longitude", "latitude"),
-      crs = 4326,
-      remove = FALSE
+  if (nrow(estuary_limits) > 1) {
+    stop("More than one row found for estuary: ", estuary_name)
+  }
+
+  required_cols <- c(
+    "estuary_limit_lat_min",
+    "estuary_limit_lat_max",
+    "estuary_limit_lon_min",
+    "estuary_limit_lon_max"
+  )
+
+  missing_cols <- setdiff(required_cols, names(estuary_limits))
+
+  if (length(missing_cols) > 0) {
+    stop(
+      "Missing required columns: ",
+      paste(missing_cols, collapse = ", ")
     )
+  }
 
   # -------------------------
   # 2. Bounding box + buffer
   # -------------------------
-  bbox <- sf::st_bbox(points_sf)
-  buffer_deg <- 0.02
+  xlim <- c(
+    estuary_limits$estuary_limit_lon_min - buffer_deg,
+    estuary_limits$estuary_limit_lon_max + buffer_deg
+  )
 
-  xlim <- c(bbox["xmin"] - buffer_deg,
-            bbox["xmax"] + buffer_deg)
+  ylim <- c(
+    estuary_limits$estuary_limit_lat_min - buffer_deg,
+    estuary_limits$estuary_limit_lat_max + buffer_deg
+  )
 
-  ylim <- c(bbox["ymin"] - buffer_deg,
-            bbox["ymax"] + buffer_deg)
-  
   fixed_bbox <- fix_bbox_aspect(
-  xlim = xlim,
-  ylim = ylim,
-  target_ratio = 1 # carte carrée
-)
+    xlim = xlim,
+    ylim = ylim,
+    target_ratio = 1 # carte carrée
+  )
 
-xlim <- fixed_bbox$xlim
-ylim <- fixed_bbox$ylim
+  xlim <- fixed_bbox$xlim
+  ylim <- fixed_bbox$ylim
 
   coords <- matrix(
     c(
@@ -76,9 +87,11 @@ ylim <- fixed_bbox$ylim
     byrow = TRUE
   )
 
-  poly <- sf::st_polygon(list(coords))
   bbox_sf <- sf::st_sf(
-    geometry = sf::st_sfc(poly, crs = 4326)
+    geometry = sf::st_sfc(
+      sf::st_polygon(list(coords)),
+      crs = 4326
+    )
   )
 
   bbox_vector <- c(
@@ -104,24 +117,27 @@ ylim <- fixed_bbox$ylim
 
     villes_points <- sf::st_intersection(
       villes_points,
-      sf::st_as_sfc(sf::st_bbox(points_sf))
+      sf::st_as_sfc(sf::st_bbox(bbox_sf))
     )
 
     # -------------------------
-    #  Filtrage par noms fournis
+    # Filter by selected city names
     # -------------------------
     if (!is.null(villes_selection)) {
 
       villes_points <- villes_points |>
         dplyr::filter(name %in% villes_selection)
 
-      # message si certaines villes absentes
-      villes_manquantes <- setdiff(villes_selection,
-                                   unique(villes_points$name))
+      villes_manquantes <- setdiff(
+        villes_selection,
+        unique(villes_points$name)
+      )
 
       if (length(villes_manquantes) > 0) {
-        warning("These cities were not found in OSM data: ",
-                paste(villes_manquantes, collapse = ", "))
+        warning(
+          "These cities were not found in OSM data: ",
+          paste(villes_manquantes, collapse = ", ")
+        )
       }
     }
 
@@ -151,9 +167,12 @@ ylim <- fixed_bbox$ylim
   # 5. Save to package
   # -------------------------
   dir_estuary <- file.path(path, estuary_name)
-  dir.create(dir_estuary,
-             recursive = TRUE,
-             showWarnings = FALSE)
+
+  dir.create(
+    dir_estuary,
+    recursive = TRUE,
+    showWarnings = FALSE
+  )
 
   terra::writeRaster(
     osm_raster,
@@ -171,9 +190,7 @@ ylim <- fixed_bbox$ylim
   }
 
   saveRDS(
-    list(xlim = xlim, ylim = ylim,
-         halin_limit_lat = halin_limit_lat,
-         halin_limit_lon = halin_limit_lon),
+    list(xlim = xlim, ylim = ylim),
     file.path(dir_estuary, "bbox.rds")
   )
 
@@ -181,12 +198,11 @@ ylim <- fixed_bbox$ylim
   # 6. Return object
   # -------------------------
   return(list(
-    points_sf = points_sf,
+    estuary = estuary_name,
+    bbox_sf = bbox_sf,
     osm_raster = osm_raster,
     villes = villes_finales,
     xlim = xlim,
-    ylim = ylim,
-    halin_limit_lat = halin_limit_lat,
-    halin_limit_lon = halin_limit_lon
+    ylim = ylim
   ))
 }

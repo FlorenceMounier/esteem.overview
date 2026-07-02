@@ -133,6 +133,10 @@ tef_oms_2005 <- set_caption(
 tef_oms_2005
 ```
 
+# Fish size classes
+
+
+
 # Benthic quality index computation details
 
 The measured main grain size, organic matter percentage, and main phyla found in the sediment of intertidal and subtidal areas in each estuary are presented along with the most proximate EUNIS habitats in Table \@ref(tab:tab_habitat_eunis).

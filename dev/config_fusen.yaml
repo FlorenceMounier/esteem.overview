@@ -111,6 +111,21 @@ flat_maps.Rmd:
     overwrite: ask
     clean: ask
     codecov: false
+flat_trend_correlation.Rmd:
+  path: dev/flat_trend_correlation.Rmd
+  state: active
+  R: R/cor_gam_trajectories.R
+  tests: []
+  vignettes: []
+  inflate:
+    flat_file: dev/flat_trend_correlation.Rmd
+    vignette_name: ~
+    open_vignette: true
+    check: false
+    document: true
+    overwrite: 'yes'
+    clean: ask
+    codecov: false
 flat_utils.Rmd:
   path: dev/flat_utils.Rmd
   state: active

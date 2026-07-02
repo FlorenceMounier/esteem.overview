@@ -50,8 +50,6 @@ load_estuary_basemap <- function(estuary_name,
     osm_raster = osm_raster,
     villes = villes,
     xlim = bbox$xlim,
-    ylim = bbox$ylim,
-    halin_limit_lat = bbox$halin_limit_lat,
-    halin_limit_lon = bbox$halin_limit_lon
+    ylim = bbox$ylim
   ))
 }

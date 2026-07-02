@@ -26,6 +26,7 @@ safe_gam <- function(df,
                      min_n = 6,
                      min_years = 6) {
   
+  
   response_sym <- sym(response_col)
   year_sym <- sym(year_col)
   
@@ -39,29 +40,36 @@ safe_gam <- function(df,
   n_obs <- nrow(df_mod)
   n_years <- n_distinct(df_mod[[year_col]])
   
+  empty_stats <- tibble(
+    n = n_obs,
+    n_years = n_years,
+    edf = NA_real_,
+    F = NA_real_,
+    p_value = NA_real_,
+    deviance_explained = NA_real_,
+    trend_type = "not tested"
+  )
+  
+  empty_predictions <- df_mod |>
+    transmute(
+      year = .data[[year_col]],
+      observed = .data[[response_col]],
+      fitted_gam = NA_real_
+    )
+  
   if (n_obs < min_n || n_years < min_years) {
-    return(tibble(
-      n = n_obs,
-      n_years = n_years,
-      edf = NA_real_,
-      F = NA_real_,
-      p_value = NA_real_,
-      deviance_explained = NA_real_,
-      trend_type = "not tested"
+    return(list(
+      stats = empty_stats,
+      predictions = empty_predictions
     ))
   }
   
   k_use <- min(k_max, n_years - 1)
   
   if (k_use < 3) {
-    return(tibble(
-      n = n_obs,
-      n_years = n_years,
-      edf = NA_real_,
-      F = NA_real_,
-      p_value = NA_real_,
-      deviance_explained = NA_real_,
-      trend_type = "not tested"
+    return(list(
+      stats = empty_stats,
+      predictions = empty_predictions
     ))
   }
   
@@ -79,14 +87,12 @@ safe_gam <- function(df,
   )
   
   if (is.null(mod)) {
-    return(tibble(
-      n = n_obs,
-      n_years = n_years,
-      edf = NA_real_,
-      F = NA_real_,
-      p_value = NA_real_,
-      deviance_explained = NA_real_,
-      trend_type = "model failed"
+    failed_stats <- empty_stats |>
+      mutate(trend_type = "model failed")
+    
+    return(list(
+      stats = failed_stats,
+      predictions = empty_predictions
     ))
   }
   
@@ -104,7 +110,7 @@ safe_gam <- function(df,
     p_value < 0.05 & edf > 1.5 ~ "non-linear temporal pattern"
   )
   
-  gam_results <- tibble(
+  stats <- tibble(
     n = n_obs,
     n_years = n_years,
     edf = edf,
@@ -114,5 +120,17 @@ safe_gam <- function(df,
     trend_type = trend_type
   )
   
+  predictions <- df_mod |>
+    transmute(
+      year = .data[[year_col]],
+      observed = .data[[response_col]],
+      fitted_gam = as.numeric(predict(mod, newdata = df_mod))
+    )
+  
+  gam_results = list(
+    stats = stats,
+    predictions = predictions
+  )
+
   return(gam_results)
 }

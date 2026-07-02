@@ -39,7 +39,7 @@ plot_estuary_map(
 
 \item{shape_points}{Fixed point shape used when \code{shape_var} is not supplied.}
 
-\item{package}{Package name where basemap is stored.}
+\item{package}{Package where basemaps are stored}
 }
 \value{
 ggplot object.
